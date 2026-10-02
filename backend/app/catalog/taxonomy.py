@@ -188,3 +188,14 @@ def format_attribute_value(name: str, value: str | bool | int | float) -> str:
     unit = _split_unit(name)[1]
     number = str(value) if isinstance(value, int) else f"{value:g}"
     return f"{number} {unit}" if unit else number
+
+
+def format_rupees(amount: int) -> str:
+    """Indian digit grouping with the rupee sign and no decimals: 124999 -> "₹1,24,999"."""
+    digits = str(amount)
+    head, tail = digits[:-3], digits[-3:]
+    groups = []
+    while head:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    return "₹" + ",".join([*groups, tail])

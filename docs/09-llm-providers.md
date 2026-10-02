@@ -76,7 +76,7 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - Stop reasons `end_turn`, `tool_use`, `max_tokens` and `refusal` map to the same names. Any other stop reason maps to `end_turn`.
 - `tool_results_message` puts every `tool_result` block for a turn into a single user message.
 - Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.
-- Retries rely on the SDK's built-in retry for rate limits, overload and connection errors. Once retries run out, the adapter raises `LLMUpstreamError`.
+- Each attempt times out after 60 seconds. Retries rely on the SDK's built-in retry (2 retries) for rate limits, overload, connection errors and timeouts. Once retries run out, the adapter raises `LLMUpstreamError`.
 
 ## Adding a provider
 

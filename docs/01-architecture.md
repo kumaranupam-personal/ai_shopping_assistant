@@ -60,7 +60,9 @@ ai_shopping_assistant/
         engine.py            search_products implementation
         index.py             loads database and vectors at startup
       catalog/
-        taxonomy.py          categories, attributes, sizes, colors, card attributes
+        taxonomy.py          categories, attributes and display rules
+        store.py             catalog file names and read access
+        cards.py             builds product cards
         ingest.py            validates a product file and writes the catalog database
         embed.py             writes the vector file
         schema.sql
