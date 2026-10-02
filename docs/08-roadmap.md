@@ -14,7 +14,7 @@ Build the phases in order. Each phase is done only when its criteria pass.
 
 ## Phase 3: Agent
 
-- Build: the LLM layer with the Anthropic adapter from `09-llm-providers.md`, plus the tools, the system prompt, the session store, the agent loop and the terminal chat (`app.cli`). The terminal chat prints status lines, shown product titles and prices, and reply text.
+- Build: the LLM layer with the Anthropic adapter from `09-llm-providers.md`, plus the tools, the system prompt, the session store, the agent loop and the terminal chat from `01-architecture.md`.
 - Done when the LLM layer, tool and agent loop tests pass and the example conversation in `00-overview.md` works end to end in the terminal.
 
 ## Phase 4: API

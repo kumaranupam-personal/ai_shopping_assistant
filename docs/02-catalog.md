@@ -32,8 +32,8 @@ Field rules (ingestion enforces all of them):
 - `price` and `mrp`: positive integer rupees, with `mrp` greater than or equal to `price`.
 - `rating`: 0.0 to 5.0 with one decimal place.
 - `review_count` and `stock`: non-negative integers. A `stock` of 0 means out of stock.
-- `sizes`: values from the category's sizes, and an empty list when the category has none.
-- `colors`: 1 to 4 values from the taxonomy's color list.
+- `sizes`: one or more distinct values from the category's sizes, or an empty list when the category has none.
+- `colors`: 1 to 4 distinct values from the taxonomy's color list.
 - `attributes`: exactly the category's attributes, each with an allowed value.
 - `tags`: 0 to 10 lowercase strings.
 - `description`: non-empty, at most 1000 characters.
@@ -141,7 +141,7 @@ Display rules, used wherever an attribute is shown to the user:
 `app.catalog.ingest <path>` loads a product file into the catalog store.
 
 - Input is UTF-8 JSONL with one product per line.
-- Every line is checked against the field rules and the taxonomy. Lines that fail are written to `ingest_rejects.jsonl` in `DATA_DIR`, each with its line number and the reasons.
+- Every line is checked against the field rules and the taxonomy. Lines that fail are written to `ingest_rejects.jsonl` in `DATA_DIR`, which is replaced on every run, each with its line number and the reasons.
 - If any line is rejected and `--allow-rejects` isn't passed, the command exits with an error and leaves the existing `catalog.db` untouched. With `--allow-rejects`, the valid lines are loaded and the rejected ones skipped.
 - The new `catalog.db` is built in a temporary file and then renamed into `DATA_DIR`, so a failed run never leaves a half-written catalog.
 - It prints a summary with loaded and rejected counts per category.
@@ -166,8 +166,8 @@ All rupee amounts shown to the user, both in agent prose and in the UI, use the 
 `backend/demo/` generates the demo catalog. It isn't part of the runtime app and nothing in `app/` imports it.
 
 - `demo.generate` uses only Python code, with no LLM calls. It seeds its random number generator with 42, so every run produces the same file, and it writes `demo/products.jsonl`. The output must pass ingestion with zero rejects.
-- It produces 300 products per category, 2400 in total, with 6 synthetic brands per category. Brand lists and description templates live in `demo/templates/`.
-- IDs are a category prefix, a hyphen and a 5-digit sequence number. The prefixes are JKT for jackets, SHO for shoes, PHN for phones, LAP for laptops, BAG for backpacks, WCH for watches, KRT for kurtas and KIT for kitchen_appliances.
+- It produces 300 products per category, 2400 in total, with 6 synthetic brands per category. Brand lists, title patterns, description templates and tag rules live in `demo/templates/`.
+- IDs are a category prefix, a hyphen and a 5-digit sequence number starting at 00001 within each category. The prefixes are JKT for jackets, SHO for shoes, PHN for phones, LAP for laptops, BAG for backpacks, WCH for watches, KRT for kurtas and KIT for kitchen_appliances.
 - Price ranges in rupees: jackets 799 to 14999, shoes 499 to 12999, phones 6999 to 89999, laptops 24999 to 189999, backpacks 399 to 7999, watches 499 to 29999, kurtas 399 to 6999, kitchen_appliances 799 to 24999.
 - About 70% of products are discounted, by 5% to 60%.
 - Ratings are skewed so most fall between 3.5 and 4.7. `review_count` ranges from 0 to 25000 and is positively correlated with rating.

@@ -67,13 +67,14 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 
 `app/llm/anthropic_provider.py`, selected with `LLM_PROVIDER=anthropic`.
 
-- Uses the async Anthropic client and `messages.create`, not the SDK's tool runner.
+- Uses the async Anthropic client and `beta.messages.create`, because the refusal fallback below is a beta feature. It doesn't use the SDK's tool runner.
 - The default model is `claude-opus-5-5`.
 - Credentials: `LLM_API_KEY`. If it's unset, the adapter falls back to an active `ant auth login` profile, and startup fails only if neither is available.
 - `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
 - Tool choice is `auto`, and tools are sent in the same order on every call.
 - The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`.
-- `native_message` is the full assistant content, including thinking and tool-use blocks, exactly as returned.
+- `native_message` is the full assistant content, including thinking and tool-use blocks, exactly as returned. `text` holds only the text blocks.
+- Stop reasons `end_turn`, `tool_use`, `max_tokens` and `refusal` map to the same names. Any other stop reason maps to `end_turn`.
 - `tool_results_message` puts every `tool_result` block for a turn into a single user message.
 - Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.
 - Retries rely on the SDK's built-in retry for rate limits, overload and connection errors. Once retries run out, the adapter raises `LLMUpstreamError`.

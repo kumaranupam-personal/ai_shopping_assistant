@@ -13,9 +13,10 @@
 Loop rules:
 
 - A turn may make at most 8 model calls. If it hits that limit, the turn fails with the error `turn_limit` from `05-api.md`.
+- A `max_tokens` stop reason also fails the turn with `turn_limit`. The response may hold unanswered tool calls, and rolling the turn back keeps the history valid for the next turn.
+- A `refusal` stop reason ends the turn with `done`. A fixed polite message is sent as a `text` event and added as an `assistant` entry.
 - The system prompt is static. Nothing that changes per request, such as dates or IDs, goes into it, so providers can cache it.
-- A `max_tokens` stop reason ends the turn with `done`, keeping the text received so far.
-- A `refusal` stop reason ends the turn with `done`, using a fixed polite message as the reply text.
+- The loop returns a turn record with the latency and the `usage` of every model call. The eval runner reads it, and the API ignores it.
 
 ## Required behaviors
 
@@ -25,7 +26,7 @@ Loop rules:
 2. Map every request to find products to `search_products`. Hard constraints go into filters. The need and any soft preferences go into `query`.
 3. Search right away whenever a category or a clear use case can be inferred. Ask exactly one short clarifying question only when neither can be inferred. Never ask more than one question in a row.
 4. After every search that the user should see, call `show_products` with up to 8 of the best results (at least 3 when that many exist), best first, and 2 to 4 refinement suggestions.
-5. For a refinement, start from the previous search's arguments, which are visible in the history, and change only what the user changed.
+5. For a refinement, start from the previous search's arguments, which are visible in the history, and change only what the user changed. "Cheaper" without a number sets `price_max` to one rupee below the lowest price in the latest shown list. "Costlier" or "more premium" without a number sets `price_min` to one rupee above the highest price in it.
 6. Resolve ordinal references ("the second one") against the latest `show_products` result in the history.
 7. If a search returns nothing, relax in this order and say what was relaxed: drop attribute filters the agent inferred but the user did not state, drop the brand, raise `price_max` by 15%, drop the size. Stop relaxing once results appear.
 8. State prices and specs only when they appear in a tool result. Format amounts as described in `02-catalog.md`. Never invent products, discounts, delivery dates or stock levels.
@@ -76,7 +77,7 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 
 Session rules:
 
-- A session expires once it has been idle longer than `SESSION_TTL_MINUTES`. Sending a message and restoring the session both count as activity. Expired sessions are purged lazily on access.
+- A session expires once it has been idle longer than `SESSION_TTL_MINUTES`. Sending a message and restoring the session both count as activity. Every access to the store first removes all expired sessions.
 - A new message is rejected when `turn_count` has reached `MAX_TURNS_PER_SESSION`, or when `busy` is true. The matching error codes are in `05-api.md`.
 - A turn's transcript entries are committed only when the turn ends with `done`. Until then they're held with the turn.
 - If a turn fails, or the client disconnects before it ends, the turn is cancelled. `history`, `transcript`, `shown_ids` and `turn_count` go back to their state before that turn, so a half-finished exchange is never stored.

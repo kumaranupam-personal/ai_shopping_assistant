@@ -8,12 +8,12 @@
 - `filters`: an object whose fields are all optional:
   - `category`: one category name from the taxonomy in `02-catalog.md`.
   - `price_min` and `price_max`: integer rupees, inclusive.
-  - `brand`: a list of brands. A product matches if its brand is in the list.
+  - `brand`: a list of brands. A product matches if its brand is in the list, compared case-insensitively.
   - `size`: one size string from the taxonomy's value rules. A product matches if the value is in its `sizes`.
   - `color`: one color. A product matches if the value is in its `colors`.
   - `min_rating`: a decimal. A product matches if its `rating` is at least this value.
   - `in_stock_only`: boolean. Default true. If true, `stock` must be greater than 0.
-  - `attributes`: a map from attribute name to a condition. For text and boolean attributes, the condition is a single value (exact match) or a list of values (match any). For numeric attributes, it's a single number (exact match) or an object with optional `min` and `max`, both inclusive.
+  - `attributes`: a map from attribute name to a condition. For text and boolean attributes, the condition is a single value (exact match) or a list of values (match any). For numeric attributes, it's a single number (exact match) or an object with optional `min` and `max`, both inclusive. Attribute names are checked against the category's attributes, so attribute filters need `category`. Without it, they're ignored with a warning.
 - `sort`: `relevance` (the default), `price_asc`, `price_desc` or `rating` (highest first). With any sort other than `relevance`, `query` is ignored and the results are the filter matches in that order.
 - `limit`: 1 to 20. Default 10.
 
@@ -35,7 +35,7 @@ Unknown categories, sizes, colors, attribute names or attribute values do not ra
 }
 ```
 
-`total_matches` counts every product that passes the filters, before `limit` is applied. `description`, `tags` and `image_url` are left out to keep tool results small.
+`total_matches` counts every product that passes the filters, before `limit` is applied. `warnings` is always present and may be empty. `description`, `tags` and `image_url` are left out to keep tool results small.
 
 ## Pipeline
 
@@ -44,7 +44,7 @@ Unknown categories, sizes, colors, attribute names or attribute values do not ra
 3. **Keyword list.** Turn the query into an FTS5 expression. Lowercase it, keep only alphanumeric tokens, drop a fixed English stopword list, and join the remaining tokens with OR. Take the top 50 candidates by FTS5 `bm25()`. If no tokens remain, the keyword list is empty.
 4. **Vector list.** Embed the query with the same model used to build the index, normalize it, and score the candidates by dot product. Take the top 50.
 5. **Fuse.** Combine the two lists with reciprocal rank fusion: each product's score is the sum of `1 / (60 + rank)` over the lists it appears in, where `rank` starts at 1. Sort by score descending, breaking ties by `rating` and then `id`.
-6. **Diversify.** When `sort` is `relevance`, including the empty-query case, allow at most 3 products per brand in the returned page. Skipped products move down, behind the other brands.
+6. **Diversify.** When `sort` is `relevance`, including the empty-query case, allow at most 3 products per brand in the returned page. Walk the ranked list in order, taking a product unless its brand already has 3, and append the skipped products after the rest in their original order.
 7. **Truncate** to `limit`.
 
 ## Index loading

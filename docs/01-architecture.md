@@ -14,7 +14,7 @@
 
 1. The frontend sends the user message to the chat endpoint with its session ID.
 2. The API server loads the session and runs one agent turn, which alternates model calls and tool calls (see `04-agent.md`).
-3. Tools query the catalog through the search service. The display tool sends product cards to the client over the open stream, and the model's reply text is streamed as it arrives.
+3. Tools query the catalog through the search service. The display tool sends product cards to the client over the open stream, and the model's text is streamed after each model call.
 4. The turn is committed to the session when it succeeds and rolled back otherwise, and the stream closes.
 
 ## Grounding principle
@@ -80,7 +80,7 @@ ai_shopping_assistant/
 
 ## Configuration
 
-The backend reads these environment variables, optionally from `backend/.env`. Variables set in the shell take precedence over `.env`. Every other document refers to them by name. Relative paths resolve against the `backend/` folder, whatever the current directory is.
+The backend reads these environment variables, optionally from `backend/.env`. Variables set in the shell take precedence over `.env`. `backend/.env.example` lists every backend variable with its default. Every other document refers to them by name. Relative paths resolve against the `backend/` folder, whatever the current directory is.
 
 - `LLM_PROVIDER`: which adapter to use. Default `anthropic`.
 - `LLM_API_KEY`: the API key for the chosen provider. Required unless the adapter documents another credential source in `09-llm-providers.md`.
@@ -106,7 +106,7 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 3. `uv run python -m app.catalog.ingest demo/products.jsonl` builds the catalog database.
 4. `uv run python -m app.catalog.embed` builds the vector file.
 5. `uv run python -m app` starts the API server on `PORT` with auto-reload.
-6. `uv run python -m app.cli` starts a terminal chat that skips the API and frontend.
+6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
 8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money.
 9. `npm install && npm run dev` serves the UI on port 5173, and `npm test` runs the browser tests.

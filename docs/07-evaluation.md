@@ -20,11 +20,11 @@
 
 - `id` and a one-line `description`.
 - `turns`: an ordered list of user messages.
-- `expect`: checks applied to the final turn:
-  - `shown`: the conditions that every product in the final `show_products` call must meet, using the same `filters` syntax as `03-search.md`.
+- `expect`: checks applied to the final turn. Every key is optional:
+  - `shown`: the conditions that every product in the final turn's last `show_products` call must meet, using the same `filters` syntax as `03-search.md`.
   - `min_shown`: the minimum number of products in that call.
-  - `clarifies`: true when the final turn should ask a question and show nothing.
-  - `declines`: true when the request is out of scope and should show nothing.
+  - `clarifies`: true when the final turn should make no `show_products` call and its reply should contain a question mark.
+  - `declines`: true when the final turn should make no `search_products` or `show_products` call.
   - `mentions`: case-insensitive substrings the final reply must contain, such as "relaxed".
   - `reply_language`: `english` or `hinglish`. It is checked with a word-list heuristic: a reply counts as Hinglish when at least 2 distinct words from a fixed list of common Hindi words (such as hai, aur, ke, liye, yeh, aap, mein, sasta) appear in it.
 

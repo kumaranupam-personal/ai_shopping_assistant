@@ -27,7 +27,7 @@ Restores a session's conversation after a page reload.
 - Response 200: a `text/event-stream` carrying the events below, which always ends with exactly one `done` or `error` event. If the client disconnects first, the server cancels the turn as described in `04-agent.md`.
 - Response 404: `session_not_found`.
 - Response 409: `turn_in_progress`.
-- Response 422: the message is empty or too long.
+- Response 422: `invalid_request`, when the body is malformed or the message is empty or too long.
 - Response 429: `session_full`.
 
 ### GET /api/products/{id}
@@ -86,7 +86,8 @@ The server builds status text from tool inputs, never from model prose:
 - `session_not_found`: the session is unknown or has expired.
 - `turn_in_progress`: another turn is already running for this session.
 - `session_full`: the session has reached `MAX_TURNS_PER_SESSION`.
-- `turn_limit`: the agent hit its per-turn model-call limit (see `04-agent.md`).
+- `invalid_request`: the request body failed validation. FastAPI's default validation response is replaced with this error body.
+- `turn_limit`: the turn hit the model-call limit or a model response hit the output-token limit (see `04-agent.md`).
 - `upstream_error`: the LLM provider failed after retries.
 - `internal_error`: any other unexpected failure. The message is generic and the details go only to server logs.
 - `product_not_found`: the product ID is unknown.
