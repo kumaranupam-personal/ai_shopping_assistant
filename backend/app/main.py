@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.agent.loop import TurnLimitError, run_turn
 from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
-from app.catalog.cards import build_card
+from app.catalog.cards import attribute_details, build_card
 from app.catalog.store import fetch_products
 from app.config import Settings
 from app.llm.base import LLMProvider, LLMUpstreamError
@@ -154,7 +154,7 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         product = fetch_products(request.app.state.index.conn, [product_id]).get(product_id)
         if product is None:
             return error_response(404, "product_not_found")
-        return {**product, "card": build_card(product)}
+        return {**product, "card": build_card(product), "details": attribute_details(product)}
 
     @app.get("/api/health")
     async def health(request: Request) -> dict:

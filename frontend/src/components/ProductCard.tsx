@@ -8,6 +8,30 @@ export function cardLabel(card: Card) {
   return `${card.title}, ${formatRupees(card.price)}${card.in_stock ? "" : ", out of stock"}`;
 }
 
+/** Price, crossed-out MRP and discount (only when discounted). */
+export function Price({ card, large }: { card: Card; large?: boolean }) {
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+      <span className={large ? "text-xl font-semibold" : "font-semibold"}>{formatRupees(card.price)}</span>
+      {card.discount_pct > 0 && (
+        <>
+          <s className="text-xs text-fg-muted">{formatRupees(card.mrp)}</s>
+          <span className="text-xs font-medium text-success">{card.discount_pct}% off</span>
+        </>
+      )}
+    </span>
+  );
+}
+
+export function Rating({ card }: { card: Card }) {
+  return (
+    <span className="flex items-center gap-1 text-xs text-fg-muted">
+      <Star aria-hidden className="size-3.5 fill-current text-star" />
+      {card.rating.toFixed(1)} ({formatCount(card.review_count)})
+    </span>
+  );
+}
+
 export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id: string) => void }) {
   return (
     <button
@@ -20,19 +44,8 @@ export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id:
       <div className="flex min-w-0 flex-1 flex-col gap-1 p-3">
         <span className="truncate text-xs text-fg-muted">{card.brand}</span>
         <span className="line-clamp-2 text-sm font-medium">{card.title}</span>
-        <span className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
-          <span className="font-semibold">{formatRupees(card.price)}</span>
-          {card.discount_pct > 0 && (
-            <>
-              <s className="text-xs text-fg-muted">{formatRupees(card.mrp)}</s>
-              <span className="text-xs font-medium text-success">{card.discount_pct}% off</span>
-            </>
-          )}
-        </span>
-        <span className="flex items-center gap-1 text-xs text-fg-muted">
-          <Star aria-hidden className="size-3.5 fill-current text-star" />
-          {card.rating.toFixed(1)} ({formatCount(card.review_count)})
-        </span>
+        <Price card={card} />
+        <Rating card={card} />
         <span className="mt-1 flex flex-wrap gap-1">
           {card.highlights.slice(0, 3).map(({ label, value }) => (
             <span key={label} className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-fg-muted">

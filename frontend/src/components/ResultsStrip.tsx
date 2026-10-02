@@ -1,7 +1,8 @@
 import { X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { formatRupees } from "../format";
+import Modal from "./Modal";
 import { cardLabel } from "./ProductCard";
 import ProductImage from "./ProductImage";
 import ResultsPanel, { type ResultsProps } from "./ResultsPanel";
@@ -42,37 +43,19 @@ export default function ResultsStrip(props: ResultsProps) {
   );
 }
 
-/**
- * A native modal dialog: the browser traps focus, makes the page behind inert and restores focus on close. A history
- * entry lets the back gesture close it.
- */
+/** The full-screen results sheet. A history entry lets the browser back gesture close it. */
 function ResultsSheet({ onClose, ...props }: ResultsProps & { onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const opener = useRef(document.activeElement as HTMLElement | null); // captured once, before the modal takes focus
-
   useEffect(() => {
-    if (!dialog.current!.open) dialog.current!.showModal();
     if (!history.state?.resultsSheet) history.pushState({ resultsSheet: true }, ""); // once, even if effects re-run
     window.addEventListener("popstate", onClose);
-    return () => {
-      window.removeEventListener("popstate", onClose);
-      opener.current?.focus(); // the dialog is removed rather than closed, so return focus ourselves
-    };
+    return () => window.removeEventListener("popstate", onClose);
   }, [onClose]);
 
   // Esc and the close button leave through the history entry, so the back gesture and these behave the same.
   const close = () => (history.state?.resultsSheet ? history.back() : onClose());
 
   return (
-    <dialog
-      ref={dialog}
-      aria-label="All results"
-      onCancel={(event) => {
-        event.preventDefault();
-        close();
-      }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface-muted text-fg lg:hidden"
-    >
+    <Modal label="All results" onClose={close} className="h-dvh w-full bg-surface-muted lg:hidden">
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-2">
           <span className="text-sm font-medium">All results</span>
@@ -84,6 +67,6 @@ function ResultsSheet({ onClose, ...props }: ResultsProps & { onClose: () => voi
           <ResultsPanel {...props} />
         </div>
       </div>
-    </dialog>
+    </Modal>
   );
 }

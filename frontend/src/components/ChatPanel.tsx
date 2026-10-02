@@ -1,6 +1,7 @@
 import type { useChat } from "../useChat";
 import Composer from "./Composer";
 import MessageList from "./MessageList";
+import { EmptyState } from "./States";
 import StatusLine from "./StatusLine";
 
 export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
@@ -11,6 +12,8 @@ export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }
 
   return (
     <>
+      {/* Narrow layout: the empty state sits at the top of the chat; wide shows it in the results panel. */}
+      {state.messages.length === 0 && <EmptyState className="px-4 pt-8 lg:hidden" />}
       <MessageList
         messages={state.messages}
         resultSets={state.resultSets}

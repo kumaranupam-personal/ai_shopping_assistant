@@ -15,6 +15,7 @@ export type ChatState = {
   selectedResultSet: number | null;
   turnRunning: boolean;
   status: string;
+  loadingResults: boolean; // a search started this turn and its cards haven't arrived yet
   draft: string; // text to place in the composer
   notice: string | null;
 };
@@ -41,6 +42,7 @@ const initialState: ChatState = {
   selectedResultSet: null,
   turnRunning: false,
   status: "",
+  loadingResults: false,
   draft: "",
   notice: null,
 };
@@ -51,6 +53,7 @@ function addResultSet(state: ChatState, resultSet: ResultSet): ChatState {
     ...state,
     resultSets: [...state.resultSets, resultSet],
     selectedResultSet: index,
+    loadingResults: false,
     messages: [...state.messages, { kind: "marker", resultSet: index }],
   };
 }
@@ -71,11 +74,14 @@ function reducer(state: ChatState, action: Action): ChatState {
       const messages = action.addUserMessage
         ? [...state.messages, { kind: "user" as const, text: action.text }]
         : state.messages.filter((m) => m.kind !== "error"); // Retry replaces the error row
-      return { ...state, messages, turnRunning: true, status: "", draft: "" };
+      return { ...state, messages, turnRunning: true, status: "", loadingResults: false, draft: "" };
     }
     case "event": {
       const { event } = action;
-      if (event.event === "status") return { ...state, status: event.data.text };
+      if (event.event === "status") {
+        // Search status text starts with "Searching" (docs/05-api.md, Status text).
+        return { ...state, status: event.data.text, loadingResults: state.loadingResults || event.data.text.startsWith("Searching") };
+      }
       if (event.event === "text") return { ...state, messages: [...state.messages, { kind: "assistant", text: event.data.text }] };
       if (event.event === "products") return addResultSet(state, event.data);
       return state; // done and error are handled by the send loop
@@ -83,7 +89,7 @@ function reducer(state: ChatState, action: Action): ChatState {
     case "failed":
       return { ...state, messages: [...state.messages, { kind: "error", text: action.message, retryText: action.text }] };
     case "turnEnded":
-      return { ...state, turnRunning: false, status: "" };
+      return { ...state, turnRunning: false, status: "", loadingResults: false };
     case "select":
       return { ...state, selectedResultSet: action.index };
     case "setDraft":

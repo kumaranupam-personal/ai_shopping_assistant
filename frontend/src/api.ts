@@ -24,12 +24,11 @@ export type Product = {
   id: string;
   title: string;
   brand: string;
-  category: string;
   description: string;
   sizes: string[];
   colors: string[];
-  attributes: Record<string, string | number | boolean>;
   card: Card;
+  details: { label: string; value: string }[]; // every attribute, formatted for display
 };
 
 export type StreamEvent =
