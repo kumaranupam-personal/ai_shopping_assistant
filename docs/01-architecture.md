@@ -24,10 +24,11 @@ The model chooses which products to show and writes prose about them. It never s
 ## Tech stack
 
 - Python 3.12, managed with `uv`.
-- FastAPI and Uvicorn for the API server.
+- FastAPI and Uvicorn for the API server. Server-sent events use FastAPI's built-in `StreamingResponse`, with no extra library.
+- Pydantic, which FastAPI already depends on, for product validation during ingestion.
 - Provider SDKs, used only inside their adapters. The Anthropic Python SDK is the first.
 - SQLite from the Python standard library, with FTS5 for keyword search.
-- `sentence-transformers` with the model `all-MiniLM-L6-v2` (384 dimensions) for embeddings.
+- `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
 - `pytest` for tests and `pyyaml` for eval cases.
 - Node 20 for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.

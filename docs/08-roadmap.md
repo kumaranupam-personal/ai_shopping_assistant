@@ -2,39 +2,59 @@
 
 Build the phases in order. Each phase is done only when its criteria pass.
 
+## Delivery rules
+
+- Work happens on the `develop` branch. Each part below is one commit, made manually after review.
+- A commit changes at most 1000 lines, not counting lockfiles (`uv.lock`, `package-lock.json`).
+- Every commit leaves all existing tests passing and depends on no later commit.
+- Code is the minimum the spec requires. Tests are parametrized instead of repeated.
+- If implementation shows a spec needs to change, the doc is updated in the same commit.
+
 ## Phase 1: Catalog
 
-- Build: the backend skeleton, configuration, the taxonomy, the database schema, ingestion, the embedding script and the demo data generator.
+- Part 1: backend skeleton (`pyproject.toml`, `.env.example`, `.gitignore`), configuration and the taxonomy.
+- Part 2: database schema, ingestion and embedding.
+- Part 3: demo data generator and its templates.
 - Done when the ingestion and demo data tests from `07-evaluation.md` pass, and a manual look at 20 random products finds them plausible.
 
 ## Phase 2: Search
 
-- Build: the search engine and index loading from `03-search.md`.
+- Part 1: index loading, filters, the sorts without a query, and warnings, from `03-search.md`.
+- Part 2: keyword list, vector list, fusion and brand diversity.
 - Done when the search tests pass, the performance target is met, and 20 hand-written queries return sensible top-5 results on manual review.
 
 ## Phase 3: Agent
 
-- Build: the LLM layer with the Anthropic adapter from `09-llm-providers.md`, plus the tools, the system prompt, the session store, the agent loop and the terminal chat from `01-architecture.md`.
+- Part 1: the LLM layer with the Anthropic adapter, from `09-llm-providers.md`.
+- Part 2: the session store and the tools.
+- Part 3: the system prompt, the agent loop and the terminal chat from `01-architecture.md`.
 - Done when the LLM layer, tool and agent loop tests pass and the example conversation in `00-overview.md` works end to end in the terminal.
 
 ## Phase 4: API
 
-- Build: the endpoints and streaming from `05-api.md`.
+- Part 1: the endpoints and streaming from `05-api.md`.
 - Done when the API tests pass and a `curl` call to the chat endpoint streams events in the documented order.
 
 ## Phase 5: Frontend
 
-- Build: every component and behavior in `06-frontend.md`.
+- Part 1: scaffold, design tokens, app shell, header and theme switch.
+- Part 2: API client, stream parser, client state and session lifecycle.
+- Part 3: chat panel, message list, status line and composer.
+- Part 4: results panel, grid, cards, suggestion chips, results strip and results sheet.
+- Part 5: product drawer and the loading, empty and error states.
+- Part 6: Playwright tests with a mocked API, and Lighthouse checks.
 - Done when the example conversation works in the browser, including clicking a suggestion chip, restoring an earlier result set, the product drawer, a new chat, restoring after a reload and the narrow layout, and every item in the quality bar of `06-frontend.md` holds.
 
 ## Phase 6: Evaluation
 
-- Build: the eval cases and runner from `07-evaluation.md`.
+- Part 1: the eval runner and grounding check from `07-evaluation.md`.
+- Part 2: the eval cases.
+- Later parts: prompt and tool-description tuning, one change per commit.
 - Done when every target in `07-evaluation.md` is met. If one fails, iterate on the prompt and tool descriptions before changing the search code.
 
 ## Phase 7: Second provider
 
-- Build: a second adapter, following "Adding a provider" in `09-llm-providers.md`. OpenAI is the suggested choice.
+- Part 1: a second adapter, following "Adding a provider" in `09-llm-providers.md`. OpenAI is the suggested choice.
 - Done when the eval targets in `07-evaluation.md` are met with `LLM_PROVIDER` set to the new adapter, and nothing outside `app/llm/` changed apart from the docs.
 
 ## Stretch goals
