@@ -71,9 +71,14 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Parts: prompt and tool-description tuning, one change per commit, rerunning the suite as `07-evaluation.md` requires.
 - Done when every target in `07-evaluation.md` is met on all three providers, which completes step 3 of "Adding a provider" for OpenAI and Gemini. If a target fails, iterate on the prompt and tool descriptions before changing the search code.
 
+## Phase 10: Product tiles
+
+- Part 1: optional `image_url` and the demo data without images from `02-catalog.md`, `category` and `colors` on the card from `05-api.md`, and the product tiles from `06-frontend.md`.
+- Done when the tests in `07-evaluation.md` pass and every demo product shows its tile, in its own color, in both layouts and both themes.
+
 ## Stretch goals
 
-These come after Phase 9 and are each specified in a new doc before being built.
+These come after Phase 10 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

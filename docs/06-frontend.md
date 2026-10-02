@@ -29,7 +29,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 ### Product grid
 
 - The grid sizes from the results panel's own width using a container query, not the viewport: `repeat(auto-fill, minmax(208px, 1fr))` with a 16 px gap, or a 12 px gap when the panel is under 640 px wide. That's 1 to 6 columns depending on the space.
-- Images use a fixed 1:1 aspect ratio with `object-fit: cover`, so cards never change height while images load.
+- Images and product tiles use a fixed 1:1 aspect ratio, images with `object-fit: cover`, so cards never change height while images load.
 - Titles clamp to 2 lines and brands to 1 line, with an ellipsis. Highlights wrap onto a second line rather than overflowing.
 
 ### Drawer
@@ -53,6 +53,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Surfaces:** 1 px borders in light neutral tones (dark neutral tones in dark mode). Cards gain a soft shadow and slightly stronger border on hover. No gradients.
 - **Motion:** 150 to 200 ms ease-out transitions for hover states, message entry, chip presses and the drawer. All motion is disabled under `prefers-reduced-motion`.
 - **Messages:** user messages are right-aligned accent-tinted bubbles. Assistant messages are left-aligned plain text with no bubble. Result markers are compact bordered rows with a grid icon.
+- **Product tiles:** stand in for a product image. The background is a soft wash of the product's first color, and the category's `lucide-react` icon sits large and centered in a deeper shade of that color: `Shirt` for jackets and kurtas (lucide has no jacket icon), `SportShoe` for shoes, `Smartphone` for phones, `Laptop` for laptops, `Backpack` for backpacks, `Watch` for watches and `CookingPot` for kitchen appliances. Below the icon is the color name, capitalized, followed by "· {n} colours" when the product has more than one, and small dots in the top-right corner show every color. Each of the 15 colors in `02-catalog.md` has its own wash and shade in both themes, and the pale ones (white, beige, silver, gold, yellow) get a hairline inner border so the tile stays visible on the card. The 64 px strip image shows only the icon on the wash.
 - **Cards:** the brand in small muted text above the title, then the price row (price, crossed-out MRP, green discount text), the rating row (amber star, rating, review count in parentheses), and up to 3 highlight pills. Out-of-stock cards show a muted overlay with a red "Out of stock" label and stay clickable.
 
 ## Loading, empty and error states
@@ -61,7 +62,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Before the first result set:** in the wide layout, the results panel shows the same heading and line, with the featured products from `GET /api/featured` below them under their headline. In the narrow layout, the featured products fill the results strip. The skeleton cards described below hold their place while they load. If the request fails, the wide panel shows only the heading and line, and the narrow strip stays hidden. Clicking a featured card opens the drawer. The first `products` event replaces them, and they return after a new chat.
 - **While a turn runs:** the status line shows the latest `status` text with a spinner, and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
 - **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available."
-- **Images:** load lazily, show a neutral skeleton block while loading, and fall back to a generic product icon on error, since cards carry no category.
+- **Images:** a product with an `image_url` loads it lazily, showing a neutral skeleton block while loading. A product without one, or whose image fails to load, shows its product tile.
 - **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
 
 ## Components

@@ -66,18 +66,21 @@ Each event is sent as `event: <type>` followed by `data: <json>`. `status`, `pro
   "id": "JKT-00012",
   "title": "TrekNorth Summit 800 Down Jacket",
   "brand": "TrekNorth",
+  "category": "jackets",
+  "colors": ["navy", "black"],
   "price": 7499,
   "mrp": 11999,
   "discount_pct": 38,
   "rating": 4.4,
   "review_count": 1832,
   "in_stock": true,
-  "image_url": "https://placehold.co/400x400?text=Down+Jacket",
+  "image_url": "https://example.com/images/JKT-00012.jpg",
   "highlights": [{"label": "type", "value": "down"}, {"label": "warmth", "value": "extreme"}, {"label": "waterproof", "value": "yes"}]
 }
 ```
 
 - `discount_pct` is `round((mrp - price) / mrp * 100)`. It is 0 when `mrp` equals `price`.
+- `image_url` is null when the product has no image.
 - `highlights` holds the category's card attributes from `02-catalog.md`, in the listed order, with labels and values formatted by the display rules there.
 - The server builds cards from catalog rows only, both in stream events and in session restores.
 

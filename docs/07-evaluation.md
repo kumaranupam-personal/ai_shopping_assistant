@@ -15,6 +15,7 @@
 - API: with a stubbed agent, the event order and error codes match `05-api.md`, and the session rules from `04-agent.md` hold (busy, full, expired, rollback on failure, cancellation and rollback on client disconnect). The featured list follows its selection rule. Restoring a session returns only committed turns, and its cards reflect the current catalog: a price changed after the turn shows the new price, and a removed product is left out.
 - Session restore in the browser: reloading restores messages, result markers and the latest result set. A new tab starts a new session. An expired session shows the notice. Reloading during a turn puts the interrupted message back in the composer.
 - Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM.
+- Product tiles in the browser: a card without an image, and a card whose image fails to load, show a tile with their category's icon in their first color's wash.
 - Featured products in the browser: they show on first load in both layouts, the first result set replaces them, a new chat brings them back, and a restored session with results doesn't show them.
 
 ## Eval suite
@@ -59,4 +60,4 @@ The first run of a prompt version also saves its system prompt and tools as `eva
 - Turn latency, measured from the start of a turn to its end: p50 under 8 s and p95 under 15 s.
 - Input and output tokens per turn, plus cache-read tokens, are reported. From the second model call of a conversation onward, every call whose input (uncached plus cached tokens) is at least the provider's `min_cache_tokens` (see `09-llm-providers.md`) must read tokens from the cache, which confirms prompt caching works. Smaller calls aren't counted, because the provider can't cache them, and a provider that caches on a best-effort basis (no `min_cache_tokens`) isn't checked.
 
-Once the suite exists, every change to the prompt or the tools reruns it on every registered provider, and every change to `LLM_PROVIDER` or `LLM_MODEL` reruns it on that provider. The summaries go in the commit message.
+Every change to the prompt or the tools reruns the suite on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message.
