@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.agent.loop import run_turn
 from app.agent.session import SessionStore
 from app.config import Settings
-from app.llm.base import LLMProvider, ToolResult
+from app.llm.base import LLMProvider, ToolResult, Usage
 from app.llm.registry import build_provider
 from app.search.engine import Filters, matching_ids
 from app.search.index import SearchIndex, load_index
@@ -53,7 +53,7 @@ class Recorder:
     """Wraps the provider to see each turn's tool calls and tool results, through the neutral types only."""
 
     def __init__(self, provider: LLMProvider):
-        self.provider, self.name, self.model = provider, provider.name, provider.model
+        self.provider, self.name, self.model, self.min_cache_tokens = provider, provider.name, provider.model, provider.min_cache_tokens
         self.tools: list[str] = []  # both lists only grow; a turn's share is the slice it added
         self.results: list[ToolResult] = []
 
@@ -70,6 +70,19 @@ class Recorder:
         return self.provider.tool_results_message(results)
 
 
+def cache_misses(calls: list[Usage], min_cache_tokens: int | None) -> int:
+    """Calls after a conversation's first that read nothing from the cache although their input was large enough to cache.
+
+    A provider without a minimum caches on a best-effort basis, so its calls aren't checked.
+    """
+    if min_cache_tokens is None:
+        return 0
+    return sum(
+        1 for usage in calls[1:]
+        if usage.input_tokens + usage.cache_read_tokens >= min_cache_tokens and usage.cache_read_tokens == 0
+    )
+
+
 def load_cases(path: Path, ids: list[str]) -> list[Case]:
     cases = [Case.model_validate(item) for item in yaml.safe_load(path.read_text(encoding="utf-8"))]
     unknown = set(ids) - {case.id for case in cases}
@@ -84,7 +97,7 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
     store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
     session = store.create(provider.name)
     user_numbers: set[float] = set()
-    turns, cache_reads, error, last = [], [], None, TurnResult()
+    turns, calls, error, last = [], [], None, TurnResult()
     for text in case.turns:
         events, first_tool = [], len(recorder.tools)
         user_numbers |= user_amounts(text)
@@ -101,7 +114,7 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
             shown=[card["id"] for card in shown[-1]["products"]] if shown else None,
         )
         tool_ids, tool_prices = tool_facts([r.content for r in recorder.results])  # the whole conversation so far
-        cache_reads += [usage.cache_read_tokens for _, usage in record.calls]
+        calls += [usage for _, usage in record.calls]
         turns.append({
             "user": text,
             **vars(last),
@@ -124,7 +137,7 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
         "scored": bool(expect),
         "passed": not failures and not any(t["grounding"] for t in turns),
         "failures": failures,
-        "cache_misses": sum(1 for reads in cache_reads[1:] if reads == 0),  # every call after a conversation's first
+        "cache_misses": cache_misses(calls, provider.min_cache_tokens),
         "turns": turns,
     }
 
@@ -139,7 +152,6 @@ def summarize(results: list[dict]) -> dict:
     scored = [r for r in results if r["scored"]]
     turns = [t for r in results for t in r["turns"]]
     latencies = [t["latency_s"] for t in turns]
-    cache_reported = any(t["cache_read_tokens"] for t in turns)
 
     def mean(key: str) -> float:
         return round(sum(t[key] for t in turns) / len(turns)) if turns else 0
@@ -155,7 +167,7 @@ def summarize(results: list[dict]) -> dict:
         "mean_input_tokens": mean("input_tokens"),
         "mean_output_tokens": mean("output_tokens"),
         "mean_cache_read_tokens": mean("cache_read_tokens"),
-        "cache_misses": sum(r["cache_misses"] for r in results) if cache_reported else None,
+        "cache_misses": sum(r["cache_misses"] for r in results),
     }
     summary["targets_met"] = (
         summary["pass_rate"] >= TARGETS["pass_rate"]

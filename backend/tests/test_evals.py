@@ -7,7 +7,8 @@ from app.config import Settings
 from app.llm.base import ToolCall
 from app.search.engine import Filters, matching_ids
 from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from evals.run import EVALS_DIR, Case, load_cases, run_case
+from app.llm.base import Usage
+from evals.run import EVALS_DIR, Case, cache_misses, load_cases, run_case
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -103,3 +104,17 @@ def test_the_case_file_is_valid(index):
     for case in cases:
         if case.expect.shown is not None:
             matching_ids(index, Filters(**case.expect.shown), ["J1"])  # raises on an unknown filter value
+
+
+@pytest.mark.parametrize(
+    ("calls", "misses"),
+    [
+        ([Usage(3000, 0, 0), Usage(3000, 0, 0)], 0),  # below the minimum: can't be cached, so not a miss
+        ([Usage(5000, 0, 0), Usage(5000, 0, 0)], 1),  # large enough, nothing read
+        ([Usage(5000, 0, 0), Usage(1000, 0, 4000)], 0),  # read from the cache
+        ([Usage(5000, 0, 0)], 0),  # a conversation's first call is never a miss
+    ],
+)
+def test_a_cache_miss_counts_only_calls_large_enough_to_cache(calls, misses):
+    assert cache_misses(calls, min_cache_tokens=4096) == misses
+    assert cache_misses(calls, min_cache_tokens=None) == 0  # best-effort caching isn't checked

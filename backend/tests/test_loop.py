@@ -15,6 +15,7 @@ class ScriptedProvider:
     """Returns prepared responses in order and records what each call received."""
 
     name = model = "scripted"
+    min_cache_tokens = 0
 
     def __init__(self, *responses):
         self.responses, self.calls = list(responses), []

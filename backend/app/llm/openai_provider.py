@@ -28,6 +28,7 @@ def parse_arguments(raw: str) -> dict:
 
 class OpenAIProvider:
     name = "openai"
+    min_cache_tokens = 1024
 
     def __init__(self, settings: Settings, client: openai.AsyncOpenAI | None = None):
         # The key is passed explicitly so the SDK never reads OPENAI_API_KEY on its own.

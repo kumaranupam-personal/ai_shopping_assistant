@@ -64,7 +64,7 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 
 - Part 1: the OpenAI adapter, selected with `LLM_PROVIDER=openai`.
 - Part 2: the Gemini adapter, selected with `LLM_PROVIDER=gemini`.
-- Done when, for each new adapter, its tests pass, the suite runs end to end with `LLM_PROVIDER` set to it, and every case that passes on the baseline but fails on it is explained as either an adapter bug (fixed in this phase) or a model difference (left for Phase 9). Nothing changes outside `app/llm/`, its tests, the dependency files and the docs.
+- Done when, for each new adapter, its tests pass, the suite runs end to end with `LLM_PROVIDER` set to it, and every case that passes on the baseline but fails on it is explained as either an adapter bug (fixed in this phase) or a model difference (left for Phase 9). Nothing changes outside `app/llm/`, its tests, the dependency files, the docs, and fixes to how the eval suite measures that a new provider exposes. The agent, tools, search, API and frontend stay untouched, which shows that adding a provider needs only an adapter.
 
 ## Phase 9: Tuning
 

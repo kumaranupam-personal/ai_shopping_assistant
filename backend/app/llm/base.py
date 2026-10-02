@@ -54,6 +54,7 @@ class LLMResponse:
 class LLMProvider(Protocol):
     name: str
     model: str
+    min_cache_tokens: int | None  # the smallest input the provider caches for the default model; None if best-effort
 
     async def complete(self, system: str, history: list, tools: list[ToolSpec]) -> LLMResponse: ...
 

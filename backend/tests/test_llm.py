@@ -4,14 +4,18 @@ import copy
 from pathlib import Path
 
 import anthropic
+import httpx
 import httpx2
 import openai
 import pytest
 from anthropic.types.beta import BetaMessage
+from google.genai import errors as genai_errors
+from google.genai import types as genai
 from openai.types.responses import Response
 
 from app.config import Settings
 from app.llm.anthropic_provider import FALLBACK_BETA, REQUEST_TIMEOUT_SECONDS, AnthropicProvider
+from app.llm.gemini_provider import HTTP_OPTIONS, GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
 from app.llm.base import LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
 from app.llm.registry import build_provider
@@ -40,7 +44,10 @@ class StubClient:
 
     def __init__(self, result):
         self.result, self.request = result, None
-        self.beta = self.messages = self.responses = self
+        self.beta = self.messages = self.responses = self.aio = self.models = self
+
+    async def generate_content(self, **request):  # the Gemini client's call
+        return await self.create(**request)
 
     async def create(self, **request):
         self.request = request
@@ -133,28 +140,38 @@ def _status_error(cls, status):
     return cls("failed", response=httpx2.Response(status, request=request), body=None)
 
 
-ADAPTERS = [(anthropic, AnthropicProvider), (openai, OpenAIProvider)]
+def _gemini_error(code):
+    return (genai_errors.ClientError if code < 500 else genai_errors.ServerError)(code, {"error": {"code": code, "message": "failed"}})
 
 
-@pytest.mark.parametrize(("sdk", "adapter"), ADAPTERS)
-@pytest.mark.parametrize(
-    "error",
-    [
-        lambda sdk: _status_error(sdk.RateLimitError, 429),
-        lambda sdk: _status_error(sdk.InternalServerError, 529),
-        lambda sdk: sdk.APIConnectionError(request=httpx2.Request("POST", "https://x")),
-    ],
-    ids=["rate limit", "overloaded", "connection"],
-)
-def test_retryable_failures_become_upstream_errors(sdk, adapter, error):
+# (adapter, error factory) per provider: rate limit, overload or server error, and a dropped connection.
+RETRYABLE = [
+    *[(adapter, factory) for sdk, adapter in [(anthropic, AnthropicProvider), (openai, OpenAIProvider)] for factory in (
+        lambda sdk=sdk: _status_error(sdk.RateLimitError, 429),
+        lambda sdk=sdk: _status_error(sdk.InternalServerError, 529),
+        lambda sdk=sdk: sdk.APIConnectionError(request=httpx2.Request("POST", "https://x")),
+    )],
+    (GeminiProvider, lambda: _gemini_error(429)),
+    (GeminiProvider, lambda: _gemini_error(503)),
+    (GeminiProvider, lambda: httpx.ConnectError("down")),
+]
+CLIENT_ERRORS = [
+    (AnthropicProvider, lambda: _status_error(anthropic.BadRequestError, 400), anthropic.BadRequestError),
+    (OpenAIProvider, lambda: _status_error(openai.BadRequestError, 400), openai.BadRequestError),
+    (GeminiProvider, lambda: _gemini_error(400), genai_errors.ClientError),
+]
+
+
+@pytest.mark.parametrize(("adapter", "error"), RETRYABLE)
+def test_retryable_failures_become_upstream_errors(adapter, error):
     with pytest.raises(LLMUpstreamError):
-        complete(error(sdk), adapter=adapter)
+        complete(error(), adapter=adapter)
 
 
-@pytest.mark.parametrize(("sdk", "adapter"), ADAPTERS)
-def test_client_errors_are_not_masked_as_upstream_errors(sdk, adapter):
-    with pytest.raises(sdk.BadRequestError):
-        complete(_status_error(sdk.BadRequestError, 400), adapter=adapter)
+@pytest.mark.parametrize(("adapter", "error", "raised"), CLIENT_ERRORS)
+def test_client_errors_are_not_masked_as_upstream_errors(adapter, error, raised):
+    with pytest.raises(raised):
+        complete(error(), adapter=adapter)
 
 
 @pytest.mark.parametrize(
@@ -166,12 +183,24 @@ def test_registry_rejects_unknown_providers_and_missing_keys(overrides, message)
         build_provider(Settings(_env_file=None, **overrides))
 
 
-@pytest.mark.parametrize(("name", "adapter", "default_model"), [("anthropic", AnthropicProvider, "claude-opus-5-5"), ("openai", OpenAIProvider, "gpt-6-astra")])
+@pytest.mark.parametrize(
+    ("name", "adapter", "default_model"),
+    [("anthropic", AnthropicProvider, "claude-opus-5-5"), ("openai", OpenAIProvider, "gpt-6-astra"), ("gemini", GeminiProvider, "gemini-3.8-flash")],
+)
 def test_registry_builds_the_configured_adapter(name, adapter, default_model):
     provider = build_provider(Settings(_env_file=None, llm_provider=name, llm_api_key="k"))
     assert isinstance(provider, adapter) and provider.name == name and provider.model == default_model
-    assert provider.client.timeout == REQUEST_TIMEOUT_SECONDS and provider.client.max_retries == 2
     assert build_provider(Settings(_env_file=None, llm_provider=name, llm_api_key="k", llm_model="other")).model == "other"
+
+
+@pytest.mark.parametrize("adapter", [AnthropicProvider, OpenAIProvider])
+def test_sdk_clients_time_out_after_60_seconds_and_retry_twice(adapter):
+    client = adapter(Settings(_env_file=None, llm_api_key="k")).client
+    assert client.timeout == REQUEST_TIMEOUT_SECONDS and client.max_retries == 2
+
+
+def test_gemini_client_times_out_after_60_seconds_and_retries_twice():
+    assert HTTP_OPTIONS.timeout == REQUEST_TIMEOUT_SECONDS * 1000 and HTTP_OPTIONS.retry_options.attempts == 3
 
 
 def test_only_provider_adapters_import_a_provider_sdk():
@@ -253,4 +282,69 @@ def test_openai_messages_are_built_in_responses_format():
     assert provider.tool_results_message(results) == [
         {"type": "function_call_output", "call_id": "call_1", "output": '{"ok": true}'},
         {"type": "function_call_output", "call_id": "call_2", "output": "ValueError: boom"},  # no error flag in the API
+    ]
+
+
+def gemini_response(*parts, finish="STOP", cached=4000, blocked=False):
+    return genai.GenerateContentResponse(
+        candidates=[] if blocked else [genai.Candidate(content=genai.Content(role="model", parts=list(parts)), finish_reason=finish)],
+        prompt_feedback=genai.GenerateContentResponsePromptFeedback(block_reason="SAFETY") if blocked else None,
+        usage_metadata=genai.GenerateContentResponseUsageMetadata(
+            prompt_token_count=5000, cached_content_token_count=cached, candidates_token_count=30, thoughts_token_count=10,
+        ),
+    )
+
+
+THOUGHT = genai.Part(text="Let me think.", thought=True, thought_signature=b"sig")
+SEARCHING = genai.Part(text="Searching now.")
+FUNCTION_CALL = genai.Part(function_call=genai.FunctionCall(id="fc_1", name="search_products", args={"query": "warm jacket"}))
+
+
+def test_gemini_request_carries_settings_and_merges_adjacent_user_turns():
+    provider = GeminiProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    results = provider.tool_results_message([ToolResult("search_products|fc_1", "{}")])
+    history = [provider.user_message("hello"), gemini_response(FUNCTION_CALL).candidates[0].content, results, provider.user_message("thanks")]
+    _, request = complete(gemini_response(SEARCHING), history=history, adapter=GeminiProvider)
+    config = request["config"]
+    assert request["model"] == "gemini-3.8-flash" and config.system_instruction == "You help shoppers."
+    assert config.thinking_config.thinking_level == "MEDIUM" and config.max_output_tokens == 4000
+    [declaration] = config.tools[0].function_declarations
+    assert (declaration.name, declaration.description, declaration.parameters_json_schema) == (TOOL.name, TOOL.description, TOOL.parameters)
+    assert config.tool_config.function_calling_config.mode == "AUTO" and config.automatic_function_calling.disable
+    # The tool results and the next user message become one user turn; the stored history is unchanged.
+    assert [c.role for c in request["contents"]] == ["user", "model", "user"]
+    assert request["contents"][2].parts == [*results.parts, *history[3].parts] and len(history[2].parts) == 1
+
+
+def test_gemini_response_is_parsed_into_llm_response():
+    response, _ = complete(gemini_response(THOUGHT, SEARCHING, FUNCTION_CALL), adapter=GeminiProvider)
+    assert response.text == ["Searching now."] and response.stop_reason == "tool_use"  # thoughts aren't reply text
+    assert response.tool_calls == [ToolCall("search_products|fc_1", "search_products", {"query": "warm jacket"})]
+    assert response.usage == Usage(1000, 40, 4000)  # cached tokens out of the prompt; thinking counts as output
+    # The whole content goes back unchanged, so the thought signature reaches the next call.
+    assert response.native_message.parts[0].thought_signature == b"sig"
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (gemini_response(SEARCHING), "end_turn"),
+        (gemini_response(SEARCHING, finish="MAX_TOKENS"), "max_tokens"),
+        (gemini_response(SEARCHING, finish="SAFETY"), "refusal"),
+        (gemini_response(blocked=True), "refusal"),
+    ],
+)
+def test_gemini_stop_reasons_map_to_neutral_names(response, expected):
+    parsed, _ = complete(response, adapter=GeminiProvider)
+    assert parsed.stop_reason == expected
+
+
+def test_gemini_tool_results_carry_the_function_name_and_wrap_errors():
+    provider = GeminiProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    message = provider.tool_results_message([ToolResult("search_products|fc_1", '{"ok": true}'), ToolResult("compare_products|", "ValueError: boom", is_error=True)])
+    responses = [part.function_response for part in message.parts]
+    assert message.role == "user"
+    assert [(r.id, r.name, r.response) for r in responses] == [
+        ("fc_1", "search_products", {"output": {"ok": True}}),
+        (None, "compare_products", {"error": "ValueError: boom"}),  # Gemini gave no call ID
     ]
