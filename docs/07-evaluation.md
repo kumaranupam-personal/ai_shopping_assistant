@@ -4,6 +4,7 @@
 
 `backend/tests/` holds the backend tests, which run with `pytest`. `frontend/tests/` holds the browser tests, which run with `npm test`. Neither set calls an LLM provider.
 
+- Configuration and taxonomy: defaults apply when nothing is set, shell variables override `.env`, and relative paths resolve against `backend/`. Every category's card attributes are among its attributes, and the display rules format every unit suffix and value type correctly.
 - Ingestion: valid products load, each broken field rule from `02-catalog.md` rejects the line with a reason, duplicate IDs are rejected, the exit code follows `--allow-rejects`, and a failed run leaves any existing `catalog.db` untouched.
 - Demo data: generating twice gives identical files, the output passes ingestion with zero rejects, each category has the right count, and the plausibility rules in `02-catalog.md` hold.
 - Search: each filter type returns only matching products, unknown filters produce warnings, the fusion arithmetic matches a hand-computed example, the brand cap is enforced, every sort order and tie-break holds, non-relevance sorts ignore the query, and startup fails when the embeddings don't match the catalog.
@@ -25,7 +26,7 @@
   - `min_shown`: the minimum number of products in that call.
   - `clarifies`: true when the final turn should make no `show_products` call and its reply should contain a question mark.
   - `declines`: true when the final turn should make no `search_products` or `show_products` call.
-  - `mentions`: case-insensitive substrings the final reply must contain, such as "relaxed".
+  - `mentions`: case-insensitive substrings the final reply must contain, such as a brand name the reply should name.
   - `reply_language`: `english` or `hinglish`. It is checked with a word-list heuristic: a reply counts as Hinglish when at least 2 distinct words from a fixed list of common Hindi words (such as hai, aur, ke, liye, yeh, aap, mein, sasta) appear in it.
 
 Case coverage:

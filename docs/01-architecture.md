@@ -25,18 +25,19 @@ The model chooses which products to show and writes prose about them. It never s
 
 - Python 3.12, managed with `uv`.
 - FastAPI and Uvicorn for the API server. Server-sent events use FastAPI's built-in `StreamingResponse`, with no extra library.
-- Pydantic, which FastAPI already depends on, for product validation during ingestion.
+- Pydantic, which FastAPI already depends on, for product validation during ingestion, and `pydantic-settings` for reading configuration.
 - Provider SDKs, used only inside their adapters. The Anthropic Python SDK is the first.
 - SQLite from the Python standard library, with FTS5 for keyword search.
-- `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed.
+- `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
-- `pytest` for tests and `pyyaml` for eval cases.
-- Node 20 for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
+- `pytest` with `pytest-asyncio` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
+- Node 24 LTS for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
 
 ## Repository layout
 
 ```
 ai_shopping_assistant/
+  .gitignore                 ignores .env, generated files and build output
   docs/                      this specification
   backend/
     pyproject.toml
@@ -66,7 +67,7 @@ ai_shopping_assistant/
       cli.py                 terminal chat for development
     demo/
       generate.py            writes demo/products.jsonl, which is git-ignored
-      templates/             brand lists and description templates
+      templates/             generator data files
     data/                    built catalog files, git-ignored
     tests/                   backend tests
     evals/
@@ -84,7 +85,7 @@ ai_shopping_assistant/
 The backend reads these environment variables, optionally from `backend/.env`. Variables set in the shell take precedence over `.env`. `backend/.env.example` lists every backend variable with its default. Every other document refers to them by name. Relative paths resolve against the `backend/` folder, whatever the current directory is.
 
 - `LLM_PROVIDER`: which adapter to use. Default `anthropic`.
-- `LLM_API_KEY`: the API key for the chosen provider. Required unless the adapter documents another credential source in `09-llm-providers.md`.
+- `LLM_API_KEY`: the API key for the chosen provider. The API server, terminal chat and eval runner require it. The catalog commands and backend tests don't.
 - `LLM_MODEL`: model ID for the chosen provider. Default: unset, which means the adapter's default model from `09-llm-providers.md`.
 - `LLM_EFFORT`: `low`, `medium` or `high`. Default `low`.
 - `LLM_MAX_TOKENS`: maximum output tokens per model call. Default `16000`.
@@ -110,4 +111,4 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
 8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money.
-9. `npm install && npm run dev` serves the UI on port 5173, and `npm test` runs the browser tests.
+9. `npm install && npm run dev` serves the UI on port 5173. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.
