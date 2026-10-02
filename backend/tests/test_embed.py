@@ -1,6 +1,8 @@
 import json
+import sqlite3
 
 import numpy as np
+import pytest
 
 from app.catalog.embed import embed, product_text
 from app.catalog.ingest import ingest
@@ -30,6 +32,18 @@ def test_embed_writes_normalized_vectors_in_id_order(tmp_path):
     vectors = np.load(data_dir / "embeddings.npy")
     assert vectors.shape == (2, 384) and vectors.dtype == np.float32
     assert np.allclose(np.linalg.norm(vectors, axis=1), 1.0)
+
+
+def test_missing_catalog_raises_without_creating_one(tmp_path):
+    with pytest.raises(sqlite3.OperationalError):
+        embed(tmp_path, FakeModel())
+    assert not (tmp_path / "catalog.db").exists()
+
+
+def test_empty_catalog_writes_empty_outputs(tmp_path):
+    ingest(write_lines(tmp_path / "p.jsonl", []), tmp_path)
+    assert embed(tmp_path, FakeModel()) == 0
+    assert np.load(tmp_path / "embeddings.npy").shape == (0, 384)
 
 
 def test_product_text_joins_title_description_and_tags():

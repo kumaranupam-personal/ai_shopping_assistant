@@ -2,8 +2,9 @@
 
 ## Interface
 
-`search_products(query, filters, sort, limit) -> SearchResult`, defined in `app/search/engine.py`. It is synchronous, deterministic and has no LLM calls.
+`search_products(index, query, filters, sort, limit) -> SearchResult`, defined in `app/search/engine.py`. It is synchronous, deterministic and has no LLM calls. Invalid `sort` or `limit` values raise an error.
 
+- `index`: the search index loaded at startup (see Index loading).
 - `query`: a natural-language description of the need. It may be empty.
 - `filters`: an object whose fields are all optional:
   - `category`: one category name from the taxonomy in `02-catalog.md`.

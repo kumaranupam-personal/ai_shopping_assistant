@@ -4,8 +4,12 @@ import pytest
 
 from app.catalog.ingest import ingest
 from app.catalog.taxonomy import CATEGORIES
-from demo.generate import PER_CATEGORY, generate, main, matches, price_range
+from demo.generate import PER_CATEGORY, generate, main, price_range
 from demo.templates import TEMPLATES
+
+
+def matches(constraint, value) -> bool:
+    return value in constraint if isinstance(constraint, list) else constraint[0] <= value <= constraint[1]
 
 
 @pytest.fixture(scope="module")

@@ -29,7 +29,7 @@ TEMPLATES = {
             "Built by {brand} for dependable everyday layering.",
         ],
         "bool_sentences": {
-            "waterproof": ("The waterproof shell keeps rain and snow out.", "It isn't waterproof, so pair it with a shell in heavy rain."),
+            "waterproof": ("The waterproof shell keeps rain and snow out.", "Pair it with a shell in heavy rain."),
         },
         "tags": {
             "type": {"down": ["insulated"], "fleece": ["layering"], "windcheater": ["windproof", "running"],
@@ -63,7 +63,7 @@ TEMPLATES = {
             "Lightweight build that doesn't tire your feet.",
         ],
         "bool_sentences": {
-            "waterproof": ("Waterproof uppers keep your feet dry in puddles.", "It isn't waterproof, so avoid deep puddles."),
+            "waterproof": ("Waterproof uppers keep your feet dry in puddles.", "Best kept away from deep puddles."),
         },
         "tags": {
             "type": {"running": ["running", "sports", "gym"], "trekking": ["trekking", "hiking", "outdoor"],
@@ -84,7 +84,7 @@ TEMPLATES = {
                                 16: (39999, 89999)}},
         "brands": ["Novaphone", "Zentrix", "Pixelon", "Aurora", "Kirin", "Vyom"],
         "models": ["Neo", "Spark", "Nova", "Pulse", "Orbit", "Zen"],
-        "title": "{brand} {model} ({ram_gb} RAM, {storage_gb})",
+        "title": "{brand} {model} Phone ({ram_gb} RAM, {storage_gb})",
         "sentences": [
             "It pairs {ram_gb} of RAM with {storage_gb} of storage.",
             "The {battery_mah} battery comfortably lasts a full day.",
@@ -147,8 +147,8 @@ TEMPLATES = {
             "Multiple pockets keep small items organised.",
         ],
         "bool_sentences": {
-            "waterproof": ("Waterproof fabric protects your things in the rain.", "It isn't waterproof, so use a rain cover in heavy rain."),
-            "laptop_compartment": ("A padded compartment holds your laptop.", "It has no dedicated laptop compartment."),
+            "waterproof": ("Waterproof fabric protects your things in the rain.", "Use a rain cover in heavy rain."),
+            "laptop_compartment": ("A padded compartment holds your laptop.", "The main section holds everyday essentials."),
         },
         "tags": {
             "use": {"daily": ["college", "everyday"], "travel": ["travel"], "trekking": ["trekking", "hiking", "outdoor"],
