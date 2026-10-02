@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from app.agent.prompt import SYSTEM_PROMPT
-from app.agent.session import SessionStore
+from app.agent.session import Turn
 from app.agent.tools import TOOL_SPECS, TurnContext, current, execute, status_text
 from app.llm.base import LLMProvider, Usage
 from app.search.index import SearchIndex
@@ -27,13 +27,11 @@ class TurnRecord:
 async def run_turn(
     provider: LLMProvider,
     index: SearchIndex,
-    store: SessionStore,
-    session_id: str,
+    turn: Turn,
     text: str,
     emit: Callable[[str, dict], None],
 ) -> TurnRecord:
-    """Runs the turn and commits it. Any failure or cancellation rolls it back and re-raises."""
-    turn = store.begin_turn(session_id)
+    """Runs a started turn (`SessionStore.begin_turn`) and commits it. Any failure or cancellation rolls it back and re-raises."""
     history, record = turn.session.history, TurnRecord()
     token = current.set(TurnContext(index, turn, emit))
 

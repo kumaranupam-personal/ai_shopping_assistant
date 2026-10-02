@@ -53,6 +53,9 @@ def _attribute_clause(attr: Attribute, condition, warnings: list[str]) -> tuple[
             return None
         return " AND ".join(f"{column} {op} ?" for op, _ in bounds), [v for _, v in bounds]
     values = condition if isinstance(condition, list) else [condition]
+    if not values:
+        warnings.append(f"empty condition for attribute {attr.name!r} ignored")
+        return None
     allowed = [v for v in values if attr.allows(v)]
     warnings += [f"unknown value {v!r} for attribute {attr.name!r} ignored" for v in values if not attr.allows(v)]
     if not allowed:

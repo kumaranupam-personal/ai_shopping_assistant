@@ -12,7 +12,7 @@ JSON_COLUMNS = ("sizes", "colors", "attributes", "tags")
 
 def open_catalog(data_dir: Path) -> sqlite3.Connection:
     """Read-only, so a missing catalog raises instead of creating an empty catalog.db."""
-    conn = sqlite3.connect(f"file:{data_dir / CATALOG_DB}?mode=ro", uri=True, check_same_thread=False)
+    conn = sqlite3.connect(f"{(data_dir / CATALOG_DB).absolute().as_uri()}?mode=ro", uri=True, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 

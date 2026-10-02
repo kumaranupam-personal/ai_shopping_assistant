@@ -33,7 +33,7 @@ async def main() -> None:
     print("Shopping assistant. Type a message, or press Enter on an empty line to quit.")
     while text := (await asyncio.to_thread(input, "\n> ")).strip():
         try:
-            await run_turn(provider, index, store, session.id, text, print_event)
+            await run_turn(provider, index, store.begin_turn(session.id), text, print_event)
         except Exception as e:  # noqa: BLE001 - show the failure and keep chatting
             print(f"  [error: {type(e).__name__}: {e}]")
 

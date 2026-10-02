@@ -76,11 +76,16 @@ class SessionStore:
         session.last_active = self.clock()
         return session
 
-    def begin_turn(self, session_id: str) -> Turn:
+    def check_can_start(self, session_id: str) -> Session:
+        """Raises the error a new turn would hit, without starting one."""
         session = self.get(session_id)
         if session.busy:
             raise TurnInProgressError(session_id)
         if session.turn_count >= self.max_turns:
             raise SessionFullError(session_id)
+        return session
+
+    def begin_turn(self, session_id: str) -> Turn:
+        session = self.check_can_start(session_id)
         session.busy = True
         return Turn(session, len(session.history))

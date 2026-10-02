@@ -158,7 +158,7 @@ def test_only_provider_adapters_import_a_provider_sdk():
         tree = ast.parse(path.read_text())
         modules = [a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names]
         modules += [n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module]
-        if any(m.split(".")[0] in PROVIDER_SDKS for m in modules):
-            if not (path.parent.name == "llm" and path.name.endswith("_provider.py")):
-                offenders.append(path.relative_to(APP_DIR))
+        is_adapter = path.parent.name == "llm" and path.name.endswith("_provider.py")
+        if not is_adapter and any(m.split(".")[0] in PROVIDER_SDKS for m in modules):
+            offenders.append(path.relative_to(APP_DIR))
     assert offenders == []

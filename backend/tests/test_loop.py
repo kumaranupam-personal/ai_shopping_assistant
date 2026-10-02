@@ -49,7 +49,8 @@ def store():
 
 def run(provider, index, store, session, text="warm jacket under 3k"):
     events = []
-    record = asyncio.run(run_turn(provider, index, store, session.id, text, lambda *e: events.append(e)))
+    turn = store.begin_turn(session.id)
+    record = asyncio.run(run_turn(provider, index, turn, text, lambda *e: events.append(e)))
     return record, events
 
 

@@ -9,12 +9,8 @@ from app.catalog.ingest import ingest
 from app.search.engine import Filters, diversify, fts_expression, fuse, search_products
 from app.search.index import CatalogNotReadyError, load_index
 from tests.test_embed import FakeModel
-from tests.conftest import CATALOG
+from tests.conftest import CATALOG, ids
 from tests.test_ingest import VALID, product, write_lines
-
-
-def ids(result):
-    return [p["id"] for p in result["results"]]
 
 
 @pytest.mark.parametrize(
@@ -195,3 +191,11 @@ def test_relevance_without_query_is_diversified(query_index):
 
 def test_sorts_other_than_relevance_are_not_diversified(query_index):
     assert ids(search_products(query_index, sort="rating")) == ["Q4", "Q3", "Q2", "Q1", "Q5"]
+
+
+def test_catalog_opens_from_a_path_with_uri_special_characters(tmp_path):
+    data_dir = tmp_path / "data #1 100%"  # '#' and '%' would break a hand-built file: URI
+    ingest(write_lines(tmp_path / "p.jsonl", CATALOG), data_dir)
+    embed(data_dir, FakeModel())
+    index = load_index(data_dir, model=FakeModel())
+    assert search_products(index, sort="price_asc")["total_matches"] == 5
