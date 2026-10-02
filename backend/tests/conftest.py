@@ -27,6 +27,11 @@ CATALOG = [
 ]
 
 
+def ids(result):
+    """Product ids in a search result, in order."""
+    return [p["id"] for p in result["results"]]
+
+
 @pytest.fixture(scope="session")
 def data_dir(tmp_path_factory):
     path = tmp_path_factory.mktemp("catalog")

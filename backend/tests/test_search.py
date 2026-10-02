@@ -9,12 +9,8 @@ from app.catalog.ingest import ingest
 from app.search.engine import Filters, diversify, fts_expression, fuse, search_products
 from app.search.index import CatalogNotReadyError, load_index
 from tests.test_embed import FakeModel
-from tests.conftest import CATALOG
+from tests.conftest import CATALOG, ids
 from tests.test_ingest import VALID, product, write_lines
-
-
-def ids(result):
-    return [p["id"] for p in result["results"]]
 
 
 @pytest.mark.parametrize(

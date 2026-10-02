@@ -28,8 +28,10 @@ COMPARE_FIELDS = ("id", "title", "brand", "price", "rating", "attributes")
 
 def _parse_value(attr, value: str):
     """Tool inputs are strings; turn them into the attribute's type when the attribute is known."""
-    if attr is None or attr.kind == "text":
+    if attr is None:
         return value
+    if attr.kind == "text":
+        return value.lower()  # catalog text values are lowercase
     if attr.kind == "bool":
         return {"true": True, "false": False}.get(value.lower(), value)
     try:

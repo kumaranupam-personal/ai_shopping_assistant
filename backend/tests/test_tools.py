@@ -7,6 +7,7 @@ from app.agent.tools import TOOL_SPECS, TOOLS, TurnContext, current, execute, st
 from app.catalog.cards import build_card
 from app.catalog.taxonomy import format_rupees
 from app.llm.base import ToolCall
+from tests.conftest import ids
 from tests.test_ingest import VALID
 
 PORTABLE_KEYS = {
@@ -32,10 +33,7 @@ def call(name, **arguments):
     return json.loads(result.content)
 
 
-def ids(result):
-    return [p["id"] for p in result["results"]]
-
-
+@pytest.mark.usefixtures("ctx")
 @pytest.mark.parametrize(
     ("attributes", "expected"),
     [
@@ -44,12 +42,13 @@ def ids(result):
         ([{"name": "weight_g", "min": 500, "max": 700}], ["J1", "J3"]),
     ],
 )
-def test_search_converts_attribute_objects(ctx, attributes, expected):
+def test_search_converts_attribute_objects(attributes, expected):
     result = call("search_products", query="", category="jackets", attributes=attributes, sort="price_asc")
     assert ids(result) == expected and result["warnings"] == []
 
 
-def test_search_parses_numbers_and_reports_applied_filters(ctx):
+@pytest.mark.usefixtures("ctx")
+def test_search_parses_numbers_and_reports_applied_filters():
     result = call("search_products", query="", category="phones", price_max=12000,
                   attributes=[{"name": "ram_gb", "any_of": ["4"]}])
     assert ids(result) == ["P2"]
@@ -80,23 +79,26 @@ def test_show_products_with_no_known_ids_records_nothing(ctx):
     assert events == [] and context.turn.transcript == [] and context.turn.shown_ids is None
 
 
-def test_compare_lists_differing_attributes(ctx):
+@pytest.mark.usefixtures("ctx")
+def test_compare_lists_differing_attributes():
     result = call("compare_products", product_ids=["J1", "J3", "NOPE"])
     assert [p["id"] for p in result["products"]] == ["J1", "J3"]
     assert set(result["products"][0]) == {"id", "title", "brand", "price", "rating", "attributes"}
     assert result["differing_attributes"] == ["type", "waterproof", "weight_g"] and result["not_found"] == ["NOPE"]
 
 
-def test_product_details_returns_the_full_record_or_not_found(ctx):
+@pytest.mark.usefixtures("ctx")
+def test_product_details_returns_the_full_record_or_not_found():
     assert call("get_product_details", product_id="J1")["attributes"]["type"] == "down"
     assert call("get_product_details", product_id="NOPE") == {"error": "not_found"}
 
 
+@pytest.mark.usefixtures("ctx")
 @pytest.mark.parametrize(
     ("name", "arguments"),
     [("no_such_tool", {}), ("compare_products", {"product_ids": ["J1"], "extra": 1}), ("search_products", {"query": "x", "sort": "newest"})],
 )
-def test_failures_become_error_results(ctx, name, arguments):
+def test_failures_become_error_results(name, arguments):
     result = execute(ToolCall("call_9", name, arguments))
     assert result.is_error and result.call_id == "call_9" and "\n" not in result.content
 
@@ -144,3 +146,11 @@ def test_every_tool_has_a_portable_schema():
     assert [s.name for s in TOOL_SPECS] == list(TOOLS)
     for spec in TOOL_SPECS:
         assert keys(spec.parameters) <= PORTABLE_KEYS, spec.name
+
+
+@pytest.mark.usefixtures("ctx")
+def test_text_values_are_lowercased_and_empty_conditions_warn():
+    result = call("search_products", query="", category="jackets", sort="price_asc",
+                  attributes=[{"name": "type", "any_of": ["Down"]}, {"name": "warmth"}])
+    assert ids(result) == ["J1", "J4"]
+    assert result["warnings"] == ["empty condition for attribute 'warmth' ignored"]
