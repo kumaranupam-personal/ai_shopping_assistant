@@ -77,7 +77,7 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry }: RowPro
           onClick={() => onSelect(message.resultSet)}
           aria-pressed={selected === message.resultSet}
           className={clsx(
-            "flex min-w-0 items-center gap-2 self-start rounded-lg border px-3 py-1.5 text-left text-sm transition-colors duration-150 ease-out",
+            "flex max-w-full min-w-0 items-center gap-2 self-start rounded-lg border px-3 py-1.5 text-left text-sm transition-colors duration-150 ease-out",
             selected === message.resultSet ? "border-accent text-fg" : "border-line text-fg-muted hover:border-line-strong hover:text-fg",
           )}
         >
