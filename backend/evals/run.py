@@ -5,10 +5,13 @@
 
 import argparse
 import asyncio
+import hashlib
 import json
 import math
+import subprocess
 import sys
 import time
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -17,8 +20,10 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.loop import run_turn
+from app.agent.prompt import SYSTEM_PROMPT
 from app.agent.session import SessionStore
-from app.config import Settings
+from app.agent.tools import TOOL_SPECS
+from app.config import BACKEND_DIR, Settings
 from app.llm.base import LLMProvider, ToolResult, Usage
 from app.llm.registry import build_provider
 from app.search.engine import Filters, matching_ids
@@ -26,6 +31,7 @@ from app.search.index import SearchIndex, load_index
 from evals.checks import TurnResult, expect_failures, grounding_violations, tool_facts, user_amounts
 
 EVALS_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = EVALS_DIR / "results"
 TARGETS = {"pass_rate": 0.9, "grounding_violations": 0, "latency_p50_s": 8.0, "latency_p95_s": 15.0}
 
 
@@ -68,6 +74,27 @@ class Recorder:
     def tool_results_message(self, results):
         self.results += results
         return self.provider.tool_results_message(results)
+
+
+def prompt_snapshot() -> dict:
+    """Everything the model sees besides the conversation: the system prompt and every tool."""
+    return {"system_prompt": SYSTEM_PROMPT, "tools": [asdict(tool) for tool in TOOL_SPECS]}
+
+
+def prompt_version(snapshot: dict) -> str:
+    """A short hash of a snapshot, so any change to the prompt or a tool gives a new version."""
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
+
+
+def git_state(cwd: Path = BACKEND_DIR) -> tuple[str | None, bool | None]:
+    """The commit a run used, and whether the backend had uncommitted changes (eval results aside). None outside git."""
+    def git(*args: str) -> str:
+        return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+
+    try:
+        return git("rev-parse", "--short", "HEAD"), bool(git("status", "--porcelain", "--", ".", ":(exclude)evals/results"))
+    except (OSError, subprocess.CalledProcessError):
+        return None, None
 
 
 def cache_misses(calls: list[Usage], min_cache_tokens: int | None) -> int:
@@ -187,6 +214,9 @@ async def main(argv: list[str] | None = None) -> int:
 
     settings = Settings()
     cases = load_cases(args.cases, args.ids)
+    snapshot = prompt_snapshot()
+    version = prompt_version(snapshot)
+    commit, dirty = git_state()
     provider, index = build_provider(settings), load_index(settings.data_dir)
     catalog = [(row["id"], row["title"]) for row in index.conn.execute("SELECT id, title FROM products")]
 
@@ -198,10 +228,15 @@ async def main(argv: list[str] | None = None) -> int:
         print(f"{'PASS' if result['passed'] else 'FAIL'} {case.id}", *(f"  - {f}" for f in result["failures"] + grounding), sep="\n")
 
     summary = summarize(results)
-    out = EVALS_DIR / "results" / f"{datetime.now():%Y%m%d-%H%M%S}-{provider.name}.json"
-    out.parent.mkdir(exist_ok=True)
-    out.write_text(json.dumps({"provider": provider.name, "model": provider.model, "summary": summary, "cases": results}, indent=2, ensure_ascii=False))
-    print(json.dumps(summary, indent=2), f"Results: {out}", sep="\n")
+    (RESULTS_DIR / "prompts").mkdir(parents=True, exist_ok=True)
+    snapshot_file = RESULTS_DIR / "prompts" / f"{version}.json"
+    if not snapshot_file.exists():  # once per prompt version, so any two versions can be diffed
+        snapshot_file.write_text(json.dumps({"prompt_version": version, **snapshot}, indent=2, ensure_ascii=False) + "\n")
+    out = RESULTS_DIR / f"{datetime.now():%Y%m%d-%H%M%S}-{provider.name}-{version}.json"
+    header = {"provider": provider.name, "model": provider.model, "prompt_version": version, "git_commit": commit, "git_dirty": dirty}
+    out.write_text(json.dumps({**header, "summary": summary, "cases": results}, indent=2, ensure_ascii=False) + "\n")
+    note = " with uncommitted changes" if dirty else ""
+    print(json.dumps(summary, indent=2), f"Prompt version: {version} (commit {commit}{note})", f"Results: {out}", sep="\n")
     return 0 if summary["targets_met"] else 1
 
 

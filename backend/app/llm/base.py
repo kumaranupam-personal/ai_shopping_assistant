@@ -4,6 +4,13 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 StopReason = Literal["end_turn", "tool_use", "max_tokens", "refusal"]
+REQUEST_TIMEOUT_SECONDS = 60  # per attempt; every adapter's SDK retries a failed attempt twice
+
+
+def is_upstream_failure(status: int | None) -> bool:
+    """Whether an HTTP status left after the SDK's retries means the provider failed (rate limit or server error),
+    rather than a bad request that would fail again."""
+    return status is not None and (status == 429 or status >= 500)
 
 
 class LLMUpstreamError(Exception):

@@ -6,7 +6,7 @@ The agent is independent of any one provider. It calls the interface defined her
 
 - Only the files `app/llm/<provider>_provider.py` may import a provider SDK. A unit test enforces this by scanning imports.
 - The agent loop, tools, session store, API and evals use only the types in `app/llm/base.py`.
-- The system prompt and tool descriptions are shared by every provider. Adapters send them unchanged.
+- The system prompt and tool descriptions are shared by every provider. Adapters send them unchanged, with the tools in the same order on every call.
 - Conversation history is stored in the provider's native message format and treated as opaque outside the adapter. Native format keeps reasoning blocks and tool-call IDs intact, which some providers require to be sent back unchanged. Because of this, a session is bound to the provider that created it.
 
 ## Interface
@@ -62,10 +62,12 @@ A history can hold a tool-results message followed directly by a user message, w
 
 Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 
-- `LLM_API_KEY`: passed to the provider SDK explicitly. The SDK is never left to read its own provider-named variable.
+- `LLM_<PROVIDER>_API_KEY` (such as `LLM_OPENAI_API_KEY`): the adapter reads only its own provider's key and passes it to the SDK explicitly. The SDK is never left to read its own provider-named variable, such as `OPENAI_API_KEY`.
 - `LLM_MODEL`: used as the model ID, or the adapter's default model when unset.
 - `LLM_EFFORT`: mapped to the provider's nearest control, or ignored if the provider has none.
 - `LLM_MAX_TOKENS`: passed as the provider's output-token limit.
+
+Every adapter times out each attempt after 60 seconds and retries a failed attempt twice, for rate limits, overload, connection errors and timeouts. A rate limit, server error or connection failure that remains after the retries raises `LLMUpstreamError`. Any other error, such as a bad request, passes through unchanged (see `04-agent.md` for how the turn then fails).
 
 ## Anthropic adapter
 
@@ -74,14 +76,14 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - Uses the async Anthropic client and `beta.messages.create`, because the refusal fallback below is a beta feature. It doesn't use the SDK's tool runner.
 - The default model is `claude-opus-5-5`.
 - `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
-- Tool choice is `auto`, and tools are sent in the same order on every call.
+- Tool choice is `auto`.
 - The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`. The last content block of the last history message gets the same marker, so each call reads the earlier conversation from the cache. The marker goes on a copy of that message, so the stored history is unchanged, and a string content becomes a single text block in the copy. Inputs under 512 tokens aren't cached.
 - Consecutive user messages, such as a tool-results message followed by the next user message, are sent as they are, because the API combines consecutive messages from the same role.
 - `native_message` is the full assistant content, including thinking and tool-use blocks, as returned. The one exception is a response in which the refusal fallback below switched models: the switch markers are dropped, and of the blocks before the last switch only the text blocks are kept, because only the final model's other blocks can be sent back. `text` holds only the text blocks.
 - Stop reasons `end_turn`, `tool_use`, `max_tokens` and `refusal` map to the same names. Any other stop reason maps to `end_turn`.
 - `tool_results_message` puts every `tool_result` block for a turn into a single user message.
 - Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.
-- Each attempt times out after 60 seconds. Retries rely on the SDK's built-in retry (2 retries) for rate limits, overload, connection errors and timeouts. Once retries run out, the adapter raises `LLMUpstreamError`.
+- Retries are the SDK's built-in ones.
 
 ## OpenAI adapter
 
@@ -90,12 +92,12 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - Uses the async OpenAI client and the Responses API (`responses.create`), statelessly: `store` is false and `include` asks for `reasoning.encrypted_content`, so reasoning comes back encrypted and is sent with the next call. It doesn't use `previous_response_id` or conversations, because the session keeps the history.
 - The default model is `gpt-6-astra`.
 - `LLM_EFFORT` maps to `reasoning.effort` with the same value, and `LLM_MAX_TOKENS` to `max_output_tokens`.
-- The system prompt goes in `instructions`. Tools are function tools with `strict` false, because strict mode requires every property to be required. Tool choice is `auto`, and tools are sent in the same order on every call.
+- The system prompt goes in `instructions`. Tools are function tools with `strict` false, because strict mode requires every property to be required. Tool choice is `auto`.
 - Caching is automatic for the shared prefix, so no cache parameters are sent, and inputs under 1,024 tokens aren't cached. OpenAI counts cached tokens inside `input_tokens`, so the adapter subtracts `cached_tokens` and reports it as `cache_read_tokens`.
 - A user message is one input item. `native_message` is the list of a response's output items (reasoning, messages and function calls), and `tool_results_message` returns a list of `function_call_output` items. Each call flattens the history into one list of items, in which tool results followed by a user message are valid as they are.
 - `function_call_output` has no error flag, so an error result is sent as its message text. Function-call arguments that aren't a JSON object become empty arguments, so the tool fails with an error result the model can correct.
 - Stop reasons: a refusal content part, or an incomplete response with reason `content_filter`, maps to `refusal`. An incomplete response with reason `max_output_tokens` maps to `max_tokens`. Otherwise, function calls map to `tool_use` and anything else to `end_turn`. There is no refusal fallback.
-- Timeouts, retries and `LLMUpstreamError` follow the Anthropic adapter: 60 seconds per attempt and the SDK's 2 built-in retries.
+- Retries are the SDK's built-in ones.
 
 ## Gemini adapter
 
@@ -109,7 +111,7 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - A user message is one `user` content with a text part. `native_message` is the response's content (role `model`) unchanged, so thought signatures reach the next call. A response with no content, such as a blocked prompt, is stored as nothing and skipped. `tool_results_message` returns one `user` content with a function response per result. Each call merges adjacent contents from the same role, so tool results followed by the next user message form one user turn.
 - A function response must carry the function's name, which ToolResult doesn't hold, so the adapter's call IDs are `<function name>|<Gemini's call ID>` and it splits them back. The ID part is empty when Gemini gives none. The response object holds the tool's JSON under `output`, or the error message under `error`.
 - Stop reasons: a blocked prompt, or a finish reason of `SAFETY`, `RECITATION`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `SPII` or an image safety reason, maps to `refusal`. `MAX_TOKENS` maps to `max_tokens`. Otherwise, function calls map to `tool_use` and anything else to `end_turn`. There is no refusal fallback.
-- Each attempt times out after 60 seconds. This SDK retries only when configured, so the adapter allows 3 attempts, the original request plus 2 retries, like the other adapters. Rate limits, server errors and connection failures that remain raise `LLMUpstreamError`.
+- This SDK retries only when configured, so the adapter configures 3 attempts: the original request plus the 2 retries.
 
 ## Adding a provider
 

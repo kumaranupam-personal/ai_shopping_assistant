@@ -3,11 +3,19 @@
 import anthropic
 
 from app.config import Settings
-from app.llm.base import LLMResponse, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import (
+    REQUEST_TIMEOUT_SECONDS,
+    LLMResponse,
+    LLMUpstreamError,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    Usage,
+    is_upstream_failure,
+)
 
 DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
-REQUEST_TIMEOUT_SECONDS = 60  # per attempt; the SDK retries failed attempts twice
 STOP_REASONS = {"end_turn", "tool_use", "max_tokens", "refusal"}
 CACHE = {"type": "ephemeral"}
 
@@ -41,7 +49,7 @@ class AnthropicProvider:
 
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic | None = None):
         # The key is passed explicitly so the SDK never reads ANTHROPIC_API_KEY on its own.
-        self.client = client or anthropic.AsyncAnthropic(api_key=settings.llm_api_key, timeout=REQUEST_TIMEOUT_SECONDS)
+        self.client = client or anthropic.AsyncAnthropic(api_key=settings.api_key(self.name), timeout=REQUEST_TIMEOUT_SECONDS)
         self.model = settings.llm_model or DEFAULT_MODEL
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens
@@ -62,7 +70,7 @@ class AnthropicProvider:
         except anthropic.APIConnectionError as e:
             raise LLMUpstreamError(str(e)) from e
         except anthropic.APIStatusError as e:
-            if e.status_code == 429 or e.status_code >= 500:
+            if is_upstream_failure(e.status_code):
                 raise LLMUpstreamError(str(e)) from e
             raise
         content = echoable(message.content)

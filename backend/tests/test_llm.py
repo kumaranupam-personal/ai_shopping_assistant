@@ -14,10 +14,10 @@ from google.genai import types as genai
 from openai.types.responses import Response
 
 from app.config import Settings
-from app.llm.anthropic_provider import FALLBACK_BETA, REQUEST_TIMEOUT_SECONDS, AnthropicProvider
+from app.llm.anthropic_provider import FALLBACK_BETA, AnthropicProvider
 from app.llm.gemini_provider import HTTP_OPTIONS, GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
-from app.llm.base import LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import REQUEST_TIMEOUT_SECONDS, LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage, is_upstream_failure
 from app.llm.registry import build_provider
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
@@ -56,9 +56,15 @@ class StubClient:
         return self.result
 
 
+def keyed(**overrides) -> Settings:
+    """Settings with a key for every provider, as a .env with all three keys would give."""
+    keys = {f"llm_{p}_api_key": f"{p}-key" for p in ("anthropic", "openai", "gemini")}
+    return Settings(_env_file=None, **keys | overrides)
+
+
 def complete(result, history=None, adapter=AnthropicProvider):
     client = StubClient(result)
-    settings = Settings(_env_file=None, llm_api_key="test-key", llm_effort="medium", llm_max_tokens=4000)
+    settings = keyed(llm_effort="medium", llm_max_tokens=4000)
     response = asyncio.run(adapter(settings, client).complete("You help shoppers.", history or [], [TOOL]))
     return response, client.request
 
@@ -123,7 +129,7 @@ def test_fallback_keeps_only_text_before_the_switch_point():
 
 
 def test_messages_are_built_in_anthropic_format():
-    provider = AnthropicProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    provider = AnthropicProvider(keyed(), StubClient(None))
     assert provider.user_message("hi") == {"role": "user", "content": "hi"}
     results = [ToolResult("toolu_1", '{"ok": true}'), ToolResult("toolu_2", "boom", is_error=True)]
     assert provider.tool_results_message(results) == {
@@ -176,7 +182,10 @@ def test_client_errors_are_not_masked_as_upstream_errors(adapter, error, raised)
 
 @pytest.mark.parametrize(
     ("overrides", "message"),
-    [({"llm_provider": "nope", "llm_api_key": "k"}, "Unknown LLM_PROVIDER"), ({}, "LLM_API_KEY is required")],
+    [
+        ({"llm_provider": "nope"}, "Unknown LLM_PROVIDER"),
+        ({"llm_provider": "openai", "llm_anthropic_api_key": "k"}, "LLM_OPENAI_API_KEY is required"),  # another provider's key doesn't count
+    ],
 )
 def test_registry_rejects_unknown_providers_and_missing_keys(overrides, message):
     with pytest.raises(LLMConfigError, match=message):
@@ -188,15 +197,16 @@ def test_registry_rejects_unknown_providers_and_missing_keys(overrides, message)
     [("anthropic", AnthropicProvider, "claude-opus-5-5"), ("openai", OpenAIProvider, "gpt-6-astra"), ("gemini", GeminiProvider, "gemini-3.8-flash")],
 )
 def test_registry_builds_the_configured_adapter(name, adapter, default_model):
-    provider = build_provider(Settings(_env_file=None, llm_provider=name, llm_api_key="k"))
+    provider = build_provider(Settings(_env_file=None, llm_provider=name, **{f"llm_{name}_api_key": f"{name}-key"}))
     assert isinstance(provider, adapter) and provider.name == name and provider.model == default_model
-    assert build_provider(Settings(_env_file=None, llm_provider=name, llm_api_key="k", llm_model="other")).model == "other"
+    assert build_provider(keyed(llm_provider=name, llm_model="other")).model == "other"
 
 
 @pytest.mark.parametrize("adapter", [AnthropicProvider, OpenAIProvider])
 def test_sdk_clients_time_out_after_60_seconds_and_retry_twice(adapter):
-    client = adapter(Settings(_env_file=None, llm_api_key="k")).client
-    assert client.timeout == REQUEST_TIMEOUT_SECONDS and client.max_retries == 2
+    provider = adapter(keyed())
+    assert provider.client.timeout == REQUEST_TIMEOUT_SECONDS and provider.client.max_retries == 2
+    assert provider.client.api_key == f"{provider.name}-key"  # each adapter takes only its own provider's key
 
 
 def test_gemini_client_times_out_after_60_seconds_and_retries_twice():
@@ -276,7 +286,7 @@ def test_openai_malformed_arguments_become_empty():
 
 
 def test_openai_messages_are_built_in_responses_format():
-    provider = OpenAIProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    provider = OpenAIProvider(keyed(), StubClient(None))
     assert provider.user_message("hi") == {"role": "user", "content": "hi"}
     results = [ToolResult("call_1", '{"ok": true}'), ToolResult("call_2", "ValueError: boom", is_error=True)]
     assert provider.tool_results_message(results) == [
@@ -301,7 +311,7 @@ FUNCTION_CALL = genai.Part(function_call=genai.FunctionCall(id="fc_1", name="sea
 
 
 def test_gemini_request_carries_settings_and_merges_adjacent_user_turns():
-    provider = GeminiProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    provider = GeminiProvider(keyed(), StubClient(None))
     results = provider.tool_results_message([ToolResult("search_products|fc_1", "{}")])
     history = [provider.user_message("hello"), gemini_response(FUNCTION_CALL).candidates[0].content, results, provider.user_message("thanks")]
     _, request = complete(gemini_response(SEARCHING), history=history, adapter=GeminiProvider)
@@ -340,7 +350,7 @@ def test_gemini_stop_reasons_map_to_neutral_names(response, expected):
 
 
 def test_gemini_tool_results_carry_the_function_name_and_wrap_errors():
-    provider = GeminiProvider(Settings(_env_file=None, llm_api_key="k"), StubClient(None))
+    provider = GeminiProvider(keyed(), StubClient(None))
     message = provider.tool_results_message([ToolResult("search_products|fc_1", '{"ok": true}'), ToolResult("compare_products|", "ValueError: boom", is_error=True)])
     responses = [part.function_response for part in message.parts]
     assert message.role == "user"
@@ -348,3 +358,8 @@ def test_gemini_tool_results_carry_the_function_name_and_wrap_errors():
         ("fc_1", "search_products", {"output": {"ok": True}}),
         (None, "compare_products", {"error": "ValueError: boom"}),  # Gemini gave no call ID
     ]
+
+
+@pytest.mark.parametrize(("status", "upstream"), [(429, True), (500, True), (529, True), (400, False), (401, False), (None, False)])
+def test_only_rate_limits_and_server_errors_are_upstream_failures(status, upstream):
+    assert is_upstream_failure(status) is upstream  # None: an error without a status is never treated as upstream

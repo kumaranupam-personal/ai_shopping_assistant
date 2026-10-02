@@ -78,7 +78,8 @@ ai_shopping_assistant/
       cases.yaml
       run.py                 eval runner
       checks.py              grounding check and case expectations
-      results/               eval run outputs and each provider's baseline, tracked in git
+      results/               eval run outputs and each provider's baseline, tracked in git so runs can be compared
+        prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
     src/
@@ -91,7 +92,7 @@ ai_shopping_assistant/
 The backend reads these environment variables, optionally from `backend/.env`. Variables set in the shell take precedence over `.env`. `backend/.env.example` lists every backend variable with its default. Every other document refers to them by name. Relative paths resolve against the `backend/` folder, whatever the current directory is.
 
 - `LLM_PROVIDER`: which adapter to use. Default `anthropic`.
-- `LLM_API_KEY`: the API key for the chosen provider. The API server, terminal chat and eval runner require it. The catalog commands and backend tests don't.
+- `LLM_ANTHROPIC_API_KEY`, `LLM_OPENAI_API_KEY` and `LLM_GEMINI_API_KEY`: each provider's API key. All three can be set at once, and only the chosen provider's key is used. The API server, terminal chat and eval runner require the chosen provider's key. The catalog commands and backend tests don't need any.
 - `LLM_MODEL`: model ID for the chosen provider. Default: unset, which means the adapter's default model from `09-llm-providers.md`.
 - `LLM_EFFORT`: `low`, `medium` or `high`. Default `low`.
 - `LLM_MAX_TOKENS`: maximum output tokens per model call. Default `16000`.
