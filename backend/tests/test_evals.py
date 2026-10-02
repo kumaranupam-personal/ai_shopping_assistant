@@ -7,7 +7,7 @@ from app.config import Settings
 from app.llm.base import ToolCall
 from app.search.engine import Filters, matching_ids
 from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from evals.run import Case, run_case
+from evals.run import EVALS_DIR, Case, load_cases, run_case
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -88,3 +88,12 @@ def test_a_case_runs_end_to_end_and_is_graded(index):
     [turn] = result["turns"]
     assert turn["tools"] == ["search_products", "show_products"] and turn["shown"] == ["J3", "J1"]
     assert turn["model_calls"] == 2 and turn["grounding"] == []  # ₹1,000 is J1's price, from the search result
+
+
+def test_the_case_file_is_valid(index):
+    """Unknown keys fail validation, and every shown filter uses known categories, sizes, colors and attributes."""
+    cases = load_cases(EVALS_DIR / "cases.yaml", [])
+    assert len({case.id for case in cases}) == len(cases) == 20
+    for case in cases:
+        if case.expect.shown is not None:
+            matching_ids(index, Filters(**case.expect.shown), ["J1"])  # raises on an unknown filter value

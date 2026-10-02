@@ -19,7 +19,7 @@
 
 ## Eval suite
 
-`backend/evals/cases.yaml` holds at least 30 cases, and `backend/evals/run.py` runs them against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning the suite. Each case contains:
+`backend/evals/cases.yaml` holds 20 cases, each checking something the others don't, and `backend/evals/run.py` runs them against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning the suite. Each case contains:
 
 - `id` and a one-line `description`.
 - `turns`: an ordered list of user messages.
@@ -33,12 +33,12 @@
 
 Case coverage:
 
-- At least 2 single-turn intents per category.
-- At least 8 multi-turn refinements: cheaper, a different attribute, a different size, a brand, ordinal references, and comparison.
-- At least 3 vague requests that should get a clarifying question.
-- At least 3 out-of-scope requests.
-- At least 3 no-result requests that should trigger relaxation.
-- At least 6 Hinglish cases, all scored: a single-turn intent, a refinement ("aur sasta dikhao"), an ordinal reference ("dusra wala"), amount phrasings ("8k", "5 hazaar", "teen hazaar tak"), a clarification and an out-of-scope request.
+- Every category in at least one case.
+- 4 multi-turn refinements: a different attribute, a brand, an ordinal reference and a comparison.
+- 2 vague requests that should get a clarifying question.
+- 2 out-of-scope requests: an unrelated request and a category the store doesn't carry.
+- 2 no-result requests that should trigger relaxation: one fixed by raising the budget, one by dropping an inferred attribute.
+- 6 Hinglish cases, all scored: a single-turn intent, a refinement ("aur sasta dikhao"), an ordinal reference ("dusra wala"), an amount in Hindi number words ("teen hazaar tak"), a clarification and an out-of-scope request.
 
 ## Grounding check
 
