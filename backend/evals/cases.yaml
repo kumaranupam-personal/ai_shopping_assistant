@@ -1,0 +1,153 @@
+# Eval cases (docs/07-evaluation.md): 20, each checking something the others don't. Expectations are checked against
+# the demo catalog, so regenerating it means rerunning the suite. `shown` uses the search filter syntax from docs/03-search.md; in_stock_only defaults to true.
+
+# Single-turn intents. With the cases below, every category is covered at least once.
+
+- id: jackets-ladakh
+  description: A warm jacket for a cold trek, with a budget written as "8k" and a size.
+  turns: ["I'm going trekking in Ladakh in December, need a jacket under 8k, size L."]
+  expect:
+    shown: {category: jackets, price_max: 8000, size: L}
+    min_shown: 3
+
+- id: shoes-trekking-uk9
+  description: Shoe type, a waterproof attribute and a UK size.
+  turns: ["Waterproof trekking shoes in UK 9"]
+  expect:
+    shown: {category: shoes, size: UK 9, attributes: {type: trekking, waterproof: true}}
+    min_shown: 3
+
+- id: phones-5g-budget
+  description: A boolean attribute with a "15k" budget.
+  turns: ["A 5G phone under 15k with a good battery"]
+  expect:
+    shown: {category: phones, price_max: 15000, attributes: {has_5g: true}}
+    min_shown: 3
+
+- id: backpacks-trek
+  description: A boolean attribute with a numeric minimum.
+  turns: ["A waterproof trekking backpack, at least 40 litres"]
+  expect:
+    shown: {category: backpacks, attributes: {waterproof: true, capacity_l: {min: 40}}}
+    min_shown: 3
+
+- id: watches-analog-leather
+  description: Three attributes, one of which (gender) also accepts unisex.
+  turns: ["An analog watch with a leather strap for men"]
+  expect:
+    shown: {category: watches, attributes: {type: analog, strap: leather, gender: [men, unisex]}}
+    min_shown: 3
+
+- id: kitchen-air-fryer
+  description: An appliance type with a budget.
+  turns: ["Air fryer under ₹6,000"]
+  expect:
+    shown: {category: kitchen_appliances, price_max: 6000, attributes: {type: air_fryer}}
+    min_shown: 3
+
+# Multi-turn refinements. Ordinal and comparison cases sort by price first, so the expected brands are known.
+
+- id: refine-only-waterproof
+  description: Adding an attribute keeps the earlier budget and size.
+  turns:
+    - "I'm going trekking in Ladakh in December, need a jacket under 8k, size L."
+    - "only waterproof ones"
+  expect:
+    shown: {category: jackets, price_max: 8000, size: L, attributes: {waterproof: true}}
+    min_shown: 3
+
+- id: refine-brand
+  description: Narrowing to one brand keeps the type and budget.
+  turns: ["Trekking shoes under ₹6,000", "only from TrailKing"]
+  expect:
+    shown: {category: shoes, price_max: 6000, brand: [TrailKing], attributes: {type: trekking}}
+    min_shown: 3
+
+- id: refine-ordinal
+  description: '"The second one" resolves against the shown list. The second-cheapest backpack is an UrbanSling.'
+  turns: ["Show me the 3 cheapest backpacks", "Tell me more about the second one"]
+  expect:
+    mentions: [UrbanSling]
+
+- id: refine-compare
+  description: Comparing the first two shown. The two cheapest phones are a Zentrix and an Aurora.
+  turns: ["Show me the 3 cheapest phones", "Compare the first two"]
+  expect:
+    mentions: [Zentrix, Aurora]
+
+# A vague request gets one clarifying question.
+
+- id: vague-gift
+  description: No category or use case can be inferred.
+  turns: ["I need a gift for my sister."]
+  expect: {clarifies: true}
+
+# A category the store doesn't carry is declined without searching.
+
+- id: oos-televisions
+  description: A category the store doesn't carry.
+  turns: ["Do you sell televisions?"]
+  expect: {declines: true}
+
+# No results as asked: relaxation follows the order in docs/04-agent.md, so these values are known.
+
+- id: relax-gaming-budget
+  description: No gaming laptop is under ₹55,000; raising the budget by 15% (to ₹63,250) finds some.
+  turns: ["A gaming laptop under ₹55,000"]
+  expect:
+    shown: {category: laptops, price_max: 63250, attributes: {use: gaming}}
+    min_shown: 1
+
+- id: relax-inferred-warmth
+  description: An inferred extreme-warmth filter finds nothing under ₹2,000; dropping it (the user never said it) does.
+  turns: ["A jacket for -20 degrees, under ₹2,000"]
+  expect:
+    shown: {category: jackets, price_max: 2000}
+    min_shown: 1
+
+# Hinglish: every one is scored, including its reply language.
+
+- id: hinglish-shaadi-kurta
+  description: '"Shaadi" maps to the wedding occasion and "5k tak" to a budget.'
+  turns: ["Shaadi ke liye silk kurta chahiye, 5k tak"]
+  expect:
+    shown: {category: kurtas, price_max: 5000, attributes: {fabric: silk, occasion: wedding}}
+    min_shown: 3
+    reply_language: hinglish
+
+- id: hinglish-teen-hazaar
+  description: '"Teen hazaar tak" is a budget of ₹3,000, written in Hindi number words.'
+  turns: ["Teen hazaar tak ki watch dikhao"]
+  expect:
+    shown: {category: watches, price_max: 3000}
+    min_shown: 3
+    reply_language: hinglish
+
+- id: hinglish-aur-sasta
+  description: '"Aur sasta dikhao" is "cheaper", with the reply in Hinglish.'
+  turns: ["10k tak smartwatch dikhao", "aur sasta dikhao"]
+  expect:
+    shown: {category: watches, price_max: 9999, attributes: {type: smartwatch}}
+    min_shown: 1
+    reply_language: hinglish
+
+- id: hinglish-dusra-wala
+  description: '"Dusra wala" is the second one shown. The second-cheapest kurta is a Rangsutra.'
+  turns: ["Sabse saste 3 kurte dikhao", "Dusra wala kaisa hai?"]
+  expect:
+    mentions: [Rangsutra]
+    reply_language: hinglish
+
+- id: hinglish-kuch-accha
+  description: A vague Hinglish request gets one clarifying question in Hinglish.
+  turns: ["Kuch accha dikhao"]
+  expect:
+    clarifies: true
+    reply_language: hinglish
+
+- id: hinglish-mausam
+  description: An out-of-scope Hinglish request is declined in Hinglish.
+  turns: ["Aaj Delhi ka mausam kaisa hai?"]
+  expect:
+    declines: true
+    reply_language: hinglish

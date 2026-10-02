@@ -52,8 +52,10 @@ async def run_turn(
             response = await provider.complete(SYSTEM_PROMPT, history, TOOL_SPECS)
             record.calls.append((time.perf_counter() - started, response.usage))
             history.append(response.native_message)
-            for part in response.text:
-                say(part)
+            # With show_products the reply arrives in its `reply`; other text alongside it is the model thinking aloud.
+            if not any(call.name == "show_products" for call in response.tool_calls):
+                for part in response.text:
+                    say(part)
             if response.stop_reason == "max_tokens":
                 raise TurnLimitError("a model response hit the output-token limit")
             if response.stop_reason == "refusal":
