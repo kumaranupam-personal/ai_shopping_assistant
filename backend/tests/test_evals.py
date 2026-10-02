@@ -35,10 +35,16 @@ def test_tool_facts_collect_ids_and_prices_from_any_result_shape():
 
 
 def test_grounding_flags_invented_amounts_and_unreturned_products():
-    catalog = [("J1", "TrekNorth Summit Jacket"), ("J2", "Himfrost Rain Jacket")]
-    reply_text = "The TrekNorth Summit Jacket is ₹1,000, under your ₹3k budget. The Himfrost Rain Jacket is ₹2,000."
+    catalog = [("J1", "TrekNorth Summit Jacket"), ("J2", "Himfrost Rain Jacket"), ("J3", "Himfrost Rain Jacket"), ("J4", "Snowline Parka")]
+    reply_text = "The TrekNorth Summit Jacket is ₹1,000, under your ₹3k budget. J4 is ₹2,000."
     violations = grounding_violations(reply_text, catalog, {"J1"}, {1000.0}, user_amounts("under 3k"))
-    assert violations == ["amount ₹2,000 is in no tool result and wasn't typed by the user", "product J2 was named but no tool returned it"]
+    assert violations == ["amount ₹2,000 is in no tool result and wasn't typed by the user", "product J4 was named but no tool returned it"]
+
+
+def test_a_title_shared_by_several_products_is_grounded_when_any_of_them_was_returned():
+    catalog = [("J2", "Himfrost Rain Jacket"), ("J3", "Himfrost Rain Jacket"), ("J4", "Snowline Parka")]
+    assert grounding_violations("Try the Himfrost Rain Jacket.", catalog, {"J3"}, set(), set()) == []
+    assert grounding_violations("Try the Snowline Parka.", catalog, {"J3"}, set(), set()) == ["title 'Snowline Parka' was named but no tool returned it"]
 
 
 @pytest.mark.parametrize(("text", "language"), [("Yeh jackets aapke budget mein hain.", "hinglish"), ("These are warm.", "english")])

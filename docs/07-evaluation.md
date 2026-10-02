@@ -42,7 +42,7 @@ Case coverage:
 
 ## Grounding check
 
-The eval applies this to every turn of every case. A rupee amount is a number written after "₹", "Rs" or "Rs.", or before "rupees", with or without digit grouping. Each rupee amount in the assistant text must equal a `price` or `mrp` that appeared in a tool result during that conversation, a `price_min` or `price_max` in the `applied` filters a search reported (so a relaxed budget can be stated), or a number the user typed. User amounts are normalized before comparison, so "8k" counts as 8000, "5 hazaar" as 5000, and the Hindi number words one to ten followed by "hazaar" are recognized ("teen hazaar" counts as 3000). Each product ID or exact product title in the text must belong to a product returned by a tool in that conversation. Any mismatch counts as a grounding violation.
+The eval applies this to every turn of every case. A rupee amount is a number written after "₹", "Rs" or "Rs.", or before "rupees", with or without digit grouping. Each rupee amount in the assistant text must equal a `price` or `mrp` that appeared in a tool result during that conversation, a `price_min` or `price_max` in the `applied` filters a search reported (so a relaxed budget can be stated), or a number the user typed. User amounts are normalized before comparison, so "8k" counts as 8000, "5 hazaar" as 5000, and the Hindi number words one to ten followed by "hazaar" are recognized ("teen hazaar" counts as 3000). Each product ID or exact product title in the text must belong to a product returned by a tool in that conversation. Titles can repeat in a catalog, so a title counts as grounded when any product with that title was returned. Any mismatch counts as a grounding violation.
 
 ## Metrics and targets
 
