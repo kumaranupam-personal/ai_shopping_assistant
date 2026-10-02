@@ -79,6 +79,7 @@ ai_shopping_assistant/
       run.py                 eval runner
       checks.py              grounding check and case expectations
       results/               eval run outputs and each provider's baseline, tracked in git
+        prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
     src/

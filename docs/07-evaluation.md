@@ -46,7 +46,13 @@ The eval applies this to every turn of every case. A rupee amount is a number wr
 
 ## Metrics and targets
 
-The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and writes `evals/results/<timestamp>-<provider>.json`, which records the provider and model. The targets apply to each provider separately. The results folder is tracked in git, so runs can be compared over time. Each provider's reference run is `evals/results/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit.
+The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and writes `evals/results/<timestamp>-<provider>-<prompt_version>.json`. The targets apply to each provider separately. Each results file records:
+
+- the provider and model;
+- `prompt_version`: the first 12 hex characters of a SHA-256 hash of exactly what the model sees, the system prompt and every tool's name, description and schema, so any change to them gives a new version;
+- `git_commit` and `git_dirty`: the commit the run used, and whether `backend/` had uncommitted changes.
+
+The first run of a prompt version also saves its system prompt and tools as `evals/results/prompts/<prompt_version>.json`, so any two versions can be diffed. The results folder is tracked in git, so runs can be compared over time. Each provider's reference run is `evals/results/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit. A baseline recorded before prompt versioning carries the version it ran with, marked `prompt_version_backfilled`, and no commit.
 
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
 - Grounding violations: 0.

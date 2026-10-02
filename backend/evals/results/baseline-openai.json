@@ -1,6 +1,8 @@
 {
   "provider": "openai",
   "model": "gpt-6-astra",
+  "prompt_version": "ff5b64ad6cf8",
+  "prompt_version_backfilled": true,
   "summary": {
     "cases": 20,
     "scored": 20,
