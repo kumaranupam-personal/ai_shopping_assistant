@@ -20,7 +20,7 @@ The app serves any catalog that follows the product schema and taxonomy below. P
   "attributes": {"type": "down", "warmth": "extreme", "waterproof": true, "weight_g": 650, "gender": "men"},
   "tags": ["winter", "trekking", "high-altitude"],
   "description": "Rated for sub-zero temperatures...",
-  "image_url": "https://placehold.co/400x400?text=Down+Jacket"
+  "image_url": "https://example.com/images/JKT-00012.jpg"
 }
 ```
 
@@ -37,7 +37,7 @@ Field rules (ingestion enforces all of them):
 - `attributes`: exactly the category's attributes, each with an allowed value.
 - `tags`: 0 to 10 lowercase strings.
 - `description`: non-empty, at most 1000 characters.
-- `image_url`: an `http` or `https` URL.
+- `image_url`: optional. When present, an `http` or `https` URL.
 
 ## Taxonomy
 
@@ -174,5 +174,5 @@ All rupee amounts shown to the user, both in agent prose and in the UI, use the 
 - About 8% of products have `stock` 0.
 - Tags are derived from attributes by fixed rules. For example, jackets with `warmth` set to `extreme` get `winter`, `trekking` and `high-altitude`.
 - Descriptions are 2 to 4 sentences built from attribute-specific templates, and they never contradict `attributes`.
-- `image_url` is a `placehold.co` URL whose text is the category and type.
+- Products have no `image_url`, because the demo has no real product imagery.
 - Attribute values within a product are plausible. For example, smartwatches never have a 0 m water rating, gaming laptops always have a dedicated GPU, and a down jacket's warmth is high or extreme.

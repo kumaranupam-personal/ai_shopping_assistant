@@ -71,7 +71,7 @@ export function Banners({ notice, onDismiss }: { notice: string | null; onDismis
     <div role="status" className="min-w-0">
       {!online && (
         <p className="flex items-center gap-2 border-b border-line bg-danger-soft px-4 py-2 text-sm text-danger">
-          <WifiOff aria-hidden className="size-4 shrink-0" /> You're offline. Messages will send once you're back online.
+          <WifiOff aria-hidden className="size-4 shrink-0" /> You're offline. Reconnect to keep chatting.
         </p>
       )}
       {notice && (

@@ -122,6 +122,15 @@ def test_each_broken_rule_rejects_the_line(tmp_path, item):
     assert rejects[0]["line"] == 2 and rejects[0]["reasons"]
 
 
+def test_a_product_without_an_image_loads(tmp_path):
+    src = write_lines(tmp_path / "p.jsonl", [{k: v for k, v in VALID.items() if k != "image_url"}])
+    _, rejected, written = ingest(src, tmp_path / "data")
+    assert written and not rejected
+    conn = sqlite3.connect(tmp_path / "data" / "catalog.db")
+    assert conn.execute("SELECT image_url FROM products").fetchone() == (None,)
+    conn.close()
+
+
 def test_duplicate_ids_are_rejected(tmp_path):
     src = write_lines(tmp_path / "p.jsonl", [VALID, product(title="Another")])
     _, rejected, written = ingest(src, tmp_path / "data")

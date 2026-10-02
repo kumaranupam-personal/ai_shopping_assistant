@@ -140,12 +140,13 @@ def test_rupee_format(amount, text):
 def test_card_shape_and_highlights():
     card = build_card({**VALID, "stock": 0})
     assert card == {
-        "id": "JKT-00012", "title": VALID["title"], "brand": "TrekNorth", "price": 7499, "mrp": 11999, "rating": 4.4,
-        "review_count": 1832, "image_url": VALID["image_url"], "discount_pct": 38, "in_stock": False,
+        "id": "JKT-00012", "title": VALID["title"], "brand": "TrekNorth", "category": "jackets", "colors": ["black", "navy"],
+        "price": 7499, "mrp": 11999, "rating": 4.4, "review_count": 1832, "image_url": VALID["image_url"], "discount_pct": 38, "in_stock": False,
         "highlights": [{"label": "type", "value": "down"}, {"label": "warmth", "value": "extreme"},
                        {"label": "waterproof", "value": "yes"}],
     }
     assert build_card({**VALID, "mrp": VALID["price"]})["discount_pct"] == 0
+    assert build_card({**VALID, "image_url": None})["image_url"] is None  # a product without an image
 
 
 def test_every_tool_has_a_portable_schema():

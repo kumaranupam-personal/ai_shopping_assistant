@@ -62,15 +62,15 @@ async def run_turn(
                 say(REFUSAL_MESSAGE)
             if response.stop_reason != "tool_use" or not response.tool_calls:
                 return finish()
-            results = []
+            results, shown_before = [], turn.shown_ids
             for call in response.tool_calls:
                 if status := status_text(call.name, call.arguments):
                     emit("status", {"text": status})
                 results.append(execute(call))
             history.append(provider.tool_results_message(results))
-            # The reply came in show_products, whose result holds nothing the model still needs. Cards shown earlier
-            # in the turn would already have ended it, so shown_ids being set means this response showed them.
-            if turn.shown_ids is not None and all(call.name == "show_products" for call in response.tool_calls):
+            # The reply came in show_products, whose result holds nothing the model still needs. show_products sets a
+            # new shown list only when it displays cards, so a changed list means this response showed them.
+            if turn.shown_ids is not shown_before and all(call.name == "show_products" for call in response.tool_calls):
                 return finish()
         raise TurnLimitError(f"the turn reached {MAX_MODEL_CALLS} model calls")
     except BaseException:  # includes cancellation when the client disconnects

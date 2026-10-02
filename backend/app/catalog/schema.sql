@@ -13,7 +13,7 @@ CREATE TABLE products (
     attributes TEXT NOT NULL,  -- JSON object
     tags TEXT NOT NULL,        -- JSON list
     description TEXT NOT NULL,
-    image_url TEXT NOT NULL
+    image_url TEXT             -- NULL when the product has no image
 );
 
 CREATE INDEX products_category ON products (category);

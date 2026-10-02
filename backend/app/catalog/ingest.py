@@ -35,7 +35,7 @@ class Product(BaseModel):
     attributes: dict[str, str | bool | int | float]
     tags: list[str] = Field(max_length=10)
     description: str = Field(max_length=1000, pattern=r"\S")
-    image_url: str = Field(pattern=r"^https?://\S+$")
+    image_url: str | None = Field(None, pattern=r"^https?://\S+$")  # optional: a product may have no image
 
     @model_validator(mode="after")
     def check_catalog_rules(self) -> "Product":
