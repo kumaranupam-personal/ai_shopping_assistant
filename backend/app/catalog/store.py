@@ -20,3 +20,11 @@ def open_catalog(data_dir: Path) -> sqlite3.Connection:
 def product_from_row(row: sqlite3.Row) -> dict:
     """A product record with its JSON columns decoded."""
     return {key: json.loads(row[key]) if key in JSON_COLUMNS else row[key] for key in row.keys()}
+
+
+def fetch_products(conn: sqlite3.Connection, ids: list[str]) -> dict[str, dict]:
+    """Products by id for the ids that exist; callers decide how to order or report missing ones."""
+    if not ids:
+        return {}
+    rows = conn.execute(f"SELECT * FROM products WHERE id IN ({', '.join('?' * len(ids))})", ids)
+    return {row["id"]: product_from_row(row) for row in rows}
