@@ -9,6 +9,7 @@ NUMBER = r"\d[\d,]*(?:\.\d+)?"
 # "₹7,499", "Rs 7499", "Rs. 7,499" or "7499 rupees"; a trailing "k" means thousands, as in "₹8k".
 RUPEE_AMOUNT = re.compile(rf"(?:₹|\bRs\b\.?)\s*({NUMBER})(\s*k\b)?|({NUMBER})(\s*k\b)?\s*rupees\b", re.IGNORECASE)
 USER_AMOUNT = re.compile(rf"({NUMBER})\s*(k\b|hazaa?r\b)?", re.IGNORECASE)
+AMOUNT_KEYS = ("price", "mrp", "price_min", "price_max")
 HINDI_NUMBERS = {
     "ek": 1, "do": 2, "teen": 3, "char": 4, "chaar": 4, "paanch": 5, "panch": 5,
     "chhe": 6, "chheh": 6, "saat": 7, "aath": 8, "nau": 9, "das": 10,
@@ -44,14 +45,18 @@ def user_amounts(text: str) -> set[float]:
 
 
 def tool_facts(contents: list[str]) -> tuple[set[str], set[float]]:
-    """Product IDs, and every price and MRP, anywhere in the tool results of a conversation."""
+    """Product IDs, and every price, MRP and applied budget bound, anywhere in the tool results of a conversation.
+
+    The budget bounds (`price_min`, `price_max`) appear only in a search's `applied` filters, so a relaxed budget the
+    agent states is grounded.
+    """
     ids, prices = set(), set()
 
     def walk(value) -> None:
         if isinstance(value, dict):
             if isinstance(value.get("id"), str):
                 ids.add(value["id"])
-            prices.update(float(value[k]) for k in ("price", "mrp") if isinstance(value.get(k), int | float))
+            prices.update(float(value[k]) for k in AMOUNT_KEYS if isinstance(value.get(k), int | float))
             for item in value.values():
                 walk(item)
         elif isinstance(value, list):

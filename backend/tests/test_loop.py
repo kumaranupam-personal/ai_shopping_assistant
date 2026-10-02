@@ -56,7 +56,10 @@ def run(provider, index, store, session, text="warm jacket under 3k"):
 
 def test_tools_run_in_order_and_the_turn_commits(index, store):
     session = store.create("scripted")
-    provider = ScriptedProvider(reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
+    provider = ScriptedProvider(
+        reply("Let me look.", stop="tool_use", calls=[SEARCH]),
+        reply("Prioritize warmth: 4429, 4619.", stop="tool_use", calls=[SHOW]),  # dropped: the reply comes in SHOW
+    )
     record, events = run(provider, index, store, session)
 
     assert [e for e, _ in events] == ["text", "status", "products", "text"]

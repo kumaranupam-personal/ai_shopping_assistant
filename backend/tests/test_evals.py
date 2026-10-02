@@ -29,9 +29,9 @@ def test_user_amounts_are_normalized(text, amount):
 
 
 def test_tool_facts_collect_ids_and_prices_from_any_result_shape():
-    search = json.dumps({"results": [{"id": "J1", "price": 1000, "mrp": 1500}], "warnings": []})
+    search = json.dumps({"results": [{"id": "J1", "price": 1000, "mrp": 1500}], "warnings": [], "applied": {"price_max": 63250}})
     compare = json.dumps({"products": [{"id": "P1", "price": 15000}], "not_found": []})
-    assert tool_facts([search, compare, "ValueError: boom"]) == ({"J1", "P1"}, {1000.0, 1500.0, 15000.0})
+    assert tool_facts([search, compare, "ValueError: boom"]) == ({"J1", "P1"}, {1000.0, 1500.0, 63250.0, 15000.0})
 
 
 def test_grounding_flags_invented_amounts_and_unreturned_products():

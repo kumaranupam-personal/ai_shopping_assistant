@@ -55,6 +55,7 @@ Build the phases in order. Each phase is done only when its criteria pass.
 
 - Part 1: the eval runner and grounding check from `07-evaluation.md`.
 - Part 2: the eval cases.
+- Part 3: the fixes the first run showed: applied budget bounds count as grounded, and text written alongside `show_products` is dropped. The suite then reruns for the baseline.
 - Done when the suite runs end to end on the Anthropic adapter and writes its results file, which becomes the baseline. Meeting the targets waits for Phase 9, so this phase changes no prompt or tool description.
 
 ## Phase 8: OpenAI and Gemini providers

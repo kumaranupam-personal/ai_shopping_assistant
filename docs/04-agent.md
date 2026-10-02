@@ -6,7 +6,7 @@
 
 1. Append `provider.user_message(text)` to the history and a `user` entry to the transcript.
 2. Call `provider.complete(system, history, tools)` and append `native_message` to the history.
-3. For each part of `text`, send a `text` event and add an `assistant` entry to the transcript.
+3. For each part of `text`, send a `text` event and add an `assistant` entry to the transcript. If the response calls `show_products`, its text is dropped instead, because the reply arrives in that call's `reply` parameter and anything else written alongside it is the model thinking aloud.
 4. If `stop_reason` is `tool_use`, run the tool calls in order. Before each one, except `show_products`, send a `status` event with the text from `05-api.md`. Then append one `provider.tool_results_message(results)`. If every call was `show_products` and at least one of them showed cards, end the turn with `done`. Otherwise go back to step 2.
 5. Otherwise, end the turn with `done`.
 
