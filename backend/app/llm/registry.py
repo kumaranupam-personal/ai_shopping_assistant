@@ -3,8 +3,9 @@
 from app.config import Settings
 from app.llm.anthropic_provider import AnthropicProvider
 from app.llm.base import LLMConfigError, LLMProvider
+from app.llm.openai_provider import OpenAIProvider
 
-PROVIDERS = {"anthropic": AnthropicProvider}
+PROVIDERS = {"anthropic": AnthropicProvider, "openai": OpenAIProvider}
 
 
 def build_provider(settings: Settings) -> LLMProvider:

@@ -33,7 +33,7 @@ The agent is independent of any one provider. It calls the interface defined her
 - `text`: the reply text parts, in order.
 - `tool_calls`: a list of ToolCall.
 - `stop_reason`: one of `end_turn`, `tool_use`, `max_tokens` or `refusal`.
-- `usage`: `input_tokens`, `output_tokens` and `cache_read_tokens` (0 when the provider doesn't report it).
+- `usage`: `input_tokens` (input not read from the cache), `output_tokens` and `cache_read_tokens` (0 when the provider doesn't report it).
 - `native_message`: the assistant message in the provider's format, which the loop appends to history unchanged.
 
 ### LLMProvider
@@ -81,6 +81,20 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - `tool_results_message` puts every `tool_result` block for a turn into a single user message.
 - Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.
 - Each attempt times out after 60 seconds. Retries rely on the SDK's built-in retry (2 retries) for rate limits, overload, connection errors and timeouts. Once retries run out, the adapter raises `LLMUpstreamError`.
+
+## OpenAI adapter
+
+`app/llm/openai_provider.py`, selected with `LLM_PROVIDER=openai`.
+
+- Uses the async OpenAI client and the Responses API (`responses.create`), statelessly: `store` is false and `include` asks for `reasoning.encrypted_content`, so reasoning comes back encrypted and is sent with the next call. It doesn't use `previous_response_id` or conversations, because the session keeps the history.
+- The default model is `gpt-6-astra`.
+- `LLM_EFFORT` maps to `reasoning.effort` with the same value, and `LLM_MAX_TOKENS` to `max_output_tokens`.
+- The system prompt goes in `instructions`. Tools are function tools with `strict` false, because strict mode requires every property to be required. Tool choice is `auto`, and tools are sent in the same order on every call.
+- Caching is automatic for the shared prefix, so no cache parameters are sent. OpenAI counts cached tokens inside `input_tokens`, so the adapter subtracts `cached_tokens` and reports it as `cache_read_tokens`.
+- A user message is one input item. `native_message` is the list of a response's output items (reasoning, messages and function calls), and `tool_results_message` returns a list of `function_call_output` items. Each call flattens the history into one list of items, in which tool results followed by a user message are valid as they are.
+- `function_call_output` has no error flag, so an error result is sent as its message text. Function-call arguments that aren't a JSON object become empty arguments, so the tool fails with an error result the model can correct.
+- Stop reasons: a refusal content part, or an incomplete response with reason `content_filter`, maps to `refusal`. An incomplete response with reason `max_output_tokens` maps to `max_tokens`. Otherwise, function calls map to `tool_use` and anything else to `end_turn`. There is no refusal fallback.
+- Timeouts, retries and `LLMUpstreamError` follow the Anthropic adapter: 60 seconds per attempt and the SDK's 2 built-in retries.
 
 ## Adding a provider
 
