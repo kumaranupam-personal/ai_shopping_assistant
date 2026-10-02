@@ -156,7 +156,7 @@ def test_client_disconnect_cancels_and_rolls_back_the_turn(make_client, index):
     session_id = new_session(client)
 
     async def disconnect_after_first_event():
-        stream = stream_turn(BlockingProvider(reply(stop="tool_use", calls=[SEARCH])), index, store.begin_turn(session_id), "hi")
+        stream = stream_turn(BlockingProvider(reply(stop="tool_use", calls=[SEARCH])), index, store, session_id, "hi")
         first = await anext(stream)
         await stream.aclose()  # what the server does when the client goes away
         return first
@@ -183,3 +183,24 @@ def test_cors_allows_the_configured_origin(make_client):
         "/api/chat", headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST"}
     )
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_a_stream_that_is_never_read_leaves_the_session_free(make_client, index):
+    client = make_client()
+    session_id = new_session(client)
+    stream_turn(ScriptedProvider(), index, client.app.state.store, session_id, "hi")  # client gone before streaming
+    assert session(client, session_id).busy is False
+
+
+def test_a_turn_that_loses_the_race_gets_an_error_event(make_client, index):
+    client = make_client()
+    store = client.app.state.store
+    session_id = new_session(client)
+    store.begin_turn(session_id)  # another request started a turn after this one was checked
+
+    async def read_all():
+        return [frame async for frame in stream_turn(ScriptedProvider(), index, store, session_id, "hi")]
+
+    assert parse_events("".join(asyncio.run(read_all()))) == [
+        ("error", {"code": "turn_in_progress", "message": "A reply is still being generated for this chat."})
+    ]

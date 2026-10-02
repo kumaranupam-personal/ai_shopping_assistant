@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agent.loop import TurnLimitError, run_turn
-from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, Turn, TurnInProgressError
+from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
 from app.catalog.cards import build_card
 from app.catalog.store import fetch_products
 from app.config import Settings
@@ -24,8 +24,7 @@ from app.sse import format_event
 
 log = logging.getLogger(__name__)
 
-# Errors raised before a response starts -> (HTTP status, code).
-# Endpoints are async so all session-store access stays on the event loop thread.
+# Session errors -> (HTTP status, code). Raised before a response starts, or as an error event once streaming.
 HTTP_ERRORS = {
     SessionNotFoundError: (404, "session_not_found"),
     TurnInProgressError: (409, "turn_in_progress"),
@@ -53,6 +52,8 @@ def error_response(status: int, code: str) -> JSONResponse:
 
 
 def stream_error_code(error: BaseException) -> str:
+    if type(error) in HTTP_ERRORS:
+        return HTTP_ERRORS[type(error)][1]
     if isinstance(error, TurnLimitError):
         return "turn_limit"
     if isinstance(error, LLMUpstreamError):
@@ -61,12 +62,19 @@ def stream_error_code(error: BaseException) -> str:
     return "internal_error"
 
 
-async def stream_turn(provider: LLMProvider, index: SearchIndex, turn: Turn, text: str) -> AsyncIterator[str]:
-    """Streams one turn's events, ending with `done` or `error`. Closing the stream cancels the turn."""
+async def stream_turn(
+    provider: LLMProvider, index: SearchIndex, store: SessionStore, session_id: str, text: str
+) -> AsyncIterator[str]:
+    """Streams one turn's events, ending with `done` or `error`. Closing the stream cancels the turn.
+
+    The turn starts here, on the first read of the stream, so a stream that is never read never leaves the
+    session busy.
+    """
     queue: asyncio.Queue[str | None] = asyncio.Queue()
 
     async def run():
         try:
+            turn = store.begin_turn(session_id)
             return await run_turn(provider, index, turn, text, lambda event, data: queue.put_nowait(format_event(event, data)))
         finally:
             queue.put_nowait(None)  # end of the turn's events
@@ -98,6 +106,7 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         app.state.store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
         yield
 
+    # Endpoints are async so all session-store access stays on the event loop thread.
     app = FastAPI(title="AI shopping assistant", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
@@ -136,8 +145,9 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     @app.post("/api/chat")
     async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         state = request.app.state
-        turn = state.store.begin_turn(body.session_id)  # rejects before the stream starts
-        return StreamingResponse(stream_turn(state.provider, state.index, turn, body.message), media_type="text/event-stream")
+        state.store.check_can_start(body.session_id)  # unknown, busy and full sessions get an HTTP error
+        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message)
+        return StreamingResponse(stream, media_type="text/event-stream")
 
     @app.get("/api/products/{product_id}")
     async def product_details(product_id: str, request: Request):
