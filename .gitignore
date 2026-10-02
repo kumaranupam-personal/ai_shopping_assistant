@@ -1,0 +1,11 @@
+.DS_Store
+/context.md
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+backend/data/
+backend/demo/products.jsonl
+backend/evals/results/
+node_modules/
+frontend/dist/
