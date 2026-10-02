@@ -8,7 +8,7 @@ import pytest
 from anthropic.types.beta import BetaMessage
 
 from app.config import Settings
-from app.llm.anthropic_provider import FALLBACK_BETA, AnthropicProvider
+from app.llm.anthropic_provider import FALLBACK_BETA, REQUEST_TIMEOUT_SECONDS, AnthropicProvider
 from app.llm.base import LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
 from app.llm.registry import build_provider
 
@@ -149,6 +149,7 @@ def test_registry_rejects_unknown_providers_and_missing_keys(overrides, message)
 def test_registry_builds_the_configured_adapter():
     provider = build_provider(Settings(_env_file=None, llm_api_key="k", llm_model="claude-sonnet-5-5"))
     assert isinstance(provider, AnthropicProvider) and provider.model == "claude-sonnet-5-5"
+    assert provider.client.timeout == REQUEST_TIMEOUT_SECONDS and provider.client.max_retries == 2
 
 
 def test_only_provider_adapters_import_a_provider_sdk():
