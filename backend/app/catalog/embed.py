@@ -10,6 +10,7 @@ from fastembed import TextEmbedding
 from app.config import Settings
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+DIMENSIONS = 384
 
 
 def load_model(data_dir: Path) -> TextEmbedding:
@@ -18,7 +19,7 @@ def load_model(data_dir: Path) -> TextEmbedding:
 
 def embed_texts(model: TextEmbedding, texts: list[str]) -> np.ndarray:
     """Returns one L2-normalized float32 row per text."""
-    vectors = np.array(list(model.embed(texts)), dtype=np.float32)
+    vectors = np.array(list(model.embed(texts)), dtype=np.float32).reshape(len(texts), DIMENSIONS)
     return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
 
 
@@ -27,7 +28,8 @@ def product_text(title: str, description: str, tags: list[str]) -> str:
 
 
 def embed(data_dir: Path, model: TextEmbedding | None = None) -> int:
-    conn = sqlite3.connect(data_dir / "catalog.db")
+    # Read-only, so a missing catalog raises instead of creating an empty catalog.db.
+    conn = sqlite3.connect(f"file:{data_dir / 'catalog.db'}?mode=ro", uri=True)
     try:
         rows = conn.execute("SELECT id, title, description, tags FROM products ORDER BY id").fetchall()
     finally:

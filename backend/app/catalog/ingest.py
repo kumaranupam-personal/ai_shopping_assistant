@@ -21,8 +21,9 @@ class Product(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,32}$")
-    title: str = Field(min_length=1, max_length=120)
-    brand: str = Field(min_length=1, max_length=60)
+    # pattern \S: at least one non-space character, so blank text counts as empty.
+    title: str = Field(max_length=120, pattern=r"\S")
+    brand: str = Field(max_length=60, pattern=r"\S")
     category: str
     price: StrictInt = Field(gt=0)
     mrp: StrictInt = Field(gt=0)
@@ -33,7 +34,7 @@ class Product(BaseModel):
     colors: list[str] = Field(min_length=1, max_length=4)
     attributes: dict[str, str | bool | int | float]
     tags: list[str] = Field(max_length=10)
-    description: str = Field(min_length=1, max_length=1000)
+    description: str = Field(max_length=1000, pattern=r"\S")
     image_url: str = Field(pattern=r"^https?://\S+$")
 
     @model_validator(mode="after")

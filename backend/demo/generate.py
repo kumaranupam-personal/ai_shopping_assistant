@@ -20,12 +20,6 @@ def _sample(attr: Attribute, choices, rng: random.Random):
     return rng.randint(low, high) if attr.kind == "int" else round(rng.uniform(low, high), 1)
 
 
-def matches(constraint, value) -> bool:
-    if isinstance(constraint, list):
-        return value in constraint
-    return constraint[0] <= value <= constraint[1]
-
-
 def sample_attributes(category: Category, rules: list, rng: random.Random) -> dict:
     attrs = {
         a.name: rng.choice([True, False]) if a.kind == "bool" else _sample(a, list(a.values) or (a.min, a.max), rng)
@@ -38,7 +32,7 @@ def sample_attributes(category: Category, rules: list, rng: random.Random) -> di
     return attrs
 
 
-def _describe(category: Category, template: dict, brand: str, attrs: dict, rng: random.Random) -> tuple[str, str]:
+def _describe(template: dict, brand: str, attrs: dict, rng: random.Random) -> tuple[str, str]:
     shown = {name: format_attribute_value(name, value) for name, value in attrs.items()}
     names = template.get("names", {})
     title_words = {
@@ -70,7 +64,7 @@ def make_product(category: Category, number: int, rng: random.Random) -> dict:
     template = TEMPLATES[category.name]
     attrs = sample_attributes(category, template["rules"], rng)
     brand = rng.choice(template["brands"])
-    title, description = _describe(category, template, brand, attrs, rng)
+    title, description = _describe(template, brand, attrs, rng)
 
     low, high = price_range(template, attrs)
     price = rng.randrange(low + 1, high + 2, 10) - 1  # prices end in 9
