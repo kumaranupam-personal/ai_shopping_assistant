@@ -39,6 +39,11 @@ async def run_turn(
         emit("text", {"text": part})
         turn.transcript.append({"type": "assistant", "text": part})
 
+    def finish() -> TurnRecord:
+        turn.commit()
+        record.turn = turn.session.turn_count
+        return record
+
     try:
         history.append(provider.user_message(text))
         turn.transcript.append({"type": "user", "text": text})
@@ -54,15 +59,17 @@ async def run_turn(
             if response.stop_reason == "refusal":
                 say(REFUSAL_MESSAGE)
             if response.stop_reason != "tool_use" or not response.tool_calls:
-                turn.commit()
-                record.turn = turn.session.turn_count
-                return record
+                return finish()
             results = []
             for call in response.tool_calls:
                 if status := status_text(call.name, call.arguments):
                     emit("status", {"text": status})
                 results.append(execute(call))
             history.append(provider.tool_results_message(results))
+            # The reply came in show_products, whose result holds nothing the model still needs. Cards shown earlier
+            # in the turn would already have ended it, so shown_ids being set means this response showed them.
+            if turn.shown_ids is not None and all(call.name == "show_products" for call in response.tool_calls):
+                return finish()
         raise TurnLimitError(f"the turn reached {MAX_MODEL_CALLS} model calls")
     except BaseException:  # includes cancellation when the client disconnects
         turn.rollback()

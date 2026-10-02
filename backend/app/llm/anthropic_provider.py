@@ -9,6 +9,7 @@ DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 REQUEST_TIMEOUT_SECONDS = 60  # per attempt; the SDK retries failed attempts twice
 STOP_REASONS = {"end_turn", "tool_use", "max_tokens", "refusal"}
+CACHE = {"type": "ephemeral"}
 
 
 def echoable(content: list) -> list:
@@ -18,6 +19,20 @@ def echoable(content: list) -> list:
         return content
     last = switches[-1]
     return [b for b in content[:last] if b.type == "text"] + content[last + 1 :]
+
+
+def with_cache_marker(history: list) -> list:
+    """A copy of the history whose last block is marked for caching, so each call reads the earlier conversation
+    from the cache. The last message is always one this adapter built (user text or tool results), so its blocks are
+    plain dicts. The stored history is never changed.
+    """
+    if not history:
+        return history
+    *earlier, last = history
+    content = last["content"]
+    blocks = [{"type": "text", "text": content}] if isinstance(content, str) else list(content)
+    blocks[-1] = {**blocks[-1], "cache_control": CACHE}
+    return [*earlier, {**last, "content": blocks}]
 
 
 class AnthropicProvider:
@@ -35,10 +50,10 @@ class AnthropicProvider:
             message = await self.client.beta.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
-                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+                system=[{"type": "text", "text": system, "cache_control": CACHE}],
                 tools=[{"name": t.name, "description": t.description, "input_schema": t.parameters} for t in tools],
                 tool_choice={"type": "auto"},
-                messages=history,
+                messages=with_cache_marker(history),  # consecutive user messages are sent as is; the API merges them
                 output_config={"effort": self.effort},
                 betas=[FALLBACK_BETA],
                 fallbacks="default",

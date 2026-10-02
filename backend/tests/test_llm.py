@@ -1,5 +1,6 @@
 import ast
 import asyncio
+import copy
 from pathlib import Path
 
 import anthropic
@@ -60,7 +61,17 @@ def test_request_carries_model_settings_tools_caching_and_fallback():
     assert request["tools"] == [{"name": TOOL.name, "description": TOOL.description, "input_schema": TOOL.parameters}]
     assert request["tool_choice"] == {"type": "auto"}
     assert request["fallbacks"] == "default" and request["betas"] == [FALLBACK_BETA]
-    assert request["messages"] == [{"role": "user", "content": "hello"}]
+    assert request["messages"] == [{"role": "user", "content": [{"type": "text", "text": "hello", "cache_control": {"type": "ephemeral"}}]}]
+
+
+def test_only_a_copy_of_the_last_message_is_marked_for_caching():
+    results = {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "toolu_1", "content": "{}", "is_error": False}]}
+    history = [{"role": "user", "content": "hi"}, {"role": "assistant", "content": [{"type": "text", "text": "Hello."}]}, results]
+    stored = copy.deepcopy(history)
+    _, request = complete(message([{"type": "text", "text": "ok"}]), history=history)
+    assert request["messages"][:2] == stored[:2]
+    assert request["messages"][2]["content"] == [{**results["content"][0], "cache_control": {"type": "ephemeral"}}]
+    assert history == stored  # the stored history is unchanged
 
 
 def test_response_is_parsed_into_llm_response():

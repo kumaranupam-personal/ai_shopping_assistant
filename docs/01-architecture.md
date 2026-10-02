@@ -14,7 +14,7 @@
 
 1. The frontend sends the user message to the chat endpoint with its session ID.
 2. The API server loads the session and runs one agent turn, which alternates model calls and tool calls (see `04-agent.md`).
-3. Tools query the catalog through the search service. The display tool sends product cards to the client over the open stream, and the model's text is streamed after each model call.
+3. Tools query the catalog through the search service. The display tool sends product cards and the reply that comes with them to the client over the open stream, and any other model text is streamed after each model call.
 4. The turn is committed to the session when it succeeds and rolled back otherwise, and the stream closes.
 
 ## Grounding principle

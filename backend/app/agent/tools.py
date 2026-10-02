@@ -80,7 +80,7 @@ def compare_products(product_ids: list[str]) -> dict:
     }
 
 
-def show_products(product_ids: list[str], headline: str, suggestions: list[str] | None = None) -> dict:
+def show_products(product_ids: list[str], headline: str, reply: str, suggestions: list[str] | None = None) -> dict:
     ctx = current.get()
     found = fetch_products(ctx.index.conn, product_ids)
     shown = list(dict.fromkeys(i for i in product_ids if i in found))[:8]
@@ -89,7 +89,11 @@ def show_products(product_ids: list[str], headline: str, suggestions: list[str] 
     if shown:
         cards = [build_card(found[i]) for i in shown]
         ctx.emit("products", {"headline": headline, "suggestions": suggestions, "products": cards})
-        ctx.turn.transcript.append({"type": "products", "headline": headline, "suggestions": suggestions, "product_ids": shown})
+        ctx.emit("text", {"text": reply})
+        ctx.turn.transcript += [
+            {"type": "products", "headline": headline, "suggestions": suggestions, "product_ids": shown},
+            {"type": "assistant", "text": reply},
+        ]
         ctx.turn.shown_ids = shown
     return {
         "shown": [{"position": n, "id": i, "title": found[i]["title"]} for n, i in enumerate(shown, start=1)],
@@ -173,14 +177,16 @@ TOOL_SPECS = [
     ),
     ToolSpec(
         "show_products",
-        "Display products to the user as cards, best first. Only use IDs returned by other tools.",
+        "Display products to the user as cards, best first, with your reply. Only use IDs returned by other tools. "
+        "The turn ends once the cards are shown, so put everything you want to say in reply.",
         _object(
             {
                 "product_ids": {**_ID_LIST, "minItems": 1, "maxItems": 8},
                 "headline": {"type": "string", "maxLength": 80},
                 "suggestions": {"type": "array", "maxItems": 4, "items": {"type": "string", "maxLength": 30}},
+                "reply": {"type": "string", "description": "Your message to the user, shown after the cards."},
             },
-            ["product_ids", "headline"],
+            ["product_ids", "headline", "reply"],
         ),
     ),
 ]

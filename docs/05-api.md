@@ -55,7 +55,7 @@ Each event is sent as `event: <type>` followed by `data: <json>`. `status`, `pro
 
 - `status`: `{"text": "<status text>"}`, sent before a tool runs.
 - `products`: `{"headline": "...", "suggestions": ["..."], "products": [<card>, ...]}`, sent by `show_products`.
-- `text`: `{"text": "<assistant text block>"}`, one event per text block the model produces.
+- `text`: `{"text": "<assistant text>"}`, one event per text block the model produces, plus one for each `reply` that `show_products` sends (see `04-agent.md`).
 - `done`: `{"turn": <turn_count>}`.
 - `error`: `{"code": "<code>", "message": "<text>"}`.
 

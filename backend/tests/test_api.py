@@ -18,11 +18,7 @@ from tests.test_ingest import write_lines
 from tests.test_loop import SEARCH, SHOW, ScriptedProvider, reply
 
 MAX_TURNS = 2
-HAPPY_TURN = (
-    reply("Let me look.", stop="tool_use", calls=[SEARCH]),
-    reply(stop="tool_use", calls=[SHOW]),
-    reply("Here are 2 warm jackets."),
-)
+HAPPY_TURN = (reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
 
 
 @pytest.fixture
