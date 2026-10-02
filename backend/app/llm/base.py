@@ -31,7 +31,7 @@ class ToolCall:
 @dataclass(frozen=True)
 class ToolResult:
     call_id: str
-    content: str  # JSON string
+    content: str  # the tool's JSON string, or a one-line error message when is_error
     is_error: bool = False
 
 

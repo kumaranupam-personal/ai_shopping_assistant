@@ -53,8 +53,8 @@ class Recorder:
     """Wraps the provider to see each turn's tool calls and tool results, through the neutral types only."""
 
     def __init__(self, provider: LLMProvider):
-        self.provider, self.name = provider, provider.name
-        self.tools: list[str] = []
+        self.provider, self.name, self.model = provider, provider.name, provider.model
+        self.tools: list[str] = []  # both lists only grow; a turn's share is the slice it added
         self.results: list[ToolResult] = []
 
     async def complete(self, system, history, tools):
@@ -86,7 +86,7 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
     user_numbers: set[float] = set()
     turns, cache_reads, error, last = [], [], None, TurnResult()
     for text in case.turns:
-        events, recorder.tools = [], []
+        events, first_tool = [], len(recorder.tools)
         user_numbers |= user_amounts(text)
         started = time.perf_counter()
         try:
@@ -97,7 +97,7 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
         shown = [d for e, d in events if e == "products"]
         last = TurnResult(
             reply="\n".join(d["text"] for e, d in events if e == "text"),
-            tools=recorder.tools,
+            tools=recorder.tools[first_tool:],
             shown=[card["id"] for card in shown[-1]["products"]] if shown else None,
         )
         tool_ids, tool_prices = tool_facts([r.content for r in recorder.results])  # the whole conversation so far

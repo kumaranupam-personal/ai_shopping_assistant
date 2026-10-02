@@ -26,7 +26,7 @@ The agent is independent of any one provider. It calls the interface defined her
 
 ### ToolResult
 
-- `call_id`, `content` (a JSON string) and `is_error` (boolean).
+- `call_id`, `content` and `is_error` (boolean). `content` is the tool's JSON string, or a one-line error message when `is_error` is true, so adapters must not assume it parses as JSON.
 
 ### LLMResponse
 
