@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+/* `dark:` utilities follow the resolved theme on <html data-theme>, not just the system setting. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Design tokens (docs/06-frontend.md, Visual design): zinc neutrals, one indigo accent, semantic colors. */
+:root {
+  --page: var(--color-zinc-100);
+  --surface: var(--color-white);
+  --surface-muted: var(--color-zinc-50);
+  --line: var(--color-zinc-200);
+  --line-strong: var(--color-zinc-300);
+  --fg: var(--color-zinc-900);
+  --fg-muted: var(--color-zinc-500);
+  --accent: var(--color-indigo-600);
+  --accent-fg: var(--color-white);
+  --accent-soft: var(--color-indigo-50);
+  --accent-soft-fg: var(--color-indigo-900);
+  --success: var(--color-green-700);
+  --danger: var(--color-red-600);
+  --danger-soft: var(--color-red-50);
+  --star: var(--color-amber-500);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --page: var(--color-zinc-950);
+  --surface: var(--color-zinc-900);
+  --surface-muted: var(--color-zinc-800);
+  --line: var(--color-zinc-800);
+  --line-strong: var(--color-zinc-700);
+  --fg: var(--color-zinc-100);
+  --fg-muted: var(--color-zinc-400);
+  --accent: var(--color-indigo-400);
+  --accent-fg: var(--color-zinc-950);
+  --accent-soft: color-mix(in oklab, var(--color-indigo-400) 18%, transparent);
+  --accent-soft-fg: var(--color-indigo-100);
+  --success: var(--color-green-400);
+  --danger: var(--color-red-400);
+  --danger-soft: color-mix(in oklab, var(--color-red-400) 15%, transparent);
+  --star: var(--color-amber-400);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-fg: var(--accent-soft-fg);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-star: var(--star);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply overflow-hidden bg-page font-sans text-base text-fg antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
