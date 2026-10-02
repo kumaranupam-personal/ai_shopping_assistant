@@ -45,6 +45,8 @@ A protocol with:
 - `user_message(text)`: returns a native user message.
 - `tool_results_message(results)`: returns one native message carrying all results from a single assistant turn, in call order.
 
+A history can hold a tool-results message followed directly by a user message, when a turn ended right after `show_products` (see `04-agent.md`). Every adapter sends such a history in a form its provider accepts.
+
 ### Errors
 
 - `LLMUpstreamError`: the provider failed after the adapter's retries.
@@ -71,8 +73,9 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 - The default model is `claude-opus-5-5`.
 - `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
 - Tool choice is `auto`, and tools are sent in the same order on every call.
-- The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`.
-- `native_message` is the full assistant content, including thinking and tool-use blocks, exactly as returned. `text` holds only the text blocks.
+- The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`. The last content block of the last history message gets the same marker, so each call reads the earlier conversation from the cache. The marker goes on a copy of that message, so the stored history is unchanged, and a string content becomes a single text block in the copy.
+- Consecutive user messages, such as a tool-results message followed by the next user message, are sent as they are, because the API combines consecutive messages from the same role.
+- `native_message` is the full assistant content, including thinking and tool-use blocks, as returned. The one exception is a response in which the refusal fallback below switched models: the switch markers are dropped, and of the blocks before the last switch only the text blocks are kept, because only the final model's other blocks can be sent back. `text` holds only the text blocks.
 - Stop reasons `end_turn`, `tool_use`, `max_tokens` and `refusal` map to the same names. Any other stop reason maps to `end_turn`.
 - `tool_results_message` puts every `tool_result` block for a turn into a single user message.
 - Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.

@@ -3,17 +3,6 @@ from pydantic import ValidationError
 
 from app.config import BACKEND_DIR, Settings
 
-ENV_VARS = (
-    "LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL", "LLM_EFFORT", "LLM_MAX_TOKENS", "DATA_DIR",
-    "SESSION_TTL_MINUTES", "MAX_TURNS_PER_SESSION", "CORS_ORIGINS", "PORT",
-)
-
-
-@pytest.fixture(autouse=True)
-def clean_env(monkeypatch):
-    for name in ENV_VARS:
-        monkeypatch.delenv(name, raising=False)
-
 
 def test_defaults_apply_when_nothing_is_set():
     s = Settings(_env_file=None)

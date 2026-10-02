@@ -5,24 +5,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agent.loop import MAX_MODEL_CALLS
-from app.catalog.cards import build_card
+from app.catalog.cards import build_card, featured_cards
 from app.catalog.embed import embed
 from app.catalog.ingest import ingest
+from app.catalog.store import open_catalog
 from app.config import Settings
 from app.llm.base import LLMUpstreamError
 from app.main import create_app, stream_turn
 from app.search.index import load_index
-from tests.conftest import CATALOG
+from tests.conftest import CATALOG, jacket
 from tests.test_embed import FakeModel
 from tests.test_ingest import write_lines
 from tests.test_loop import SEARCH, SHOW, ScriptedProvider, reply
 
 MAX_TURNS = 2
-HAPPY_TURN = (
-    reply("Let me look.", stop="tool_use", calls=[SEARCH]),
-    reply(stop="tool_use", calls=[SHOW]),
-    reply("Here are 2 warm jackets."),
-)
+HAPPY_TURN = (reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
 
 
 @pytest.fixture
@@ -176,6 +173,24 @@ def test_product_details_include_the_card(make_client):
     ]
     response = client.get("/api/products/NOPE")
     assert (response.status_code, response.json()["error"]["code"]) == (404, "product_not_found")
+
+
+def test_featured_picks_the_best_rated_trusted_product_per_category(make_client):
+    body = make_client().get("/api/featured").json()
+    # J4 is the only in-stock jacket with 100+ reviews, and no phone qualifies, so phones are skipped.
+    assert (body["headline"], body["suggestions"]) == ("Popular picks", [])
+    assert [card["id"] for card in body["products"]] == ["J4"]
+
+
+def test_featured_ties_go_to_more_reviews_then_the_lower_id(tmp_path):
+    catalog = [
+        jacket("A2", "X", 1000, 4.5, 200, 1, ["M"], ["black"]),
+        jacket("A1", "X", 1000, 4.5, 200, 1, ["M"], ["black"]),
+        jacket("B1", "X", 1000, 4.5, 150, 1, ["M"], ["black"]),
+        jacket("C1", "X", 1000, 4.9, 500, 0, ["M"], ["black"]),  # best rated, but out of stock
+    ]
+    ingest(write_lines(tmp_path / "p.jsonl", catalog), tmp_path)
+    assert [card["id"] for card in featured_cards(open_catalog(tmp_path))] == ["A1"]
 
 
 def test_health_reports_the_product_count(make_client):

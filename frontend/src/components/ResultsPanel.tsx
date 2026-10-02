@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { ResultSet } from "../api";
 import ProductGrid from "./ProductGrid";
 import SuggestionChips from "./SuggestionChips";
@@ -9,10 +11,14 @@ export type ResultsProps = {
   turnRunning: boolean;
 };
 
-/** Headline and chips stay pinned while the grid scrolls. Used in the wide layout and inside the results sheet. */
-export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, turnRunning }: ResultsProps) {
+/**
+ * Headline and chips stay pinned while the grid scrolls. Used in the wide layout and inside the results sheet.
+ * `intro` scrolls away above the headline, so the panel never needs a second scroll area.
+ */
+export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, turnRunning, intro }: ResultsProps & { intro?: ReactNode }) {
   return (
     <div className="h-full overflow-y-auto">
+      {intro}
       <div className="sticky top-0 z-10 flex flex-col gap-2 border-b border-line bg-surface-muted px-4 py-3">
         <h2 className="text-lg font-semibold">{resultSet.headline}</h2>
         <SuggestionChips suggestions={resultSet.suggestions} onPick={onSuggestion} disabled={turnRunning} />

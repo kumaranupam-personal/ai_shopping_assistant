@@ -63,23 +63,25 @@ def test_search_parses_numbers_and_reports_applied_filters():
 
 def test_show_products_drops_unknown_ids_keeps_order_and_records(ctx):
     context, events = ctx
-    result = call("show_products", product_ids=["J3", "NOPE", "J1"], headline="Warm jackets", suggestions=["Cheaper"])
+    result = call("show_products", product_ids=["J3", "NOPE", "J1"], headline="Warm jackets", reply="Two picks.", suggestions=["Cheaper"])
     assert result == {
         "shown": [{"position": 1, "id": "J3", "title": VALID["title"]}, {"position": 2, "id": "J1", "title": VALID["title"]}],
         "not_found": ["NOPE"],
     }
-    [(event, data)] = events
+    (event, data), reply_event = events  # the reply follows the cards
     assert event == "products" and data["headline"] == "Warm jackets" and data["suggestions"] == ["Cheaper"]
+    assert reply_event == ("text", {"text": "Two picks."})
     assert [card["id"] for card in data["products"]] == ["J3", "J1"]
     assert context.turn.shown_ids == ["J3", "J1"]
     assert context.turn.transcript == [
-        {"type": "products", "headline": "Warm jackets", "suggestions": ["Cheaper"], "product_ids": ["J3", "J1"]}
+        {"type": "products", "headline": "Warm jackets", "suggestions": ["Cheaper"], "product_ids": ["J3", "J1"]},
+        {"type": "assistant", "text": "Two picks."},
     ]
 
 
 def test_show_products_with_no_known_ids_records_nothing(ctx):
     context, events = ctx
-    assert call("show_products", product_ids=["NOPE"], headline="x") == {"shown": [], "not_found": ["NOPE"]}
+    assert call("show_products", product_ids=["NOPE"], headline="x", reply="r") == {"shown": [], "not_found": ["NOPE"]}
     assert events == [] and context.turn.transcript == [] and context.turn.shown_ids is None
 
 
@@ -115,7 +117,7 @@ def test_failures_become_error_results(name, arguments):
         ("search_products", {"query": "x", "category": "kitchen_appliances"}, "Searching kitchen appliances"),
         ("get_product_details", {"product_id": "J1"}, "Looking up product details"),
         ("compare_products", {"product_ids": ["J1", "J3"]}, "Comparing 2 products"),
-        ("show_products", {"product_ids": ["J1"], "headline": "x"}, None),
+        ("show_products", {"product_ids": ["J1"], "headline": "x", "reply": "r"}, None),
         # Badly typed arguments are skipped, never raised: the status line runs before the tool validates anything.
         ("search_products", {"query": "x", "category": 5, "price_max": "8k", "price_min": True, "size": ["L"]}, "Searching all products"),
         ("search_products", {"query": "x", "price_max": 7999.6}, "Searching all products under ₹8,000"),
@@ -183,10 +185,10 @@ def test_show_products_caps_ids_headline_and_suggestions(ten_product_index):
     token = current.set(context)
     try:
         ids_in = [f"X{n:02d}" for n in range(1, 11)]
-        result = call("show_products", product_ids=ids_in, headline="h" * 100, suggestions=["s" * 40] * 6)
+        result = call("show_products", product_ids=ids_in, headline="h" * 100, reply="r", suggestions=["s" * 40] * 6)
     finally:
         current.reset(token)
-    [(_, data)] = events
+    (_, data), _ = events
     assert [s["id"] for s in result["shown"]] == ids_in[:8] and [c["id"] for c in data["products"]] == ids_in[:8]
     assert data["headline"] == "h" * 80 and data["suggestions"] == ["s" * 30] * 4
     assert context.turn.transcript[0]["product_ids"] == ids_in[:8] and context.turn.shown_ids == ids_in[:8]

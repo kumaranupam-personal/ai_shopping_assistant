@@ -30,6 +30,14 @@ Restores a session's conversation after a page reload.
 - Response 422: `invalid_request`, when the body is malformed or the message is empty or too long.
 - Response 429: `session_full`.
 
+### GET /api/featured
+
+A fixed selection of products for the frontend to show before a conversation has any results.
+
+- Response 200: `{"headline": "Popular picks", "suggestions": [], "products": [<card>, ...]}`, the same shape as a `products` event.
+- One product per category, in the order of the categories in `02-catalog.md`: the in-stock product with the highest rating among those with at least 100 reviews. Ties go to more reviews, then to the lower ID. A category with no such product is skipped.
+- The list is built once at startup. It belongs to no session, so it never enters a transcript or a shown list.
+
 ### GET /api/products/{id}
 
 - Response 200: the full product record from `02-catalog.md`, plus `card` (the product card shape below) and `details`: every attribute as `{"label", "value"}` in taxonomy order, formatted by the display rules in `02-catalog.md`.
@@ -47,7 +55,7 @@ Each event is sent as `event: <type>` followed by `data: <json>`. `status`, `pro
 
 - `status`: `{"text": "<status text>"}`, sent before a tool runs.
 - `products`: `{"headline": "...", "suggestions": ["..."], "products": [<card>, ...]}`, sent by `show_products`.
-- `text`: `{"text": "<assistant text block>"}`, one event per text block the model produces.
+- `text`: `{"text": "<assistant text>"}`, one event per text block the model produces, plus one for each `reply` that `show_products` sends (see `04-agent.md`).
 - `done`: `{"turn": <turn_count>}`.
 - `error`: `{"code": "<code>", "message": "<text>"}`.
 

@@ -39,7 +39,7 @@ def reply(*text, stop="end_turn", calls=()):
 
 
 SEARCH = ToolCall("c1", "search_products", {"query": "warm jacket", "category": "jackets", "price_max": 3000})
-SHOW = ToolCall("c2", "show_products", {"product_ids": ["J3", "J1"], "headline": "Warm jackets"})
+SHOW = ToolCall("c2", "show_products", {"product_ids": ["J3", "J1"], "headline": "Warm jackets", "reply": "Here are 2 warm jackets."})
 
 
 @pytest.fixture
@@ -56,17 +56,14 @@ def run(provider, index, store, session, text="warm jacket under 3k"):
 
 def test_tools_run_in_order_and_the_turn_commits(index, store):
     session = store.create("scripted")
-    provider = ScriptedProvider(
-        reply("Let me look.", stop="tool_use", calls=[SEARCH]),
-        reply(stop="tool_use", calls=[SHOW]),
-        reply("Here are 2 warm jackets."),
-    )
+    provider = ScriptedProvider(reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
     record, events = run(provider, index, store, session)
 
     assert [e for e, _ in events] == ["text", "status", "products", "text"]
     assert events[1][1] == {"text": "Searching jackets under ₹3,000"}  # status before the tool, none for show_products
     assert session.history[0] == {"user": "warm jacket under 3k"}
-    assert [list(m) for m in session.history] == [["user"], ["assistant", "calls"], ["results"], ["assistant", "calls"], ["results"], ["assistant", "calls"]]
+    # Showing the cards ends the turn: no third model call, and the cards' tool result closes the history.
+    assert [list(m) for m in session.history] == [["user"], ["assistant", "calls"], ["results"], ["assistant", "calls"], ["results"]]
     assert session.history[2]["results"][0][1]["total_matches"] == 2  # search ran against the catalog
     assert session.transcript == [
         {"type": "user", "text": "warm jacket under 3k"},
@@ -75,10 +72,18 @@ def test_tools_run_in_order_and_the_turn_commits(index, store):
         {"type": "assistant", "text": "Here are 2 warm jackets."},
     ]
     assert (session.shown_ids, session.turn_count, session.busy) == (["J3", "J1"], 1, False)
-    assert record.turn == 1 and [usage for _, usage in record.calls] == [Usage(100, 20, 80)] * 3
+    assert record.turn == 1 and [usage for _, usage in record.calls] == [Usage(100, 20, 80)] * 2
     # Every call gets the same static prompt and tool list, so providers can cache them.
     assert {c["system"] for c in provider.calls} == {SYSTEM_PROMPT}
     assert all(c["tools"] == TOOL_SPECS for c in provider.calls)
+
+
+def test_a_show_that_displays_nothing_lets_the_model_continue(index, store):
+    session = store.create("scripted")
+    unknown = ToolCall("c3", "show_products", {"product_ids": ["NOPE"], "headline": "x", "reply": "Here they are."})
+    provider = ScriptedProvider(reply(stop="tool_use", calls=[unknown]), reply("Sorry, I couldn't find those."))
+    _, events = run(provider, index, store, session)
+    assert len(provider.calls) == 2 and events == [("text", {"text": "Sorry, I couldn't find those."})]
 
 
 def test_refusal_ends_the_turn_with_a_polite_message(index, store):

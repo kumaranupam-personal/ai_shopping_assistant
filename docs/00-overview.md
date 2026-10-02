@@ -11,7 +11,7 @@ A web app where a user describes what they want to buy in natural language, conv
 - Ask a clarifying question only when a request is too vague to search.
 - Show results as product cards rendered from catalog data, never from model-written text.
 - Understand and reply in Hinglish as well as English.
-- Stay independent of any one LLM provider. The provider is chosen by configuration, and Anthropic is the first.
+- Stay independent of any one LLM provider, with the provider chosen by configuration.
 - Be measurable: an eval suite reports pass rate, grounding violations and latency.
 
 ## Non-goals

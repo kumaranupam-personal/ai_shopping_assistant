@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.agent.loop import TurnLimitError, run_turn
 from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
-from app.catalog.cards import attribute_details, build_card
+from app.catalog.cards import attribute_details, build_card, featured_cards
 from app.catalog.store import fetch_products
 from app.config import Settings
 from app.llm.base import LLMProvider, LLMUpstreamError
@@ -104,6 +104,7 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         app.state.provider = provider or build_provider(settings)
         app.state.index = index or load_index(settings.data_dir)
         app.state.store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
+        app.state.featured = {"headline": "Popular picks", "suggestions": [], "products": featured_cards(app.state.index.conn)}
         yield
 
     # Endpoints are async so all session-store access stays on the event loop thread.
@@ -148,6 +149,10 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         state.store.check_can_start(body.session_id)  # unknown, busy and full sessions get an HTTP error
         stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message)
         return StreamingResponse(stream, media_type="text/event-stream")
+
+    @app.get("/api/featured")
+    async def featured(request: Request) -> dict:
+        return request.app.state.featured
 
     @app.get("/api/products/{product_id}")
     async def product_details(product_id: str, request: Request):

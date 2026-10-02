@@ -12,7 +12,7 @@ const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
 export default function ThemeSwitch() {
   const [theme, setTheme] = useTheme();
   return (
-    <div role="group" aria-label="Theme" className="flex rounded-full border border-line bg-surface-muted p-0.5">
+    <div role="group" aria-label="Theme" className="flex rounded-full border border-line bg-surface-muted p-1">
       {OPTIONS.map(({ value, label, Icon }) => (
         <button
           key={value}

@@ -14,7 +14,7 @@ export default function Header({ onNewChat }: { onNewChat: () => void }) {
         <button
           type="button"
           onClick={onNewChat}
-          className="flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-medium text-accent-fg transition-opacity duration-150 ease-out hover:opacity-90"
+          className="flex h-8 items-center gap-2 rounded-lg bg-accent px-3 text-sm font-medium text-accent-fg transition-opacity duration-150 ease-out hover:opacity-90"
         >
           <Plus aria-hidden className="size-4" />
           <span className="max-[479px]:sr-only">New chat</span>

@@ -8,7 +8,7 @@ const EXAMPLES = [
   "Waterproof trekking shoes in UK 9",
   "Shaadi ke liye silk kurta, 5k tak",
 ];
-const MAX_HEIGHT_PX = 6 * 24 + 16; // 6 lines of 24 px plus vertical padding
+const MAX_HEIGHT_PX = 6 * 24 + 16; // 6 lines of 24 px plus the textarea's 8 px top and bottom padding
 
 type Props = {
   draft: string;
@@ -58,7 +58,7 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
           event.preventDefault();
           sendDraft();
         }}
-        className="flex items-end gap-2 rounded-xl border border-line bg-surface py-1 pr-1 pl-3 focus-within:border-accent"
+        className="flex items-end gap-2 rounded-xl border border-line bg-surface p-1 pl-3 focus-within:border-accent"
       >
         <textarea
           ref={input}
@@ -73,14 +73,14 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
           }}
           placeholder="Describe what you're looking for"
           aria-label="Message"
-          className="min-w-0 flex-1 resize-none bg-transparent py-1.5 leading-6 outline-none placeholder:text-fg-muted focus-visible:outline-none"
+          className="min-w-0 flex-1 resize-none bg-transparent py-2 leading-6 outline-none placeholder:text-fg-muted focus-visible:outline-none"
         />
         <button
           type="submit"
           aria-label="Send"
           aria-disabled={!canSend || !text}
           className={clsx(
-            "grid size-9 shrink-0 place-items-center rounded-lg transition-colors duration-150 ease-out",
+            "grid size-10 shrink-0 place-items-center rounded-lg transition-colors duration-150 ease-out",
             canSend && text ? "bg-accent text-accent-fg" : "bg-surface-muted text-fg-muted",
           )}
         >

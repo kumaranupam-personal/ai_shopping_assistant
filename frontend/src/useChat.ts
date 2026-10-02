@@ -8,7 +8,8 @@ export type Message =
   | { kind: "marker"; resultSet: number } // "Showed {n} products: {headline}"
   | { kind: "error"; text: string; retryText: string };
 
-export type ChatState = {
+type ChatState = {
+  started: boolean; // the page-load restore or create has finished, successfully or not
   ready: boolean; // a session exists
   messages: Message[];
   resultSets: ResultSet[];
@@ -37,6 +38,7 @@ const BUSY_RETRIES = 3;
 const BUSY_RETRY_MS = 1000;
 
 const initialState: ChatState = {
+  started: false,
   ready: false,
   messages: [],
   resultSets: [],
@@ -62,14 +64,14 @@ function addResultSet(state: ChatState, resultSet: ResultSet): ChatState {
 function reducer(state: ChatState, action: Action): ChatState {
   switch (action.type) {
     case "reset":
-      return { ...initialState, ready: action.ready ?? true, notice: action.notice ?? null, draft: action.draft ?? "" };
+      return { ...initialState, started: true, ready: action.ready ?? true, notice: action.notice ?? null, draft: action.draft ?? "" };
     case "restored":
       return action.entries.reduce<ChatState>(
         (s, entry) =>
           entry.type === "products"
             ? addResultSet(s, { headline: entry.headline, suggestions: entry.suggestions, products: entry.products })
             : { ...s, messages: [...s.messages, { kind: entry.type, text: entry.text }] },
-        { ...initialState, ready: true, draft: action.draft },
+        { ...initialState, started: true, ready: true, draft: action.draft },
       );
     case "send": {
       const messages = action.addUserMessage

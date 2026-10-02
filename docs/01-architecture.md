@@ -14,7 +14,7 @@
 
 1. The frontend sends the user message to the chat endpoint with its session ID.
 2. The API server loads the session and runs one agent turn, which alternates model calls and tool calls (see `04-agent.md`).
-3. Tools query the catalog through the search service. The display tool sends product cards to the client over the open stream, and the model's text is streamed after each model call.
+3. Tools query the catalog through the search service. The display tool sends product cards and the reply that comes with them to the client over the open stream, and any other model text is streamed after each model call.
 4. The turn is committed to the session when it succeeds and rolled back otherwise, and the stream closes.
 
 ## Grounding principle
@@ -26,11 +26,11 @@ The model chooses which products to show and writes prose about them. It never s
 - Python 3.12, managed with `uv`.
 - FastAPI and Uvicorn for the API server. Server-sent events use FastAPI's built-in `StreamingResponse`, with no extra library.
 - Pydantic, which FastAPI already depends on, for product validation during ingestion, and `pydantic-settings` for reading configuration.
-- Provider SDKs, used only inside their adapters. The Anthropic Python SDK is the first.
+- The Python SDK of each provider in `09-llm-providers.md`, used only inside that provider's adapter.
 - SQLite from the Python standard library, with FTS5 for keyword search.
 - `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
-- `pytest` with `pytest-asyncio` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
+- `pytest` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
 - Node 24 LTS for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
 
 ## Repository layout
@@ -51,6 +51,8 @@ ai_shopping_assistant/
         base.py              provider interface and shared types
         registry.py          builds the adapter named by LLM_PROVIDER
         anthropic_provider.py
+        openai_provider.py
+        gemini_provider.py
       agent/
         loop.py              runs one agent turn
         prompt.py            system prompt text
@@ -80,6 +82,7 @@ ai_shopping_assistant/
     package.json
     src/
     tests/                   Playwright browser tests
+    scripts/                 Lighthouse check
 ```
 
 ## Configuration
