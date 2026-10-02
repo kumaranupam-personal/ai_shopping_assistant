@@ -49,6 +49,10 @@ def test_prices_stay_in_the_category_and_spec_ranges(products):
         assert low <= spec_low <= p["price"] <= spec_high <= high
 
 
+def test_products_have_no_image(products):
+    assert not any("image_url" in p for p in products)  # the demo has no real product imagery
+
+
 def test_plausibility_rules_hold(products):
     for p in products:
         for conditions, constraints in TEMPLATES[p["category"]]["rules"]:

@@ -45,7 +45,7 @@ export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id:
       aria-label={cardLabel(card)}
       className="relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface text-left transition-[border-color,box-shadow] duration-150 ease-out hover:border-line-strong hover:shadow-md"
     >
-      <ProductImage src={card.image_url} />
+      <ProductImage card={card} />
       <div className="flex min-w-0 flex-1 flex-col gap-1 p-3">
         <span className="truncate text-xs text-fg-muted">{card.brand}</span>
         <span className="line-clamp-2 text-sm font-medium">{card.title}</span>

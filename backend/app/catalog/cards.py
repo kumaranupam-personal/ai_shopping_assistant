@@ -5,7 +5,7 @@ import sqlite3
 from app.catalog.store import product_from_row
 from app.catalog.taxonomy import CATEGORIES, attribute_label, format_attribute_value
 
-CARD_FIELDS = ("id", "title", "brand", "price", "mrp", "rating", "review_count", "image_url")
+CARD_FIELDS = ("id", "title", "brand", "category", "colors", "price", "mrp", "rating", "review_count", "image_url")
 FEATURED_MIN_REVIEWS = 100
 
 

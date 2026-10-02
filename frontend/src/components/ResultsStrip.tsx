@@ -27,7 +27,7 @@ export default function ResultsStrip(props: ResultsProps) {
             aria-label={cardLabel(card)}
             className={clsx(STRIP_CARD, "snap-start text-left")}
           >
-            <ProductImage src={card.image_url} className="size-16 shrink-0 rounded-lg" />
+            <ProductImage card={card} compact className="size-16 shrink-0 rounded-lg" />
             <span className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-sm font-medium">{card.title}</span>
               <span className="text-sm font-semibold tabular-nums">{formatRupees(card.price)}</span>

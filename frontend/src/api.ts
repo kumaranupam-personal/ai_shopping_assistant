@@ -6,13 +6,15 @@ export type Card = {
   id: string;
   title: string;
   brand: string;
+  category: string;
+  colors: string[];
   price: number;
   mrp: number;
   discount_pct: number;
   rating: number;
   review_count: number;
   in_stock: boolean;
-  image_url: string;
+  image_url: string | null;
   highlights: { label: string; value: string }[];
 };
 

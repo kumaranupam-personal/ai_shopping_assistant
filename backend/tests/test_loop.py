@@ -82,12 +82,19 @@ def test_tools_run_in_order_and_the_turn_commits(index, store):
     assert all(c["tools"] == TOOL_SPECS for c in provider.calls)
 
 
-def test_a_show_that_displays_nothing_lets_the_model_continue(index, store):
+UNKNOWN = ToolCall("c3", "show_products", {"product_ids": ["NOPE"], "headline": "x", "reply": "Here they are."})
+
+
+@pytest.mark.parametrize(
+    "earlier",
+    [[], [reply(stop="tool_use", calls=[SEARCH, SHOW])]],  # cards shown by an earlier response don't end this one
+    ids=["first response", "after cards shown alongside a search"],
+)
+def test_a_show_that_displays_nothing_lets_the_model_continue(index, store, earlier):
     session = store.create("scripted")
-    unknown = ToolCall("c3", "show_products", {"product_ids": ["NOPE"], "headline": "x", "reply": "Here they are."})
-    provider = ScriptedProvider(reply(stop="tool_use", calls=[unknown]), reply("Sorry, I couldn't find those."))
+    provider = ScriptedProvider(*earlier, reply(stop="tool_use", calls=[UNKNOWN]), reply("Sorry, I couldn't find those."))
     _, events = run(provider, index, store, session)
-    assert len(provider.calls) == 2 and events == [("text", {"text": "Sorry, I couldn't find those."})]
+    assert len(provider.calls) == len(earlier) + 2 and events[-1] == ("text", {"text": "Sorry, I couldn't find those."})
 
 
 def test_refusal_ends_the_turn_with_a_polite_message(index, store):

@@ -3,7 +3,6 @@
 import json
 import random
 from pathlib import Path
-from urllib.parse import quote_plus
 
 from app.catalog.taxonomy import CATEGORIES, COLORS, Attribute, Category, format_attribute_value
 from demo.templates import TEMPLATES
@@ -71,7 +70,6 @@ def make_product(category: Category, number: int, rng: random.Random) -> dict:
     discount = rng.randint(5, 60) if rng.random() < 0.7 else 0
     rating = round(min(5.0, max(1.0, rng.gauss(4.1, 0.35))), 1)
     sizes = sorted(rng.sample(category.sizes, rng.randint(2, len(category.sizes))), key=category.sizes.index) if category.sizes else []
-    label = f"{category.name} {attrs.get('type', '')}".replace("_", " ").strip().title()
 
     return {
         "id": f"{template['prefix']}-{number:05d}",
@@ -87,8 +85,7 @@ def make_product(category: Category, number: int, rng: random.Random) -> dict:
         "colors": rng.sample(COLORS, rng.randint(1, 4)),
         "attributes": attrs,
         "tags": _tags(template, attrs),
-        "description": description,
-        "image_url": f"https://placehold.co/400x400?text={quote_plus(label)}",
+        "description": description,  # no image_url: the demo has no real product imagery
     }
 
 

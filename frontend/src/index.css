@@ -64,6 +64,13 @@
   --color-star: var(--star);
 }
 
+/* Product tiles: a wash of the product's color over the surface, and its icon in a deeper shade toward the text color,
+   so each of the catalog's colors adapts to both themes. --swatch is a CSS color name, set per tile. */
+.product-tile {
+  background: color-mix(in oklab, var(--swatch) 18%, var(--surface));
+  color: color-mix(in oklab, var(--swatch) 55%, var(--fg));
+}
+
 @keyframes enter {
   from {
     opacity: 0;

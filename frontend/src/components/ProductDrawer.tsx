@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ApiError, getProduct, type Product } from "../api";
 import Modal, { CloseButton } from "./Modal";
 import { OutOfStock, Price, Rating } from "./ProductCard";
-import ProductImage from "./ProductImage";
+import ProductImage, { ColorDot } from "./ProductImage";
 
 type Load = { status: "loading" } | { status: "loaded"; product: Product } | { status: "failed"; message: string };
 
@@ -44,7 +44,7 @@ function Details({ product }: { product: Product }) {
   const { card } = product;
   return (
     <div className="flex flex-col gap-4">
-      <ProductImage src={card.image_url} className="rounded-xl" />
+      <ProductImage card={card} className="rounded-xl" />
       <div className="flex flex-col gap-1">
         <span className="text-sm text-fg-muted">{product.brand}</span>
         <h2 className="text-lg font-semibold">{product.title}</h2>
@@ -73,7 +73,7 @@ function Details({ product }: { product: Product }) {
       <Section title="Colors">
         {product.colors.map((color) => (
           <span key={color} className="flex items-center gap-2 text-sm capitalize">
-            <span aria-hidden className="size-4 rounded-full border border-line-strong" style={{ backgroundColor: color }} />
+            <ColorDot color={color} className="size-4" />
             {color}
           </span>
         ))}
