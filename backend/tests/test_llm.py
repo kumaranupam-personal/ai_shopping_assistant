@@ -14,10 +14,10 @@ from google.genai import types as genai
 from openai.types.responses import Response
 
 from app.config import Settings
-from app.llm.anthropic_provider import FALLBACK_BETA, REQUEST_TIMEOUT_SECONDS, AnthropicProvider
+from app.llm.anthropic_provider import FALLBACK_BETA, AnthropicProvider
 from app.llm.gemini_provider import HTTP_OPTIONS, GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
-from app.llm.base import LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import REQUEST_TIMEOUT_SECONDS, LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage, is_upstream_failure
 from app.llm.registry import build_provider
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
@@ -348,3 +348,8 @@ def test_gemini_tool_results_carry_the_function_name_and_wrap_errors():
         ("fc_1", "search_products", {"output": {"ok": True}}),
         (None, "compare_products", {"error": "ValueError: boom"}),  # Gemini gave no call ID
     ]
+
+
+@pytest.mark.parametrize(("status", "upstream"), [(429, True), (500, True), (529, True), (400, False), (401, False), (None, False)])
+def test_only_rate_limits_and_server_errors_are_upstream_failures(status, upstream):
+    assert is_upstream_failure(status) is upstream  # None: an error without a status is never treated as upstream

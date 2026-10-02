@@ -3,16 +3,32 @@
 import json
 
 import httpx
-import httpx2
 from google import genai
 from google.genai import errors, types
 
 from app.config import Settings
-from app.llm.base import LLMResponse, LLMUpstreamError, StopReason, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import (
+    REQUEST_TIMEOUT_SECONDS,
+    LLMResponse,
+    LLMUpstreamError,
+    StopReason,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    Usage,
+    is_upstream_failure,
+)
+
+try:  # the SDK uses httpx2 when it's installed, as it is today through the other SDKs, and httpx otherwise
+    import httpx2
+
+    TRANSPORT_ERRORS: tuple[type[Exception], ...] = (httpx.TransportError, httpx2.TransportError)
+except ImportError:
+    TRANSPORT_ERRORS = (httpx.TransportError,)
 
 DEFAULT_MODEL = "gemini-3.8-flash"
 HTTP_OPTIONS = types.HttpOptions(
-    timeout=60_000,  # milliseconds, per attempt
+    timeout=REQUEST_TIMEOUT_SECONDS * 1000,  # milliseconds, per attempt
     retry_options=types.HttpRetryOptions(attempts=3),  # the original request plus 2 retries, like the other adapters
 )
 # Finish reasons that mean the model declined or was stopped for safety.
@@ -59,10 +75,10 @@ class GeminiProvider:
         )
         try:
             response = await self.client.aio.models.generate_content(model=self.model, contents=merge_turns(history), config=config)
-        except (httpx.TransportError, httpx2.TransportError) as e:  # timeouts and connection failures, after retries
+        except TRANSPORT_ERRORS as e:  # timeouts and connection failures, after retries
             raise LLMUpstreamError(str(e)) from e
         except errors.APIError as e:
-            if e.code == 429 or e.code >= 500:
+            if is_upstream_failure(e.code):
                 raise LLMUpstreamError(str(e)) from e
             raise
 

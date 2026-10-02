@@ -5,10 +5,19 @@ import json
 import openai
 
 from app.config import Settings
-from app.llm.base import LLMResponse, LLMUpstreamError, StopReason, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import (
+    REQUEST_TIMEOUT_SECONDS,
+    LLMResponse,
+    LLMUpstreamError,
+    StopReason,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    Usage,
+    is_upstream_failure,
+)
 
 DEFAULT_MODEL = "gpt-6-astra"
-REQUEST_TIMEOUT_SECONDS = 60  # per attempt; the SDK retries failed attempts twice
 
 
 def flatten(history: list) -> list:
@@ -57,7 +66,7 @@ class OpenAIProvider:
         except openai.APIConnectionError as e:
             raise LLMUpstreamError(str(e)) from e
         except openai.APIStatusError as e:
-            if e.status_code == 429 or e.status_code >= 500:
+            if is_upstream_failure(e.status_code):
                 raise LLMUpstreamError(str(e)) from e
             raise
 

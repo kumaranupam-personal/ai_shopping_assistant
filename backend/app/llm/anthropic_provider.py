@@ -3,11 +3,19 @@
 import anthropic
 
 from app.config import Settings
-from app.llm.base import LLMResponse, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage
+from app.llm.base import (
+    REQUEST_TIMEOUT_SECONDS,
+    LLMResponse,
+    LLMUpstreamError,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    Usage,
+    is_upstream_failure,
+)
 
 DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
-REQUEST_TIMEOUT_SECONDS = 60  # per attempt; the SDK retries failed attempts twice
 STOP_REASONS = {"end_turn", "tool_use", "max_tokens", "refusal"}
 CACHE = {"type": "ephemeral"}
 
@@ -62,7 +70,7 @@ class AnthropicProvider:
         except anthropic.APIConnectionError as e:
             raise LLMUpstreamError(str(e)) from e
         except anthropic.APIStatusError as e:
-            if e.status_code == 429 or e.status_code >= 500:
+            if is_upstream_failure(e.status_code):
                 raise LLMUpstreamError(str(e)) from e
             raise
         content = echoable(message.content)
