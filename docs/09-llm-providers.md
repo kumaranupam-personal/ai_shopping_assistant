@@ -1,0 +1,86 @@
+# LLM providers
+
+The agent is independent of any one provider. It calls the interface defined here, and `LLM_PROVIDER` (see `01-architecture.md`) chooses which adapter backs that interface. Anthropic is the first adapter.
+
+## Boundary rules
+
+- Only the files `app/llm/<provider>_provider.py` may import a provider SDK. A unit test enforces this by scanning imports.
+- The agent loop, tools, session store, API and evals use only the types in `app/llm/base.py`.
+- The system prompt and tool descriptions are shared by every provider. Adapters send them unchanged.
+- Conversation history is stored in the provider's native message format and treated as opaque outside the adapter. Native format keeps reasoning blocks and tool-call IDs intact, which some providers require to be sent back unchanged. Because of this, a session is bound to the provider that created it.
+
+## Interface
+
+`app/llm/base.py` defines these types.
+
+### ToolSpec
+
+- `name`, `description` and `parameters`, where `parameters` is a JSON Schema object.
+- Schemas use only this portable subset: `type` (object, string, integer, number, boolean, array), `properties`, `required`, `items`, `enum`, `minimum`, `maximum`, `minItems`, `maxItems`, `maxLength`, `description`, and `additionalProperties: false` on every object. No `$ref`, `oneOf`, `anyOf` or formats.
+
+### ToolCall
+
+- `id`: the provider's call ID.
+- `name`: the tool name.
+- `arguments`: a dict parsed from the provider's output.
+
+### ToolResult
+
+- `call_id`, `content` (a JSON string) and `is_error` (boolean).
+
+### LLMResponse
+
+- `text`: the reply text parts, in order.
+- `tool_calls`: a list of ToolCall.
+- `stop_reason`: one of `end_turn`, `tool_use`, `max_tokens` or `refusal`.
+- `usage`: `input_tokens`, `output_tokens` and `cache_read_tokens` (0 when the provider doesn't report it).
+- `native_message`: the assistant message in the provider's format, which the loop appends to history unchanged.
+
+### LLMProvider
+
+A protocol with:
+
+- `name`: the provider name used in config.
+- `async complete(system, history, tools) -> LLMResponse`: one model call. Model, effort and max tokens come from config, which the adapter reads at construction.
+- `user_message(text)`: returns a native user message.
+- `tool_results_message(results)`: returns one native message carrying all results from a single assistant turn, in call order.
+
+### Errors
+
+- `LLMUpstreamError`: the provider failed after the adapter's retries.
+- `LLMConfigError`: invalid or missing configuration, raised at startup.
+
+## Registry
+
+`app/llm/registry.py` maps each `LLM_PROVIDER` value to an adapter class and builds the adapter once at startup. An unknown name, or a missing credential for the chosen provider, stops startup with `LLMConfigError`.
+
+## Shared settings
+
+Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
+
+- `LLM_API_KEY`: passed to the provider SDK explicitly. The SDK is never left to read its own provider-named variable.
+- `LLM_MODEL`: used as the model ID, or the adapter's default model when unset.
+- `LLM_EFFORT`: mapped to the provider's nearest control, or ignored if the provider has none.
+- `LLM_MAX_TOKENS`: passed as the provider's output-token limit.
+
+## Anthropic adapter
+
+`app/llm/anthropic_provider.py`, selected with `LLM_PROVIDER=anthropic`.
+
+- Uses the async Anthropic client and `beta.messages.create`, because the refusal fallback below is a beta feature. It doesn't use the SDK's tool runner.
+- The default model is `claude-opus-5-5`.
+- Credentials: `LLM_API_KEY`. If it's unset, the adapter falls back to an active `ant auth login` profile, and startup fails only if neither is available.
+- `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
+- Tool choice is `auto`, and tools are sent in the same order on every call.
+- The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`.
+- `native_message` is the full assistant content, including thinking and tool-use blocks, exactly as returned. `text` holds only the text blocks.
+- Stop reasons `end_turn`, `tool_use`, `max_tokens` and `refusal` map to the same names. Any other stop reason maps to `end_turn`.
+- `tool_results_message` puts every `tool_result` block for a turn into a single user message.
+- Refusal fallback is on: requests send `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, so a declined request is retried on a fallback model server-side. If the final response still has stop reason `refusal`, the adapter reports `refusal`.
+- Retries rely on the SDK's built-in retry for rate limits, overload and connection errors. Once retries run out, the adapter raises `LLMUpstreamError`.
+
+## Adding a provider
+
+1. Add `app/llm/<provider>_provider.py` implementing the protocol, and register it.
+2. Document its section in this file: default model, credential sources, effort mapping, caching approach, message format notes and refusal mapping.
+3. Pass the adapter tests and the eval targets in `07-evaluation.md` with `LLM_PROVIDER` set to it.
