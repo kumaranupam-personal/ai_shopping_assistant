@@ -32,7 +32,7 @@ Restores a session's conversation after a page reload.
 
 ### GET /api/products/{id}
 
-- Response 200: the full product record from `02-catalog.md`, plus `card` (the product card shape below).
+- Response 200: the full product record from `02-catalog.md`, plus `card` (the product card shape below) and `details`: every attribute as `{"label", "value"}` in taxonomy order, formatted by the display rules in `02-catalog.md`.
 - Response 404: `product_not_found`.
 
 ### GET /api/health

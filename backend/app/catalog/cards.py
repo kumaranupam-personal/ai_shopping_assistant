@@ -5,12 +5,18 @@ from app.catalog.taxonomy import CATEGORIES, attribute_label, format_attribute_v
 CARD_FIELDS = ("id", "title", "brand", "price", "mrp", "rating", "review_count", "image_url")
 
 
+def attribute_details(product: dict, names: tuple[str, ...] | None = None) -> list[dict]:
+    """Attributes as display label/value pairs, in taxonomy order (all of them unless `names` is given)."""
+    category = CATEGORIES[product["category"]]
+    return [
+        {"label": attribute_label(name), "value": format_attribute_value(name, product["attributes"][name])}
+        for name in (names or tuple(a.name for a in category.attributes))
+    ]
+
+
 def build_card(product: dict) -> dict:
     price, mrp = product["price"], product["mrp"]
-    highlights = [
-        {"label": attribute_label(name), "value": format_attribute_value(name, product["attributes"][name])}
-        for name in CATEGORIES[product["category"]].card_attributes
-    ]
+    highlights = attribute_details(product, CATEGORIES[product["category"]].card_attributes)
     return {
         **{name: product[name] for name in CARD_FIELDS},
         "discount_pct": round((mrp - price) / mrp * 100),

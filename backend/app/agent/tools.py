@@ -55,6 +55,8 @@ def _attribute_conditions(category: str | None, attributes: list[dict]) -> dict:
 
 
 def search_products_tool(query: str, sort: str = "relevance", attributes: list[dict] | None = None, **filters) -> dict:
+    if isinstance(filters.get("brand"), str):  # one brand sent bare; a string would otherwise filter by its letters
+        filters["brand"] = [filters["brand"]]
     filters = Filters(**filters, attributes=_attribute_conditions(filters.get("category"), attributes or []))
     result = search_products(current.get().index, query, filters, sort, limit=10)
     applied = {k: v for k, v in asdict(filters).items() if v not in (None, [], {})} | {"sort": sort}

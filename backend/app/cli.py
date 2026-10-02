@@ -3,7 +3,7 @@
 import asyncio
 
 from app.agent.loop import run_turn
-from app.agent.session import SessionStore
+from app.agent.session import SessionNotFoundError, SessionStore
 from app.catalog.taxonomy import format_rupees
 from app.config import Settings
 from app.llm.base import LLMConfigError
@@ -34,6 +34,9 @@ async def main() -> None:
     while text := (await asyncio.to_thread(input, "\n> ")).strip():
         try:
             await run_turn(provider, index, store.begin_turn(session.id), text, print_event)
+        except SessionNotFoundError:  # idle longer than SESSION_TTL_MINUTES
+            session = store.create(provider.name)
+            print("  [This chat expired, so a new one started. Send your message again.]")
         except Exception as e:  # noqa: BLE001 - show the failure and keep chatting
             print(f"  [error: {type(e).__name__}: {e}]")
 

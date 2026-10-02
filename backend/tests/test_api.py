@@ -170,6 +170,10 @@ def test_product_details_include_the_card(make_client):
     client = make_client()
     product = client.get("/api/products/J1").json()
     assert product["attributes"]["type"] == "down" and product["card"] == build_card({**product})
+    assert product["details"] == [
+        {"label": "type", "value": "down"}, {"label": "warmth", "value": "extreme"}, {"label": "waterproof", "value": "yes"},
+        {"label": "weight", "value": "650 g"}, {"label": "gender", "value": "men"},
+    ]
     response = client.get("/api/products/NOPE")
     assert (response.status_code, response.json()["error"]["code"]) == (404, "product_not_found")
 

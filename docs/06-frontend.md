@@ -60,7 +60,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Before the first message:** the heading "What are you shopping for?" and the line "Describe what you need in your own words, in English or Hinglish." appear in the results panel in the wide layout, and at the top of the message list in the narrow layout. The composer shows 4 example prompts as clickable chips: "Warm jacket for a Ladakh trek under ₹8,000", "Gaming laptop with 16 GB RAM", "Waterproof trekking shoes in UK 9" and "Shaadi ke liye silk kurta, 5k tak".
 - **While a turn runs:** the status line shows the latest `status` text with a spinner, and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
 - **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available."
-- **Images:** load lazily, show a neutral skeleton block while loading, and fall back to a category icon on error.
+- **Images:** load lazily, show a neutral skeleton block while loading, and fall back to a generic product icon on error, since cards carry no category.
 - **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
 
 ## Components

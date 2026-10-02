@@ -203,3 +203,9 @@ def test_non_string_any_of_values_are_accepted():
     result = call("search_products", query="", category="jackets", sort="price_asc",
                   attributes=[{"name": "waterproof", "any_of": [False]}, {"name": "weight_g", "any_of": [500]}])
     assert ids(result) == ["J3"] and result["warnings"] == []
+
+
+@pytest.mark.usefixtures("ctx")
+def test_a_single_brand_string_is_treated_as_one_brand():
+    result = call("search_products", query="", category="jackets", brand="Himfrost", in_stock_only=False)
+    assert sorted(ids(result)) == ["J2", "J3"]
