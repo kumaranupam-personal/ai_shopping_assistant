@@ -78,7 +78,7 @@ ai_shopping_assistant/
       cases.yaml
       run.py                 eval runner
       checks.py              grounding check and case expectations
-      results/               eval run outputs, git-ignored
+      results/               eval run outputs and each provider's baseline, tracked in git
   frontend/
     package.json
     src/

@@ -46,7 +46,7 @@ The eval applies this to every turn of every case. A rupee amount is a number wr
 
 ## Metrics and targets
 
-The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and writes `evals/results/<timestamp>-<provider>.json`, which records the provider and model. The targets apply to each provider separately.
+The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and writes `evals/results/<timestamp>-<provider>.json`, which records the provider and model. The targets apply to each provider separately. The results folder is tracked in git, so runs can be compared over time. Each provider's reference run is `evals/results/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit.
 
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
 - Grounding violations: 0.
