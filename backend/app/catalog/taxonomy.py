@@ -14,6 +14,20 @@ class Attribute:
     min: float | None = None
     max: float | None = None
 
+    def allows(self, value) -> bool:
+        """Whether `value` has this attribute's type and is an allowed value."""
+        if self.kind == "bool":
+            return isinstance(value, bool)
+        if self.kind == "text":
+            return isinstance(value, str) and value in self.values
+        if isinstance(value, bool) or not isinstance(value, int if self.kind == "int" else (int, float)):
+            return False
+        if self.kind == "decimal" and round(value, 1) != value:
+            return False
+        if self.values:
+            return value in self.values
+        return (self.min is None or value >= self.min) and (self.max is None or value <= self.max)
+
 
 @dataclass(frozen=True)
 class Category:
