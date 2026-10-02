@@ -1,5 +1,5 @@
 // A stand-in for the backend API (docs/05-api.md) with recorded product data, so browser tests need no server or key.
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import products from "./fixtures/products.json" with { type: "json" };
 
@@ -79,16 +79,21 @@ export async function mockApi(page: Page, turns: ScriptedTurn[]) {
   });
 }
 
+/** Every row in the chat list: messages, result markers and error rows. */
+export const chatRows = (page: Page) => page.getByRole("region", { name: "Chat" }).getByRole("listitem");
+
 /** A message in the chat list (the live region repeats assistant text, so page-wide text matches twice). */
 export const message = (page: Page, text: string) => page.getByRole("region", { name: "Chat" }).getByRole("list").getByText(text);
 
 /** Resolves once the app has a session, so tests don't race its creation. */
 export const sessionReady = (page: Page) => page.waitForFunction(() => sessionStorage.getItem("sessionId"));
 
-/** Types a message and waits until the turn's reply is shown. */
+/** Types a message and waits until the turn's reply is shown (one more copy of it, so repeated turns work). */
 export async function send(page: Page, text: string, turn: ScriptedTurn) {
   await sessionReady(page);
+  const replies = message(page, turn.reply);
+  const before = await replies.count();
   await page.getByLabel("Message").fill(text);
   await page.getByLabel("Message").press("Enter");
-  await message(page, turn.reply).waitFor();
+  await expect(replies).toHaveCount(before + 1);
 }

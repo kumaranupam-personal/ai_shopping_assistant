@@ -1,7 +1,7 @@
 // The automatable quality bar from docs/06-frontend.md: widths and themes, drag-resize, layout shift, console errors.
 import { expect, test, type Page } from "@playwright/test";
 
-import { LADAKH_TURN, WATERPROOF_TURN, message, mockApi, send } from "./mock-api";
+import { LADAKH_TURN, WATERPROOF_TURN, chatRows, message, mockApi, send } from "./mock-api";
 
 const WIDTHS = [320, 375, 768, 1024, 1280, 1440, 1920, 2560];
 
@@ -53,13 +53,13 @@ for (const colorScheme of ["light", "dark"] as const) {
 
 test("drag-resizing from 320 to 1920 px and back keeps the layout and the state", async ({ page }) => {
   await startConversation(page);
-  const messages = await page.locator("[aria-label=Chat] ol > li").count();
+  const messages = await chatRows(page).count();
   const sweep = [...Array.from({ length: 41 }, (_, i) => 320 + i * 40), ...Array.from({ length: 41 }, (_, i) => 1920 - i * 40)];
   for (const width of sweep) {
     await page.setViewportSize({ width, height: 800 });
     expect(await layoutProblems(page), `at ${width}px`).toEqual([]);
   }
-  await expect(page.locator("[aria-label=Chat] ol > li")).toHaveCount(messages);
+  await expect(chatRows(page)).toHaveCount(messages);
   await expect(page.getByRole("button", { name: `Showed 8 products: ${LADAKH_TURN.headline}` })).toHaveAttribute("aria-pressed", "true");
 });
 

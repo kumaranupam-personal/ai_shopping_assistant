@@ -29,9 +29,10 @@ type Action =
   | { type: "turnEnded" }
   | { type: "select"; index: number }
   | { type: "setDraft"; draft: string }
-  | { type: "dismissNotice" };
+  | { type: "notice"; notice: string | null };
 
 const EXPIRED_NOTICE = "Your previous chat expired. Starting a new one.";
+const UNREACHABLE_NOTICE = "Can't reach the store right now. Try again in a moment.";
 const BUSY_RETRIES = 3;
 const BUSY_RETRY_MS = 1000;
 
@@ -74,7 +75,7 @@ function reducer(state: ChatState, action: Action): ChatState {
       const messages = action.addUserMessage
         ? [...state.messages, { kind: "user" as const, text: action.text }]
         : state.messages.filter((m) => m.kind !== "error"); // Retry replaces the error row
-      return { ...state, messages, turnRunning: true, status: "", loadingResults: false, draft: "" };
+      return { ...state, messages, turnRunning: true, status: "", loadingResults: false };
     }
     case "event": {
       const { event } = action;
@@ -94,8 +95,8 @@ function reducer(state: ChatState, action: Action): ChatState {
       return { ...state, selectedResultSet: action.index };
     case "setDraft":
       return { ...state, draft: action.draft };
-    case "dismissNotice":
-      return { ...state, notice: null };
+    case "notice":
+      return { ...state, notice: action.notice };
   }
 }
 
@@ -186,7 +187,11 @@ export function useChat() {
           } catch (error) {
             if (isAbort(error)) return;
             if (error instanceof ApiError && error.code === "session_not_found") {
-              return await startNewSession(EXPIRED_NOTICE, text);
+              try {
+                return await startNewSession(EXPIRED_NOTICE, text);
+              } catch (sessionError) {
+                error = sessionError; // couldn't start a new one: show it as this turn's failure
+              }
             }
             busy = error instanceof ApiError && error.code === "turn_in_progress";
             failure = error instanceof Error ? error.message : "Something went wrong. Try again.";
@@ -213,9 +218,9 @@ export function useChat() {
     state,
     send: (text: string) => runTurn(text, true),
     retry: (text: string) => runTurn(text, false),
-    newChat: () => startNewSession().catch(() => undefined),
+    newChat: () => startNewSession().catch(() => dispatch({ type: "notice", notice: UNREACHABLE_NOTICE })),
     selectResultSet: (index: number) => dispatch({ type: "select", index }),
     setDraft: (draft: string) => dispatch({ type: "setDraft", draft }),
-    dismissNotice: () => dispatch({ type: "dismissNotice" }),
+    dismissNotice: () => dispatch({ type: "notice", notice: null }),
   };
 }

@@ -29,8 +29,11 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT_PX)}px`;
   }, [draft]);
 
-  const send = (message: string) => {
-    if (canSend && message.trim()) onSend(message.trim());
+  // Only the composer's own text is cleared on send; chips and Retry leave a half-typed draft alone.
+  const sendDraft = () => {
+    if (!canSend || !text) return;
+    onSend(text);
+    onDraftChange("");
   };
 
   return (
@@ -42,7 +45,7 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
               key={example}
               type="button"
               disabled={!canSend}
-              onClick={() => send(example)}
+              onClick={() => onSend(example)}
               className="rounded-full border border-line px-3 py-1 text-sm text-fg-muted transition-colors duration-150 ease-out hover:border-line-strong hover:text-fg"
             >
               {example}
@@ -53,7 +56,7 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          send(draft);
+          sendDraft();
         }}
         className="flex items-end gap-2 rounded-xl border border-line bg-surface py-1 pr-1 pl-3 focus-within:border-accent"
       >
@@ -65,7 +68,7 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
-              send(draft);
+              sendDraft();
             }
           }}
           placeholder="Describe what you're looking for"

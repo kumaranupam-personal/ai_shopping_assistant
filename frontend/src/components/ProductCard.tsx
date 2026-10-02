@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { Star } from "lucide-react";
 
 import type { Card } from "../api";
@@ -32,6 +33,10 @@ export function Rating({ card }: { card: Card }) {
   );
 }
 
+export function OutOfStock({ className }: { className?: string }) {
+  return <span className={clsx("rounded-full bg-danger-soft px-2.5 py-1 text-xs font-medium text-danger", className)}>Out of stock</span>;
+}
+
 export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id: string) => void }) {
   return (
     <button
@@ -56,7 +61,7 @@ export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id:
       </div>
       {!card.in_stock && (
         <span className="pointer-events-none absolute inset-0 grid place-items-center bg-surface/60">
-          <span className="rounded-full bg-danger-soft px-2.5 py-1 text-xs font-medium text-danger">Out of stock</span>
+          <OutOfStock />
         </span>
       )}
     </button>

@@ -2,6 +2,9 @@ import clsx from "clsx";
 import { WifiOff, X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
+import { CardGrid } from "./ProductGrid";
+import { STRIP, STRIP_CARD } from "./ResultsStrip";
+
 export function EmptyState({ className }: { className?: string }) {
   return (
     <div className={clsx("flex flex-col items-center gap-1 text-center", className)}>
@@ -15,9 +18,9 @@ export function EmptyState({ className }: { className?: string }) {
 export function SkeletonCards({ compact }: { compact?: boolean }) {
   if (compact) {
     return (
-      <div aria-hidden className="flex gap-3 overflow-hidden border-b border-line px-4 py-3">
+      <div aria-hidden className={clsx(STRIP, "overflow-hidden")}>
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex w-56 shrink-0 animate-pulse items-center gap-3 rounded-xl border border-line bg-surface p-2">
+          <div key={i} className={clsx(STRIP_CARD, "animate-pulse")}>
             <div className="size-16 rounded-lg bg-line" />
             <div className="flex flex-1 flex-col gap-2">
               <div className="h-3 w-4/5 rounded bg-line" />
@@ -29,8 +32,8 @@ export function SkeletonCards({ compact }: { compact?: boolean }) {
     );
   }
   return (
-    <div aria-hidden className="@container p-4">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(208px,1fr))] gap-3 @min-[640px]:gap-4">
+    <div aria-hidden className="p-4">
+      <CardGrid>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-line bg-surface">
             <div className="aspect-square bg-line" />
@@ -41,7 +44,7 @@ export function SkeletonCards({ compact }: { compact?: boolean }) {
             </div>
           </div>
         ))}
-      </div>
+      </CardGrid>
     </div>
   );
 }

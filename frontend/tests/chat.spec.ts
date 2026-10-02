@@ -1,0 +1,40 @@
+// Chat behaviors that once regressed: the composer draft, "Jump to latest" and the results sheet across breakpoints.
+import { expect, test } from "@playwright/test";
+
+import { LADAKH_TURN, WATERPROOF_TURN, message, mockApi, send } from "./mock-api";
+
+test("a suggestion chip keeps a half-typed draft", async ({ page }) => {
+  await mockApi(page, [LADAKH_TURN, WATERPROOF_TURN]);
+  await page.goto("/");
+  await send(page, "warm jacket under 8k", LADAKH_TURN);
+  await page.getByLabel("Message").fill("half-typed");
+  await page.getByRole("button", { name: "Only waterproof" }).click();
+  await message(page, WATERPROOF_TURN.reply).waitFor();
+  await expect(page.getByLabel("Message")).toHaveValue("half-typed");
+});
+
+test("New chat clears \"Jump to latest\" left over from scrolling up", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 500 });
+  await mockApi(page, [LADAKH_TURN]);
+  await page.goto("/");
+  for (let i = 0; i < 3; i++) await send(page, "warm jacket ".repeat(40), LADAKH_TURN);
+  await page.getByRole("region", { name: "Chat" }).locator(".overflow-y-auto").evaluate((el) => el.scrollTo({ top: 0 }));
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  await page.getByRole("button", { name: "New chat" }).click();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toHaveCount(0);
+});
+
+test("the results sheet stays usable after widening past the narrow layout", async ({ page }) => {
+  await page.setViewportSize({ width: 400, height: 800 });
+  await mockApi(page, [LADAKH_TURN]);
+  await page.goto("/");
+  await send(page, "warm jacket under 8k", LADAKH_TURN);
+  await page.getByRole("button", { name: /^View all/ }).click();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const sheet = page.getByRole("dialog", { name: "All results" });
+  await expect(sheet).toBeVisible(); // never an invisible modal that leaves the page inert
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toHaveCount(0);
+  await page.getByLabel("Message").click();
+  await expect(page.getByLabel("Message")).toBeFocused();
+});

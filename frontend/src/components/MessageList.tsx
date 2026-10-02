@@ -6,6 +6,7 @@ import type { ResultSet } from "../api";
 import type { Message } from "../useChat";
 
 const NEAR_BOTTOM_PX = 48;
+const isAtBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
 
 type Props = {
   messages: Message[];
@@ -21,13 +22,12 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
 
   // Follow new messages unless the user has scrolled up to read; then offer "Jump to latest".
   useEffect(() => {
-    if (atBottom) list.current?.scrollTo({ top: list.current.scrollHeight });
+    const el = list.current!;
+    if (atBottom) el.scrollTo({ top: el.scrollHeight });
+    else setAtBottom(isAtBottom(el)); // the list can shrink without a scroll event, as after New chat
   }, [messages, atBottom]);
 
-  const onScroll = () => {
-    const el = list.current!;
-    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX);
-  };
+  const onScroll = () => setAtBottom(isAtBottom(list.current!));
 
   return (
     <div className="relative min-h-0 flex-1">

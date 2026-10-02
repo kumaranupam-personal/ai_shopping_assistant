@@ -1,7 +1,7 @@
 // Session restore in the browser (docs/07-evaluation.md; docs/06-frontend.md, Session lifecycle).
 import { expect, test } from "@playwright/test";
 
-import { LADAKH_TURN, message, mockApi, send, sessionReady } from "./mock-api";
+import { LADAKH_TURN, chatRows, message, mockApi, send, sessionReady } from "./mock-api";
 
 test("reloading restores messages, result markers and the latest result set", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
@@ -26,7 +26,7 @@ test("a new tab starts a new session", async ({ page, context }) => {
   await expect(other.getByRole("heading", { name: "What are you shopping for?" }).first()).toBeVisible();
   expect(await other.evaluate(() => (window as unknown as { inherited: string | null }).inherited)).toBeNull();
   expect(await other.evaluate(() => sessionStorage.getItem("sessionId"))).toBeTruthy(); // its own, newly created
-  await expect(other.locator("[aria-label=Chat] ol > li")).toHaveCount(0);
+  await expect(chatRows(other)).toHaveCount(0);
 });
 
 test("an expired session shows the notice", async ({ page }) => {
@@ -47,5 +47,5 @@ test("reloading during a turn puts the interrupted message back in the composer"
   await expect(message(page, "warm jacket under 8k")).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Message")).toHaveValue("warm jacket under 8k");
-  await expect(page.locator("[aria-label=Chat] ol > li")).toHaveCount(0);
+  await expect(chatRows(page)).toHaveCount(0);
 });
