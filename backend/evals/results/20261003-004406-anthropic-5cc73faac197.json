@@ -1,0 +1,735 @@
+{
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "prompt_version": "5cc73faac197",
+  "git_commit": "8a693a0",
+  "git_dirty": false,
+  "summary": {
+    "cases": 20,
+    "scored": 20,
+    "passed": 20,
+    "pass_rate": 1.0,
+    "grounding_violations": 0,
+    "latency_p50_s": 6.27,
+    "latency_p95_s": 10.85,
+    "mean_input_tokens": 6,
+    "mean_output_tokens": 372,
+    "mean_cache_read_tokens": 7103,
+    "cache_misses": 0,
+    "targets_met": true
+  },
+  "cases": [
+    {
+      "id": "jackets-ladakh",
+      "description": "A warm jacket for a cold trek, with a budget written as \"8k\" and a size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.",
+          "reply": "Ladakh in December gets extremely cold, so I've put the extreme-warmth down jackets first. The TrekNorth Summit and Monsoonwear Ridge are also waterproof, and the AltiGear Basecamp is a women's jacket.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00230",
+            "JKT-00061",
+            "JKT-00010",
+            "JKT-00279",
+            "JKT-00035",
+            "JKT-00248"
+          ],
+          "latency_s": 17.01,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 492,
+          "cache_read_tokens": 3236,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "shoes-trekking-uk9",
+      "description": "Shoe type, a waterproof attribute and a UK size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Waterproof trekking shoes in UK 9",
+          "reply": "UrbanStep Glide and TrailKing Terra are highly rated and cost less than most of the others here. The rest are a mix of men's, women's and unisex fits, so check the gender on each card.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00182",
+            "SHO-00279",
+            "SHO-00283",
+            "SHO-00088",
+            "SHO-00109",
+            "SHO-00184",
+            "SHO-00081",
+            "SHO-00166"
+          ],
+          "latency_s": 5.8,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 444,
+          "cache_read_tokens": 6358,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "phones-5g-budget",
+      "description": "A boolean attribute with a \"15k\" budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A 5G phone under 15k with a good battery",
+          "reply": "I put the biggest batteries first. The Pixelon Nova has a large battery and very strong ratings, the Aurora Zen packs one of the largest batteries and a 200 MP camera, and the Kirin Neo is the cheapest well-rated pick.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "PHN-00177",
+            "PHN-00133",
+            "PHN-00128",
+            "PHN-00202",
+            "PHN-00060",
+            "PHN-00200"
+          ],
+          "latency_s": 6.45,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 456,
+          "cache_read_tokens": 6357,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "backpacks-trek",
+      "description": "A boolean attribute with a numeric minimum.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A waterproof trekking backpack, at least 40 litres",
+          "reply": "The Commuto Ascent 54 L and TrailCarry Explorer 42 L are the best-rated picks at good prices. If you need room for multi-day treks, look at the 65–70 L UrbanSling bags.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "BAG-00206",
+            "BAG-00006",
+            "BAG-00040",
+            "BAG-00197",
+            "BAG-00153",
+            "BAG-00083",
+            "BAG-00053",
+            "BAG-00188"
+          ],
+          "latency_s": 6.98,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 456,
+          "cache_read_tokens": 6361,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "watches-analog-leather",
+      "description": "Three attributes, one of which (gender) also accepts unisex.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "An analog watch with a leather strap for men",
+          "reply": "The Kaal Luxe is a good middle pick with strong ratings. The Kaal Pulse is the top-rated premium choice, and the Horizon Active costs the least but has a lower rating.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00164",
+            "WCH-00190",
+            "WCH-00222"
+          ],
+          "latency_s": 5.89,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 405,
+          "cache_read_tokens": 6355,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "kitchen-air-fryer",
+      "description": "An appliance type with a budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Air fryer under ₹6,000",
+          "reply": "The Annapurna Eco is the top-rated pick with a 3-year warranty. Go for the Swaad Turbo if you want the biggest basket and the longest warranty, at 5 years.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KIT-00197",
+            "KIT-00023",
+            "KIT-00140",
+            "KIT-00238",
+            "KIT-00287",
+            "KIT-00016",
+            "KIT-00298",
+            "KIT-00192"
+          ],
+          "latency_s": 6.78,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 438,
+          "cache_read_tokens": 6354,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-only-waterproof",
+      "description": "Adding an attribute keeps the earlier budget and size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.",
+          "reply": "Ladakh in December gets very cold, so I put the extreme-warmth down jackets first. The TrekNorth Summit and Monsoonwear Ridge are also waterproof, and the AltiGear one is a women's fit. The fleece jackets at the end are better worn as a layer under a down jacket.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00230",
+            "JKT-00061",
+            "JKT-00279",
+            "JKT-00010",
+            "JKT-00035",
+            "JKT-00248",
+            "JKT-00037"
+          ],
+          "latency_s": 7.88,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 517,
+          "cache_read_tokens": 8522,
+          "grounding": []
+        },
+        {
+          "user": "only waterproof ones",
+          "reply": "The UrbanLayer Pamir is extreme-warmth, very light and well rated, so it's a strong value pick. The TrekNorth Summit is the warmest premium choice, and the last three are rated high instead of extreme warmth, so they're less suited to a Ladakh winter.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00017",
+            "JKT-00230",
+            "JKT-00061",
+            "JKT-00279",
+            "JKT-00014",
+            "JKT-00011",
+            "JKT-00125"
+          ],
+          "latency_s": 8.85,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 525,
+          "cache_read_tokens": 11231,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-brand",
+      "description": "Narrowing to one brand keeps the type and budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Trekking shoes under ₹6,000",
+          "reply": "PaceOne Terra is the best-rated and comes in every size, and TrailKing Apex is rated just as high for less. If you'll trek in rain, UrbanStep Glide is the best-rated waterproof pick, but it's a men's shoe.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00097",
+            "SHO-00021",
+            "SHO-00069",
+            "SHO-00182",
+            "SHO-00296",
+            "SHO-00216",
+            "SHO-00081",
+            "SHO-00027"
+          ],
+          "latency_s": 6.72,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 444,
+          "cache_read_tokens": 6356,
+          "grounding": []
+        },
+        {
+          "user": "only from TrailKing",
+          "reply": "TrailKing Apex (SHO-00021) is the cheapest top-rated pair, but it isn't waterproof. If you'll trek in rain, the unisex TrailKing Metro (SHO-00221) is the best-rated waterproof option and comes in the most sizes.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00021",
+            "SHO-00221",
+            "SHO-00241",
+            "SHO-00279",
+            "SHO-00081",
+            "SHO-00184",
+            "SHO-00167"
+          ],
+          "latency_s": 6.14,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 483,
+          "cache_read_tokens": 11029,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-ordinal",
+      "description": "\"The second one\" resolves against the shown list. The second-cheapest backpack is an UrbanSling.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Show me the 3 cheapest backpacks",
+          "reply": "The UrbanSling Ridge is the only one of the three that's waterproof and has a laptop compartment. The Commuto Ridge has the highest rating and the most space for travel.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "BAG-00007",
+            "BAG-00288",
+            "BAG-00148"
+          ],
+          "latency_s": 6.69,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 334,
+          "cache_read_tokens": 6357,
+          "grounding": []
+        },
+        {
+          "user": "Tell me more about the second one",
+          "reply": "The UrbanSling Ridge 34 L Travel Backpack costs ₹439 (MRP ₹505) and has a 3.8 rating from 1,719 reviews. It's a waterproof 34 L travel bag with a laptop compartment, padded shoulder straps and several pockets, and it comes in maroon or black.",
+          "tools": [
+            "get_product_details"
+          ],
+          "shown": null,
+          "latency_s": 4.6,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 205,
+          "cache_read_tokens": 10254,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-compare",
+      "description": "Comparing the first two shown. The two cheapest phones are a Zentrix and an Aurora.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Show me the 3 cheapest phones",
+          "reply": "The Aurora Neo costs a little more than the Zentrix but gives you double the storage, a bigger battery and a higher rating. None of these three has 5G.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "PHN-00019",
+            "PHN-00130",
+            "PHN-00278"
+          ],
+          "latency_s": 6.11,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 337,
+          "cache_read_tokens": 6355,
+          "grounding": []
+        },
+        {
+          "user": "Compare the first two",
+          "reply": "The Aurora Neo Phone (₹7,229, rated 4.6) has 128 GB storage, a 5237 mAh battery, a 6.3-inch screen and a 64 MP camera. The Zentrix Neo Phone (₹7,099, rated 4.0) has 64 GB, 4223 mAh, 6.1 inches and 12 MP, so the Aurora is better unless the lowest price matters most.",
+          "tools": [
+            "compare_products"
+          ],
+          "shown": null,
+          "latency_s": 6.02,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 341,
+          "cache_read_tokens": 10878,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "vague-gift",
+      "description": "No category or use case can be inferred.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I need a gift for my sister.",
+          "reply": "Happy to help! What kind of gift are you thinking of, like a watch, kurta, backpack, shoes or something for her kitchen?",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.06,
+          "model_calls": 1,
+          "input_tokens": 4,
+          "output_tokens": 46,
+          "cache_read_tokens": 3135,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "oos-televisions",
+      "description": "A category the store doesn't carry.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Do you sell televisions?",
+          "reply": "Sorry, we don't sell televisions. You can shop jackets, shoes, phones, laptops, backpacks, watches, kurtas and kitchen appliances here, so let me know if you want something from those.",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.04,
+          "model_calls": 1,
+          "input_tokens": 4,
+          "output_tokens": 68,
+          "cache_read_tokens": 3135,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "relax-gaming-budget",
+      "description": "No gaming laptop is under ₹55,000; raising the budget by 15% (to ₹63,250) finds some.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A gaming laptop under ₹55,000",
+          "reply": "No gaming laptops were under ₹55,000, so I raised the budget to ₹63,250. The Lumen Swift costs the least, and the Vertex Air gives you 32GB RAM in a lighter build.",
+          "tools": [
+            "search_products",
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "LAP-00146",
+            "LAP-00177",
+            "LAP-00145",
+            "LAP-00102"
+          ],
+          "latency_s": 8.38,
+          "model_calls": 3,
+          "input_tokens": 8,
+          "output_tokens": 590,
+          "cache_read_tokens": 9808,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "relax-inferred-warmth",
+      "description": "An inferred extreme-warmth filter finds nothing under ₹2,000; dropping it (the user never said it) does.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A jacket for -20 degrees, under ₹2,000",
+          "reply": "Nothing under ₹2,000 is rated for extreme cold, so I dropped the warmth filter. None of these will keep you warm alone at -20°C, but the fleece is the warmest pick and works as a layer under a shell.",
+          "tools": [
+            "search_products",
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00242",
+            "JKT-00096",
+            "JKT-00215",
+            "JKT-00079",
+            "JKT-00241"
+          ],
+          "latency_s": 8.21,
+          "model_calls": 3,
+          "input_tokens": 8,
+          "output_tokens": 599,
+          "cache_read_tokens": 9831,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-shaadi-kurta",
+      "description": "\"Shaadi\" maps to the wedding occasion and \"5k tak\" to a budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Shaadi ke liye silk kurta chahiye, 5k tak",
+          "reply": "Men aur women dono ke options hain. Women ke liye Kalakriti Noor ki rating sabse achhi hai, aur men ke liye DesiLoom Saanjh aur Rangsutra Royal sabse aage hain.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KRT-00059",
+            "KRT-00279",
+            "KRT-00186",
+            "KRT-00121",
+            "KRT-00025",
+            "KRT-00013",
+            "KRT-00112",
+            "KRT-00139"
+          ],
+          "latency_s": 10.85,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 478,
+          "cache_read_tokens": 6366,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-teen-hazaar",
+      "description": "\"Teen hazaar tak\" is a budget of ₹3,000, written in Hindi number words.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Teen hazaar tak ki watch dikhao",
+          "reply": "Analog chahiye toh Chronex Active sabse highly rated hai, digital mein Tempo Active top pe hai. Gender ya type batayein toh list aur chhoti kar doon.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00029",
+            "WCH-00091",
+            "WCH-00068",
+            "WCH-00084",
+            "WCH-00031",
+            "WCH-00295",
+            "WCH-00237",
+            "WCH-00097"
+          ],
+          "latency_s": 8.46,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 379,
+          "cache_read_tokens": 6359,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-aur-sasta",
+      "description": "\"Aur sasta dikhao\" is \"cheaper\", with the reply in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "10k tak smartwatch dikhao",
+          "reply": "Swimming ke liye 100m water resistance wale Chronex Orbit ya Meridian Pulse dekhiye, aur kam budget mein Kaal Classic ki rating kaafi achhi hai.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00155",
+            "WCH-00022",
+            "WCH-00016",
+            "WCH-00235",
+            "WCH-00168",
+            "WCH-00161",
+            "WCH-00233",
+            "WCH-00039"
+          ],
+          "latency_s": 5.87,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 430,
+          "cache_read_tokens": 6355,
+          "grounding": []
+        },
+        {
+          "user": "aur sasta dikhao",
+          "reply": "Lowest shown was 2289 → price_max 2288.\nVela Orbit aur Horizon Active ki rating sabse achhi hai. Sabse sasta chahiye toh Meridian Classic lijiye, usmein bhi 100m water resistance hai.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00144",
+            "WCH-00114",
+            "WCH-00215",
+            "WCH-00286",
+            "WCH-00289",
+            "WCH-00208"
+          ],
+          "latency_s": 6.27,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 446,
+          "cache_read_tokens": 10533,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-dusra-wala",
+      "description": "\"Dusra wala\" is the second one shown. The second-cheapest kurta is a Rangsutra.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Sabse saste 3 kurte dikhao",
+          "reply": "Ye store ke sabse saste 3 kurte hain. Utsav wala sabse sasta hai aur uski rating bhi sabse achhi hai, aur Taana khadi kurta inme se akela men's option hai.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KRT-00145",
+            "KRT-00230",
+            "KRT-00031"
+          ],
+          "latency_s": 5.92,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 358,
+          "cache_read_tokens": 6358,
+          "grounding": []
+        },
+        {
+          "user": "Dusra wala kaisa hai?",
+          "reply": "Rangsutra Heritage Rayon Kurta for Women ₹409 ka hai, daily wear ke liye short sleeves wala rayon kurta hai, sizes M, L, XL aur colors olive, navy mein milta hai. Iski rating 3.2 hai (999 reviews), jo baaki options se kam hai, isliye ₹399 wala Utsav cotton kurta (5.0 rating) behtar option ho sakta hai.",
+          "tools": [
+            "get_product_details"
+          ],
+          "shown": null,
+          "latency_s": 5.17,
+          "model_calls": 2,
+          "input_tokens": 6,
+          "output_tokens": 255,
+          "cache_read_tokens": 10534,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-kuch-accha",
+      "description": "A vague Hinglish request gets one clarifying question in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Kuch accha dikhao",
+          "reply": "Aap kya dhundh rahe hain? Jaise jacket, joote, phone, laptop, backpack, watch, kurta ya kitchen appliance?",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.77,
+          "model_calls": 1,
+          "input_tokens": 4,
+          "output_tokens": 55,
+          "cache_read_tokens": 3135,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-mausam",
+      "description": "An out-of-scope Hinglish request is declined in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Aaj Delhi ka mausam kaisa hai?",
+          "reply": "Maaf kijiye, main mausam ki jaankari nahi de sakta, main sirf is store se shopping mein madad karta hoon. Agar Delhi ki thand ya baarish ke liye jacket, joote ya kuch aur chahiye, toh bataiye.",
+          "tools": [],
+          "shown": null,
+          "latency_s": 6.7,
+          "model_calls": 1,
+          "input_tokens": 4,
+          "output_tokens": 94,
+          "cache_read_tokens": 3135,
+          "grounding": []
+        }
+      ]
+    }
+  ]
+}
