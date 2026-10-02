@@ -44,5 +44,9 @@ These come after Phase 7 and are each specified in a new doc before being built.
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.
 - Personalization from seeded user profiles (preferred brands, sizes and budget).
-- Streaming reply text token by token instead of one block at a time.
+- Streaming reply text token by token instead of one block at a time. Voice conversation depends on it.
+- Voice conversation, in three levels, each specified before it's built:
+  - Push-to-talk: recorded speech is transcribed and sent through the existing chat endpoint, and reply text is spoken. The agent, search and evals are unchanged.
+  - Hands-free conversation with interruption: a WebSocket voice endpoint, streaming speech-to-text with voice activity detection, sentence-level streaming text-to-speech, and cancelling the current turn when the user starts speaking. Speech providers sit behind adapters, like the LLM layer in `09-llm-providers.md`.
+  - Speech-to-speech realtime models, considered only if latency matters more than control, since they would replace the turn loop.
 - Migrating the agent from the tool loop to an explicit LangGraph graph, with nodes that call the LLM layer from `09-llm-providers.md` and a checkpointer as the session store. The API contract in `05-api.md` stays unchanged, so the frontend is unaffected.
