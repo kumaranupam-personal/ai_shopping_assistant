@@ -28,7 +28,7 @@ export default function ResultsStrip(props: ResultsProps) {
             className={clsx(STRIP_CARD, "snap-start text-left")}
           >
             <ProductImage src={card.image_url} className="size-16 shrink-0 rounded-lg" />
-            <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-sm font-medium">{card.title}</span>
               <span className="text-sm font-semibold tabular-nums">{formatRupees(card.price)}</span>
             </span>
@@ -37,7 +37,7 @@ export default function ResultsStrip(props: ResultsProps) {
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
-          className="shrink-0 snap-start self-center rounded-xl border border-line bg-surface px-4 py-3 text-sm font-medium whitespace-nowrap text-accent"
+          className="shrink-0 snap-start self-center rounded-lg border border-line bg-surface px-4 py-3 text-sm font-medium whitespace-nowrap text-accent"
         >
           View all ({resultSet.products.length})
         </button>

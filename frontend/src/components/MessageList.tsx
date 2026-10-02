@@ -44,7 +44,7 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
         <button
           type="button"
           onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" })}
-          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium shadow-sm"
+          className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium shadow-sm"
         >
           <ArrowDown aria-hidden className="size-3.5" /> Jump to latest
         </button>
@@ -66,7 +66,7 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry }: RowPro
   const text = "whitespace-pre-line [overflow-wrap:anywhere]";
   switch (message.kind) {
     case "user":
-      return <p className={clsx(text, "max-w-[85%] self-end rounded-2xl rounded-br-md bg-accent-soft px-3.5 py-2 text-accent-soft-fg")}>{message.text}</p>;
+      return <p className={clsx(text, "max-w-[85%] self-end rounded-2xl rounded-br-md bg-accent-soft px-4 py-2 text-accent-soft-fg")}>{message.text}</p>;
     case "assistant":
       return <p className={clsx(text, "max-w-[95%] leading-relaxed")}>{message.text}</p>;
     case "marker": {
@@ -77,7 +77,7 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry }: RowPro
           onClick={() => onSelect(message.resultSet)}
           aria-pressed={selected === message.resultSet}
           className={clsx(
-            "flex max-w-full min-w-0 items-center gap-2 self-start rounded-lg border px-3 py-1.5 text-left text-sm transition-colors duration-150 ease-out",
+            "flex max-w-full min-w-0 items-center gap-2 self-start rounded-lg border px-3 py-2 text-left text-sm transition-colors duration-150 ease-out",
             selected === message.resultSet ? "border-accent text-fg" : "border-line text-fg-muted hover:border-line-strong hover:text-fg",
           )}
         >

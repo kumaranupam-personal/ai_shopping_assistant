@@ -64,7 +64,7 @@ function Details({ product }: { product: Product }) {
       {product.sizes.length > 0 && (
         <Section title="Sizes">
           {product.sizes.map((size) => (
-            <span key={size} className="rounded-lg border border-line px-2.5 py-1 text-sm">
+            <span key={size} className="rounded-lg border border-line px-3 py-1 text-sm">
               {size}
             </span>
           ))}
@@ -72,7 +72,7 @@ function Details({ product }: { product: Product }) {
       )}
       <Section title="Colors">
         {product.colors.map((color) => (
-          <span key={color} className="flex items-center gap-1.5 text-sm capitalize">
+          <span key={color} className="flex items-center gap-2 text-sm capitalize">
             <span aria-hidden className="size-4 rounded-full border border-line-strong" style={{ backgroundColor: color }} />
             {color}
           </span>

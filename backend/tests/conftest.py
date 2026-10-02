@@ -4,6 +4,7 @@ import pytest
 
 from app.catalog.embed import embed
 from app.catalog.ingest import ingest
+from app.config import Settings
 from app.search.index import load_index
 from tests.test_embed import FakeModel
 from tests.test_ingest import PHONE, VALID, product, write_lines
@@ -25,6 +26,13 @@ CATALOG = [
     {**PHONE, "id": "P2", "price": 9000, "mrp": 9000, "rating": 4.0, "review_count": 10, "stock": 1,
      "attributes": {**PHONE["attributes"], "ram_gb": 4, "has_5g": False}},
 ]
+
+
+@pytest.fixture(autouse=True)
+def clean_env(monkeypatch):
+    """Configuration in the shell never reaches a test."""
+    for name in Settings.model_fields:
+        monkeypatch.delenv(name.upper(), raising=False)
 
 
 def ids(result):

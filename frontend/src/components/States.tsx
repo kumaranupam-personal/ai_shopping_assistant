@@ -71,7 +71,7 @@ export function Banners({ notice, onDismiss }: { notice: string | null; onDismis
       {notice && (
         <p className="flex items-center justify-between gap-3 border-b border-line bg-accent-soft px-4 py-2 text-sm text-accent-soft-fg">
           {notice}
-          <button type="button" onClick={onDismiss} aria-label="Dismiss" className="grid size-6 shrink-0 place-items-center rounded">
+          <button type="button" onClick={onDismiss} aria-label="Dismiss" className="grid size-6 shrink-0 place-items-center rounded-lg">
             <X aria-hidden className="size-4" />
           </button>
         </p>

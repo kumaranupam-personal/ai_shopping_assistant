@@ -8,7 +8,7 @@ export type Message =
   | { kind: "marker"; resultSet: number } // "Showed {n} products: {headline}"
   | { kind: "error"; text: string; retryText: string };
 
-export type ChatState = {
+type ChatState = {
   ready: boolean; // a session exists
   messages: Message[];
   resultSets: ResultSet[];

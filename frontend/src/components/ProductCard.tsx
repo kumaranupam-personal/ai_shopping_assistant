@@ -13,7 +13,7 @@ export function cardLabel(card: Card) {
 export function Price({ card, large }: { card: Card; large?: boolean }) {
   return (
     <span className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
-      <span className={large ? "text-xl font-semibold" : "font-semibold"}>{formatRupees(card.price)}</span>
+      <span className={large ? "text-2xl font-semibold" : "font-semibold"}>{formatRupees(card.price)}</span>
       {card.discount_pct > 0 && (
         <>
           <s className="text-xs text-fg-muted">{formatRupees(card.mrp)}</s>
@@ -34,7 +34,7 @@ export function Rating({ card }: { card: Card }) {
 }
 
 export function OutOfStock({ className }: { className?: string }) {
-  return <span className={clsx("rounded-full bg-danger-soft px-2.5 py-1 text-xs font-medium text-danger", className)}>Out of stock</span>;
+  return <span className={clsx("rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger", className)}>Out of stock</span>;
 }
 
 export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id: string) => void }) {
@@ -53,7 +53,7 @@ export default function ProductCard({ card, onOpen }: { card: Card; onOpen: (id:
         <Rating card={card} />
         <span className="mt-1 flex flex-wrap gap-1">
           {card.highlights.slice(0, 3).map(({ label, value }) => (
-            <span key={label} className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-fg-muted">
+            <span key={label} className="rounded-full bg-surface-muted px-2 py-1 text-xs text-fg-muted">
               {label}: {value}
             </span>
           ))}

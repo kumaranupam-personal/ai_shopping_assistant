@@ -1,6 +1,6 @@
 // Backend API client and SSE stream parsing (docs/05-api.md).
 
-export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export type Card = {
   id: string;
@@ -40,7 +40,6 @@ export type StreamEvent =
 /** A non-2xx response, carrying the API's error code (docs/05-api.md, Error codes). */
 export class ApiError extends Error {
   constructor(
-    readonly status: number,
     readonly code: string,
     message: string,
   ) {
@@ -51,9 +50,9 @@ export class ApiError extends Error {
 async function toApiError(response: Response): Promise<ApiError> {
   try {
     const { error } = await response.json();
-    return new ApiError(response.status, error.code, error.message);
+    return new ApiError(error.code, error.message);
   } catch {
-    return new ApiError(response.status, "http_error", "Something went wrong. Try again.");
+    return new ApiError("http_error", "Something went wrong. Try again.");
   }
 }
 
@@ -68,7 +67,7 @@ export async function createSession(): Promise<string> {
 }
 
 export function restoreSession(sessionId: string) {
-  return request<{ session_id: string; turn_count: number; entries: Entry[] }>(
+  return request<{ entries: Entry[] }>(
     `/api/sessions/${encodeURIComponent(sessionId)}`,
   );
 }
@@ -78,7 +77,7 @@ export function getProduct(productId: string) {
 }
 
 /** Splits complete `event:`/`data:` frames off the buffer; the incomplete tail is returned as `rest`. */
-export function parseEvents(buffer: string): { events: StreamEvent[]; rest: string } {
+function parseEvents(buffer: string): { events: StreamEvent[]; rest: string } {
   const frames = buffer.split("\n\n");
   const rest = frames.pop() ?? "";
   const events = frames.flatMap((frame) => {
