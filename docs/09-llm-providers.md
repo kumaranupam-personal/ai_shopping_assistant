@@ -69,7 +69,6 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 
 - Uses the async Anthropic client and `beta.messages.create`, because the refusal fallback below is a beta feature. It doesn't use the SDK's tool runner.
 - The default model is `claude-opus-5-5`.
-- Credentials: `LLM_API_KEY`. If it's unset, the adapter falls back to an active `ant auth login` profile, and startup fails only if neither is available.
 - `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
 - Tool choice is `auto`, and tools are sent in the same order on every call.
 - The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`.
@@ -82,5 +81,5 @@ Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 ## Adding a provider
 
 1. Add `app/llm/<provider>_provider.py` implementing the protocol, and register it.
-2. Document its section in this file: default model, credential sources, effort mapping, caching approach, message format notes and refusal mapping.
+2. Document its section in this file: default model, effort mapping, caching approach, message format notes and refusal mapping.
 3. Pass the adapter tests and the eval targets in `07-evaluation.md` with `LLM_PROVIDER` set to it.

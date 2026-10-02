@@ -12,7 +12,7 @@ Build the phases in order. Each phase is done only when its criteria pass.
 
 ## Phase 1: Catalog
 
-- Part 1: backend skeleton (`pyproject.toml`, `.env.example`, `.gitignore`), configuration and the taxonomy.
+- Part 1: backend skeleton (`.gitignore`, `pyproject.toml`, `.env.example`), configuration and the taxonomy.
 - Part 2: database schema, ingestion and embedding.
 - Part 3: demo data generator and its templates.
 - Done when the ingestion and demo data tests from `07-evaluation.md` pass, and a manual look at 20 random products finds them plausible.

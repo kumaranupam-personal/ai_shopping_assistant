@@ -17,7 +17,7 @@
 - `sort`: `relevance` (the default), `price_asc`, `price_desc` or `rating` (highest first). With any sort other than `relevance`, `query` is ignored and the results are the filter matches in that order.
 - `limit`: 1 to 20. Default 10.
 
-Unknown categories, sizes, colors, attribute names or attribute values do not raise an exception. They are reported in `warnings` and that condition is ignored. This lets the agent recover from a bad guess.
+Unknown categories, sizes, colors, attribute names or attribute values do not raise an exception. They are reported in `warnings` and that condition is ignored. This lets the agent recover from a bad guess. Brands aren't part of the taxonomy, so an unknown brand isn't a warning; it simply matches nothing.
 
 ## Result shape
 
@@ -41,7 +41,7 @@ Unknown categories, sizes, colors, attribute names or attribute values do not ra
 
 1. **Filter.** Build one SQL query from `filters` and collect the matching product IDs as the candidate set. If the set is empty, return `total_matches` 0 and no results.
 2. **Rank without a query.** If `sort` is not `relevance`, or `query` is empty, sort the candidates by the chosen order, using `rating` highest first for `relevance` with an empty query. Ties are broken by `review_count` descending and then by `id`. Skip to step 6.
-3. **Keyword list.** Turn the query into an FTS5 expression. Lowercase it, keep only alphanumeric tokens, drop a fixed English stopword list, and join the remaining tokens with OR. Take the top 50 candidates by FTS5 `bm25()`. If no tokens remain, the keyword list is empty.
+3. **Keyword list.** Turn the query into an FTS5 expression. Lowercase it, keep only alphanumeric tokens, drop a fixed English stopword list, wrap each remaining token in double quotes so FTS5 never reads it as an operator, and join them with OR. Take the top 50 candidates by FTS5 `bm25()`. If no tokens remain, the keyword list is empty.
 4. **Vector list.** Embed the query with the same model used to build the index, normalize it, and score the candidates by dot product. Take the top 50.
 5. **Fuse.** Combine the two lists with reciprocal rank fusion: each product's score is the sum of `1 / (60 + rank)` over the lists it appears in, where `rank` starts at 1. Sort by score descending, breaking ties by `rating` and then `id`.
 6. **Diversify.** When `sort` is `relevance`, including the empty-query case, allow at most 3 products per brand in the returned page. Walk the ranked list in order, taking a product unless its brand already has 3, and append the skipped products after the rest in their original order.
