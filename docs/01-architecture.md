@@ -30,7 +30,7 @@ The model chooses which products to show and writes prose about them. It never s
 - SQLite from the Python standard library, with FTS5 for keyword search.
 - `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
-- `pytest` with `pytest-asyncio` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
+- `pytest` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
 - Node 24 LTS for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
 
 ## Repository layout
@@ -80,6 +80,7 @@ ai_shopping_assistant/
     package.json
     src/
     tests/                   Playwright browser tests
+    scripts/                 Lighthouse check
 ```
 
 ## Configuration

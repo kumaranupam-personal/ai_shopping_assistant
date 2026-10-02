@@ -22,7 +22,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 ### Narrow layout (below 1024 px)
 
 - One column: header, then a results strip, then the message list, then the status line and composer pinned to the bottom.
-- The results strip appears once a result set exists. It's a horizontally scrolling row of compact cards with scroll snapping: a 64 px image, a one-line title and the price. At its end, a "View all ({n})" button opens the results sheet.
+- The results strip appears once a result set exists, or before that with the featured products. It's a horizontally scrolling row of compact cards with scroll snapping: a 64 px image, a one-line title and the price. At its end, a "View all ({n})" button opens the results sheet.
 - The results sheet is a full-screen panel with the headline, chips and full product grid, plus a close button. It closes on Esc, the close button, or the browser back gesture.
 - Composer padding respects `env(safe-area-inset-bottom)` on phones.
 
@@ -57,7 +57,8 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 
 ## Loading, empty and error states
 
-- **Before the first message:** the heading "What are you shopping for?" and the line "Describe what you need in your own words, in English or Hinglish." appear in the results panel in the wide layout, and at the top of the message list in the narrow layout. The composer shows 4 example prompts as clickable chips: "Warm jacket for a Ladakh trek under ₹8,000", "Gaming laptop with 16 GB RAM", "Waterproof trekking shoes in UK 9" and "Shaadi ke liye silk kurta, 5k tak".
+- **Before the first message:** the composer shows 4 example prompts as clickable chips: "Warm jacket for a Ladakh trek under ₹8,000", "Gaming laptop with 16 GB RAM", "Waterproof trekking shoes in UK 9" and "Shaadi ke liye silk kurta, 5k tak". In the narrow layout, the heading "What are you shopping for?" and the line "Describe what you need in your own words, in English or Hinglish." sit at the top of the message list.
+- **Before the first result set:** in the wide layout, the results panel shows the same heading and line, with the featured products from `GET /api/featured` below them under their headline. In the narrow layout, the featured products fill the results strip. The skeleton cards described below hold their place while they load. If the request fails, the wide panel shows only the heading and line, and the narrow strip stays hidden. Clicking a featured card opens the drawer. The first `products` event replaces them, and they return after a new chat.
 - **While a turn runs:** the status line shows the latest `status` text with a spinner, and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
 - **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available."
 - **Images:** load lazily, show a neutral skeleton block while loading, and fall back to a generic product icon on error, since cards carry no category.
@@ -71,7 +72,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - `MessageList`: user and assistant messages, plus a result marker for each `products` event. A marker reads "Showed {n} products: {headline}", and clicking it restores that result set. The list auto-scrolls to new messages unless the user has scrolled up, in which case a "Jump to latest" button appears.
 - `StatusLine`: described under "Loading, empty and error states".
 - `Composer`: a multiline input that grows from 1 to 6 lines and then scrolls. Enter sends and Shift+Enter adds a new line. While a turn is running, typing still works, but the send button and Enter are inactive until the turn ends. Nothing is queued.
-- `ResultsPanel`: the headline, `SuggestionChips` and `ProductGrid` for the selected result set. It's used in the wide layout and inside the results sheet.
+- `ResultsPanel`: the headline, `SuggestionChips` and `ProductGrid` for the selected result set, or for the featured products before the first one. It's used in the wide layout and inside the results sheet.
 - `ResultsStrip`: the compact horizontal strip for the narrow layout.
 - `SuggestionChips`: clicking a chip sends its text as the next user message. Chips are inactive while a turn is running.
 - `ProductGrid` and `ProductCard`: described under Layout and Visual design. A card shows the fields of the card shape in `05-api.md`, and clicking it opens `ProductDrawer`.
@@ -92,6 +93,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - `messages`: an ordered list of user messages, assistant texts, result markers and error rows.
 - `resultSets`: every `products` payload in this session, in order.
 - `selectedResultSet`: an index into `resultSets`. Each new `products` event selects itself.
+- `featured`: the featured products, loaded once per page load. They never join `resultSets`.
 - `turnRunning`: true from send until `done` or `error`.
 - `status`: the latest `status` text in the current turn.
 - `theme`: `system`, `light` or `dark`, saved in `localStorage`.

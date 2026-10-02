@@ -45,21 +45,27 @@ Build the phases in order. Each phase is done only when its criteria pass.
 - Part 6: Playwright tests with a mocked API, and Lighthouse checks.
 - Done when the example conversation works in the browser, including clicking a suggestion chip, restoring an earlier result set, the product drawer, a new chat, restoring after a reload and the narrow layout, and every item in the quality bar of `06-frontend.md` holds.
 
-## Phase 6: Evaluation
+## Phase 6: Faster turns and featured products
+
+- Part 1: ending a turn right after `show_products` and the shorter-reply rule from `04-agent.md`, and history caching from `09-llm-providers.md`.
+- Part 2: the featured endpoint from `05-api.md` and the featured products in `06-frontend.md`.
+- Done when the tests in `07-evaluation.md` pass, the turn record (see `04-agent.md`) of a live search turn shows 2 model calls instead of 3, with cache reads above zero on the second, and the featured products show on first load in both layouts.
+
+## Phase 7: Evaluation
 
 - Part 1: the eval runner and grounding check from `07-evaluation.md`.
 - Part 2: the eval cases.
 - Later parts: prompt and tool-description tuning, one change per commit.
 - Done when every target in `07-evaluation.md` is met. If one fails, iterate on the prompt and tool descriptions before changing the search code.
 
-## Phase 7: Second provider
+## Phase 8: Second provider
 
 - Part 1: a second adapter, following "Adding a provider" in `09-llm-providers.md`. OpenAI is the suggested choice.
 - Done when the eval targets in `07-evaluation.md` are met with `LLM_PROVIDER` set to the new adapter, and nothing outside `app/llm/` changed apart from the docs.
 
 ## Stretch goals
 
-These come after Phase 7 and are each specified in a new doc before being built.
+These come after Phase 8 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.
