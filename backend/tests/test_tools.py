@@ -7,8 +7,12 @@ from app.agent.tools import TOOL_SPECS, TOOLS, TurnContext, current, execute, st
 from app.catalog.cards import build_card
 from app.catalog.taxonomy import format_rupees
 from app.llm.base import ToolCall
+from app.catalog.embed import embed
+from app.catalog.ingest import ingest
+from app.search.index import load_index
 from tests.conftest import ids
-from tests.test_ingest import VALID
+from tests.test_embed import FakeModel
+from tests.test_ingest import VALID, product, write_lines
 
 PORTABLE_KEYS = {
     "type", "properties", "required", "items", "enum", "minimum", "maximum",
@@ -112,13 +116,21 @@ def test_failures_become_error_results(name, arguments):
         ("get_product_details", {"product_id": "J1"}, "Looking up product details"),
         ("compare_products", {"product_ids": ["J1", "J3"]}, "Comparing 2 products"),
         ("show_products", {"product_ids": ["J1"], "headline": "x"}, None),
+        # Badly typed arguments are skipped, never raised: the status line runs before the tool validates anything.
+        ("search_products", {"query": "x", "category": 5, "price_max": "8k", "price_min": True, "size": ["L"]}, "Searching all products"),
+        ("search_products", {"query": "x", "price_max": 7999.6}, "Searching all products under ₹8,000"),
+        ("compare_products", {"product_ids": "J1"}, "Comparing 0 products"),
     ],
 )
 def test_status_text(name, arguments, text):
     assert status_text(name, arguments) == text
 
 
-@pytest.mark.parametrize(("amount", "text"), [(999, "₹999"), (7499, "₹7,499"), (124999, "₹1,24,999"), (10000000, "₹1,00,00,000")])
+@pytest.mark.parametrize(
+    ("amount", "text"),
+    [(0, "₹0"), (999, "₹999"), (7499, "₹7,499"), (124999, "₹1,24,999"), (10000000, "₹1,00,00,000"),
+     (7499.4, "₹7,499"), (-1500, "-₹1,500")],
+)
 def test_rupee_format(amount, text):
     assert format_rupees(amount) == text
 
@@ -154,3 +166,40 @@ def test_text_values_are_lowercased_and_empty_conditions_warn():
                   attributes=[{"name": "type", "any_of": ["Down"]}, {"name": "warmth"}])
     assert ids(result) == ["J1", "J4"]
     assert result["warnings"] == ["empty condition for attribute 'warmth' ignored"]
+
+
+@pytest.fixture(scope="module")
+def ten_product_index(tmp_path_factory):
+    path = tmp_path_factory.mktemp("ten_products")
+    ingest(write_lines(path / "p.jsonl", [product(id=f"X{n:02d}") for n in range(1, 11)]), path)
+    embed(path, FakeModel())
+    return load_index(path, model=FakeModel())
+
+
+def test_show_products_caps_ids_headline_and_suggestions(ten_product_index):
+    store = SessionStore(ttl_minutes=60, max_turns=30)
+    events = []
+    context = TurnContext(ten_product_index, store.begin_turn(store.create("anthropic").id), lambda *e: events.append(e))
+    token = current.set(context)
+    try:
+        ids_in = [f"X{n:02d}" for n in range(1, 11)]
+        result = call("show_products", product_ids=ids_in, headline="h" * 100, suggestions=["s" * 40] * 6)
+    finally:
+        current.reset(token)
+    [(_, data)] = events
+    assert [s["id"] for s in result["shown"]] == ids_in[:8] and [c["id"] for c in data["products"]] == ids_in[:8]
+    assert data["headline"] == "h" * 80 and data["suggestions"] == ["s" * 30] * 4
+    assert context.turn.transcript[0]["product_ids"] == ids_in[:8] and context.turn.shown_ids == ids_in[:8]
+
+
+@pytest.mark.usefixtures("ctx")
+def test_compare_removes_duplicate_ids_and_caps_at_four():
+    result = call("compare_products", product_ids=["J1", "J1", "J2", "J3", "J4", "P1"])
+    assert [p["id"] for p in result["products"]] == ["J1", "J2", "J3", "J4"] and result["not_found"] == []
+
+
+@pytest.mark.usefixtures("ctx")
+def test_non_string_any_of_values_are_accepted():
+    result = call("search_products", query="", category="jackets", sort="price_asc",
+                  attributes=[{"name": "waterproof", "any_of": [False]}, {"name": "weight_g", "any_of": [500]}])
+    assert ids(result) == ["J3"] and result["warnings"] == []

@@ -115,7 +115,8 @@ def ingest(path: Path, data_dir: Path, allow_rejects: bool = False) -> tuple[Cou
     data_dir.mkdir(parents=True, exist_ok=True)
     products, rejects, seen_ids = [], [], set()
     loaded, rejected = Counter(), Counter()
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    # split("\n"), not splitlines(): U+2028 and similar are valid inside JSON strings
+    for number, line in enumerate(path.read_text(encoding="utf-8").split("\n"), start=1):
         if not line.strip():
             continue
         product, reasons = validate_line(line, seen_ids)

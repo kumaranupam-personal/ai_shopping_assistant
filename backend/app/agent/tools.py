@@ -49,7 +49,7 @@ def _attribute_conditions(category: str | None, attributes: list[dict]) -> dict:
         if "min" in item or "max" in item:
             conditions[item["name"]] = {k: item[k] for k in ("min", "max") if k in item}
         else:
-            values = [_parse_value(attr, v) for v in item.get("any_of", [])]
+            values = [_parse_value(attr, str(v)) for v in item.get("any_of", [])]  # tolerate non-string values
             conditions[item["name"]] = values[0] if len(values) == 1 else values
     return conditions
 
@@ -66,6 +66,7 @@ def get_product_details(product_id: str) -> dict:
 
 
 def compare_products(product_ids: list[str]) -> dict:
+    product_ids = list(dict.fromkeys(product_ids))[:4]
     found = fetch_products(current.get().index.conn, product_ids)
     products = [{k: found[i][k] for k in COMPARE_FIELDS} for i in product_ids if i in found]
     names = sorted({name for p in products for name in p["attributes"]})
@@ -80,8 +81,9 @@ def compare_products(product_ids: list[str]) -> dict:
 def show_products(product_ids: list[str], headline: str, suggestions: list[str] | None = None) -> dict:
     ctx = current.get()
     found = fetch_products(ctx.index.conn, product_ids)
-    shown = list(dict.fromkeys(i for i in product_ids if i in found))
-    suggestions = suggestions or []
+    shown = list(dict.fromkeys(i for i in product_ids if i in found))[:8]
+    headline = headline[:80]
+    suggestions = [s[:30] for s in (suggestions or [])[:4]]
     if shown:
         cards = [build_card(found[i]) for i in shown]
         ctx.emit("products", {"headline": headline, "suggestions": suggestions, "products": cards})
@@ -93,21 +95,29 @@ def show_products(product_ids: list[str], headline: str, suggestions: list[str] 
     }
 
 
+def _is_amount(value) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
 def status_text(name: str, arguments: dict) -> str | None:
-    """Status shown while a tool runs, built from its inputs only. `show_products` has none."""
+    """Status shown while a tool runs, built from its inputs only. `show_products` has none.
+
+    It runs before the tool validates anything, so badly typed arguments are skipped rather than raised.
+    """
     if name == "search_products":
-        text = f"Searching {(arguments.get('category') or 'all products').replace('_', ' ')}"
-        if arguments.get("price_max") is not None:
-            text += f" under {format_rupees(arguments['price_max'])}"
-        if arguments.get("price_min") is not None:
-            text += f" over {format_rupees(arguments['price_min'])}"
-        if arguments.get("size"):
+        category = arguments.get("category")
+        text = f"Searching {category.replace('_', ' ') if isinstance(category, str) and category else 'all products'}"
+        for key, word in (("price_max", "under"), ("price_min", "over")):
+            if _is_amount(arguments.get(key)):
+                text += f" {word} {format_rupees(arguments[key])}"
+        if isinstance(arguments.get("size"), str) and arguments["size"]:
             text += f" in size {arguments['size']}"
         return text
     if name == "get_product_details":
         return "Looking up product details"
     if name == "compare_products":
-        return f"Comparing {len(arguments.get('product_ids', []))} products"
+        ids = arguments.get("product_ids")
+        return f"Comparing {len(ids) if isinstance(ids, list) else 0} products"
     return None
 
 

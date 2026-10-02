@@ -140,3 +140,12 @@ def test_exit_code_and_existing_catalog_follow_allow_rejects(tmp_path, monkeypat
     assert main([str(bad), "--allow-rejects"]) == 0
     assert db_ids(data_dir) == ["PHN-00001"]
     assert not (data_dir / "catalog.db.tmp").exists()
+
+
+def test_line_separator_characters_inside_json_strings_stay_on_one_line(tmp_path):
+    # U+2028 is valid unescaped inside a JSON string; splitlines() would cut the line there.
+    line = json.dumps(product(description="Warm. Packable."), ensure_ascii=False)
+    src = tmp_path / "p.jsonl"
+    src.write_text(line + "\r\n", encoding="utf-8")  # also a Windows line ending
+    loaded, rejected, written = ingest(src, tmp_path / "data")
+    assert written and loaded == {"jackets": 1} and not rejected
