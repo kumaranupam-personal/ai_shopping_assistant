@@ -78,7 +78,7 @@ ai_shopping_assistant/
       cases.yaml
       run.py                 eval runner
       checks.py              grounding check and case expectations
-      results/               eval run outputs and each provider's baseline, tracked in git
+      results/               eval run outputs and each provider's baseline, tracked in git so runs can be compared
         prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
