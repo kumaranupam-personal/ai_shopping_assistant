@@ -1,21 +1,22 @@
 import json
+import re
 
+import numpy as np
 import pytest
 
 from app.catalog.embed import embed
 from app.catalog.ingest import ingest
-from app.search.engine import Filters, search_products
+from app.search.engine import Filters, diversify, fts_expression, fuse, search_products
 from app.search.index import CatalogNotReadyError, load_index
 from tests.test_embed import FakeModel
-from tests.test_ingest import PHONE, VALID, write_lines
+from tests.test_ingest import PHONE, VALID, product, write_lines
 
 
 def jacket(id, brand, price, rating, review_count, stock, sizes, colors, **attrs):
-    return {
-        **VALID, "id": id, "brand": brand, "price": price, "mrp": price, "rating": rating,
-        "review_count": review_count, "stock": stock, "sizes": sizes, "colors": colors,
-        "attributes": {**VALID["attributes"], **attrs},
-    }
+    return product(
+        id=id, brand=brand, price=price, mrp=price, rating=rating, review_count=review_count, stock=stock,
+        sizes=sizes, colors=colors, attributes={**VALID["attributes"], **attrs},
+    )
 
 
 CATALOG = [
@@ -151,3 +152,76 @@ def test_startup_fails_when_embeddings_do_not_match_the_catalog(tmp_path):
     (tmp_path / "embedding_ids.json").write_text(json.dumps(["J1"]))
     with pytest.raises(CatalogNotReadyError, match="rerun embedding"):
         load_index(tmp_path, model=FakeModel())
+
+
+class KeywordModel:
+    """Maps a few words to fixed directions ("cozy" means "warm"), so vector ranking is predictable offline."""
+
+    VOCAB = {"warm": 0, "cozy": 0, "snow": 1, "rain": 2, "monsoon": 2, "fleece": 3, "soft": 3}
+
+    def embed(self, texts):
+        for text in texts:
+            vector = np.zeros(384)
+            vector[-1] = 0.1
+            for word in re.findall(r"[a-z]+", text.lower()):
+                if word in self.VOCAB:
+                    vector[self.VOCAB[word]] += 1
+            yield vector
+
+
+QUERY_CATALOG = [
+    product(id="Q1", brand="Acme", rating=4.0, title="Alpine Parka", description="A warm insulated parka for snow.", tags=["winter"]),
+    product(id="Q2", brand="Acme", rating=4.2, title="Rain Shell", description="A light shell for rain and monsoon.", tags=["monsoon"]),
+    product(id="Q3", brand="Acme", rating=4.4, title="Fleece Layer", description="A soft fleece for cool evenings.", tags=["layering"]),
+    product(id="Q4", brand="ACME", rating=4.6, title="City Bomber", description="A sleek bomber for the city.", tags=["casual"]),
+    product(id="Q5", brand="Bolt", rating=3.0, title="Trail Vest", description="A light vest for trails.", tags=["hiking"]),
+]
+
+
+@pytest.fixture(scope="module")
+def query_index(tmp_path_factory):
+    path = tmp_path_factory.mktemp("query_catalog")
+    ingest(write_lines(path / "p.jsonl", QUERY_CATALOG), path)
+    embed(path, KeywordModel())
+    return load_index(path, model=KeywordModel())
+
+
+def test_keyword_list_ranks_exact_words_first(query_index):
+    result = search_products(query_index, "monsoon")
+    assert ids(result)[0] == "Q2" and result["total_matches"] == 5
+
+
+def test_vector_list_finds_meaning_that_keywords_miss(query_index):
+    assert fts_expression("cozy") == '"cozy"'  # no product contains the word
+    assert ids(search_products(query_index, "cozy"))[0] == "Q1"
+
+
+@pytest.mark.parametrize(
+    ("query", "expression"),
+    [("NOT rain AND near", '"rain" OR "near"'), ('rain" OR (near*', '"rain" OR "near"'), ("show me the", None)],
+)
+def test_query_tokens_are_quoted_and_stopwords_dropped(query_index, query, expression):
+    assert fts_expression(query) == expression
+    assert search_products(query_index, query)["total_matches"] == 5  # never an FTS syntax error
+
+
+def test_fusion_matches_hand_computed_scores():
+    # a: 1/61 + 1/62 = 0.03252, c: 1/63 + 1/61 = 0.03227, b: 1/62 = 0.01613
+    assert fuse([["a", "b", "c"], ["c", "a"]], {"a": 1.0, "b": 1.0, "c": 1.0}) == ["a", "c", "b"]
+    # Equal scores: higher rating first, then id.
+    assert fuse([["x", "z"], ["y"]], {"x": 4.0, "y": 4.5, "z": 5.0}) == ["y", "x", "z"]
+    assert fuse([["y"], ["x"]], {"x": 4.0, "y": 4.0}) == ["x", "y"]
+
+
+def test_diversify_caps_each_brand_at_three_ignoring_case():
+    brand = {"a1": "Acme", "a2": "acme", "a3": "Acme", "a4": "ACME", "b1": "Bolt", "a5": "Acme"}
+    assert diversify(["a1", "a2", "a3", "a4", "b1", "a5"], brand) == ["a1", "a2", "a3", "b1", "a4", "a5"]
+
+
+def test_relevance_without_query_is_diversified(query_index):
+    # Rating order is Q4, Q3, Q2, Q1, Q5; Q1 is Acme's fourth product, so Bolt's Q5 moves ahead of it.
+    assert ids(search_products(query_index)) == ["Q4", "Q3", "Q2", "Q5", "Q1"]
+
+
+def test_sorts_other_than_relevance_are_not_diversified(query_index):
+    assert ids(search_products(query_index, sort="rating")) == ["Q4", "Q3", "Q2", "Q1", "Q5"]

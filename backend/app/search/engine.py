@@ -1,9 +1,12 @@
 """Filtered, ranked catalog search (docs/03-search.md)."""
 
-import json
+import re
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.catalog.embed import embed_texts
+from app.catalog.store import product_from_row
 from app.catalog.taxonomy import CATEGORIES, COLORS, Attribute
 from app.search.index import SearchIndex
 
@@ -16,8 +19,15 @@ ORDER_BY = {
     "relevance": "rating DESC",  # relevance with an empty query
 }
 TIE_BREAK = "review_count DESC, id ASC"
-SUMMARY_FIELDS = ("id", "title", "brand", "price", "mrp", "rating", "review_count")
+SUMMARY_FIELDS = ("id", "title", "brand", "price", "mrp", "rating", "review_count", "sizes", "colors", "attributes")
 ALL_SIZES = {size for c in CATEGORIES.values() for size in c.sizes}
+LIST_SIZE = 50  # keyword and vector lists each keep their top 50
+RRF_K = 60
+BRAND_CAP = 3
+STOPWORDS = frozenset(
+    "a an and are as at be but by for from have i in is it me my need of on or not show some that the "
+    "this to under over want with looking please".split()
+)
 
 
 @dataclass
@@ -95,11 +105,53 @@ def _where(filters: Filters, warnings: list[str]) -> tuple[str, list]:
 
 
 def _summary(row) -> dict:
-    summary = {name: row[name] for name in SUMMARY_FIELDS}
-    summary["in_stock"] = row["stock"] > 0
-    for name in ("sizes", "colors", "attributes"):
-        summary[name] = json.loads(row[name])
-    return summary
+    product = product_from_row(row)
+    return {**{name: product[name] for name in SUMMARY_FIELDS}, "in_stock": product["stock"] > 0}
+
+
+def fts_expression(query: str) -> str | None:
+    """Quoted, OR-joined tokens, so words like "and" or "near" are never read as FTS5 operators."""
+    tokens = [t for t in re.findall(r"[a-z0-9]+", query.lower()) if t not in STOPWORDS]
+    return " OR ".join(f'"{t}"' for t in dict.fromkeys(tokens)) or None
+
+
+def _keyword_list(index: SearchIndex, query: str, where: str, params: list) -> list[str]:
+    expression = fts_expression(query)
+    if not expression:
+        return []
+    rows = index.conn.execute(
+        "SELECT p.id FROM products_fts JOIN products p ON p.rowid = products_fts.rowid "
+        f"WHERE products_fts MATCH ? AND p.rowid IN (SELECT rowid FROM products WHERE {where}) "
+        "ORDER BY bm25(products_fts), p.id LIMIT ?",
+        [expression, *params, LIST_SIZE],
+    )
+    return [row["id"] for row in rows]
+
+
+def _vector_list(index: SearchIndex, query: str, candidate_ids: list[str]) -> list[str]:
+    query_vector = embed_texts(index.model, [query])[0]
+    scores = index.vectors[[index.positions[i] for i in candidate_ids]] @ query_vector
+    ranked = sorted(zip(candidate_ids, scores.tolist(), strict=True), key=lambda pair: (-pair[1], pair[0]))
+    return [i for i, _ in ranked[:LIST_SIZE]]
+
+
+def fuse(lists: list[list[str]], rating: dict[str, float]) -> list[str]:
+    """Reciprocal rank fusion: score is the sum of 1 / (60 + rank) over the lists an id appears in."""
+    scores = Counter()
+    for ranked in lists:
+        for rank, id in enumerate(ranked, start=1):
+            scores[id] += 1 / (RRF_K + rank)
+    return sorted(scores, key=lambda id: (-scores[id], -rating[id], id))
+
+
+def diversify(ids: list[str], brand: dict[str, str]) -> list[str]:
+    """At most 3 products per brand in order; skipped products follow, in their original order."""
+    taken, skipped, counts = [], [], Counter()
+    for id in ids:
+        key = brand[id].lower()
+        (skipped if counts[key] >= BRAND_CAP else taken).append(id)
+        counts[key] += 1
+    return taken + skipped
 
 
 def search_products(
@@ -111,9 +163,14 @@ def search_products(
         raise ValueError("limit must be between 1 and 20")
     warnings: list[str] = []
     where, params = _where(filters or Filters(), warnings)
-    if sort == "relevance" and query.strip():
-        raise NotImplementedError("keyword and vector ranking arrive in Phase 2, Part 2")
     rows = index.conn.execute(
         f"SELECT * FROM products WHERE {where} ORDER BY {ORDER_BY[sort]}, {TIE_BREAK}", params
     ).fetchall()
-    return {"total_matches": len(rows), "results": [_summary(r) for r in rows[:limit]], "warnings": warnings}
+    by_id = {row["id"]: row for row in rows}
+    ranked = list(by_id)
+    if sort == "relevance" and query.strip() and rows:
+        lists = [_keyword_list(index, query, where, params), _vector_list(index, query, ranked)]
+        ranked = fuse(lists, {id: row["rating"] for id, row in by_id.items()})
+    if sort == "relevance":
+        ranked = diversify(ranked, {id: row["brand"] for id, row in by_id.items()})
+    return {"total_matches": len(rows), "results": [_summary(by_id[i]) for i in ranked[:limit]], "warnings": warnings}

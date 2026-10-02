@@ -10,11 +10,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, ValidationError, model_validator
 
+from app.catalog.store import CATALOG_DB, JSON_COLUMNS
 from app.catalog.taxonomy import CATEGORIES, COLORS
 from app.config import Settings
 
 SCHEMA = Path(__file__).with_name("schema.sql")
-JSON_COLUMNS = ("sizes", "colors", "attributes", "tags")
 
 
 class Product(BaseModel):
@@ -128,7 +128,7 @@ def ingest(path: Path, data_dir: Path, allow_rejects: bool = False) -> tuple[Cou
     (data_dir / "ingest_rejects.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rejects))
     if rejects and not allow_rejects:
         return loaded, rejected, False
-    write_catalog(products, data_dir / "catalog.db")
+    write_catalog(products, data_dir / CATALOG_DB)
     return loaded, rejected, True
 
 
