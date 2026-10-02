@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", env_ignore_empty=True, extra="ignore")
 
     llm_provider: str = "anthropic"
-    llm_api_key: str | None = None
+    llm_anthropic_api_key: str | None = None
+    llm_openai_api_key: str | None = None
+    llm_gemini_api_key: str | None = None
     llm_model: str | None = None
     llm_effort: Literal["low", "medium", "high"] = "low"
     llm_max_tokens: PositiveInt = 16000
@@ -23,6 +25,10 @@ class Settings(BaseSettings):
     max_turns_per_session: PositiveInt = 30
     cors_origins: str = "http://localhost:5173"
     port: PositiveInt = 8000
+
+    def api_key(self, provider: str) -> str | None:
+        """The key for a provider, from LLM_<PROVIDER>_API_KEY, so every provider's key can be set at once."""
+        return getattr(self, f"llm_{provider}_api_key", None)
 
     @field_validator("data_dir")
     @classmethod

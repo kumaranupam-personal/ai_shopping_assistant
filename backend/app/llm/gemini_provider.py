@@ -56,7 +56,7 @@ class GeminiProvider:
 
     def __init__(self, settings: Settings, client: genai.Client | None = None):
         # The key is passed explicitly so the SDK never reads GOOGLE_API_KEY or GEMINI_API_KEY on its own.
-        self.client = client or genai.Client(api_key=settings.llm_api_key, vertexai=False, http_options=HTTP_OPTIONS)
+        self.client = client or genai.Client(api_key=settings.api_key(self.name), vertexai=False, http_options=HTTP_OPTIONS)
         self.model = settings.llm_model or DEFAULT_MODEL
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens

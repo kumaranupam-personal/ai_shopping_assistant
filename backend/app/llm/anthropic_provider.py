@@ -49,7 +49,7 @@ class AnthropicProvider:
 
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic | None = None):
         # The key is passed explicitly so the SDK never reads ANTHROPIC_API_KEY on its own.
-        self.client = client or anthropic.AsyncAnthropic(api_key=settings.llm_api_key, timeout=REQUEST_TIMEOUT_SECONDS)
+        self.client = client or anthropic.AsyncAnthropic(api_key=settings.api_key(self.name), timeout=REQUEST_TIMEOUT_SECONDS)
         self.model = settings.llm_model or DEFAULT_MODEL
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens

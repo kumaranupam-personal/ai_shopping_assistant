@@ -62,7 +62,7 @@ A history can hold a tool-results message followed directly by a user message, w
 
 Each adapter interprets the `LLM_` variables from `01-architecture.md` this way:
 
-- `LLM_API_KEY`: passed to the provider SDK explicitly. The SDK is never left to read its own provider-named variable.
+- `LLM_<PROVIDER>_API_KEY` (such as `LLM_OPENAI_API_KEY`): the adapter reads only its own provider's key and passes it to the SDK explicitly. The SDK is never left to read its own provider-named variable, such as `OPENAI_API_KEY`.
 - `LLM_MODEL`: used as the model ID, or the adapter's default model when unset.
 - `LLM_EFFORT`: mapped to the provider's nearest control, or ignored if the provider has none.
 - `LLM_MAX_TOKENS`: passed as the provider's output-token limit.
