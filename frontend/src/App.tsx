@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { getFeatured, type ResultSet } from "./api";
 import ChatPanel from "./components/ChatPanel";
 import Header from "./components/Header";
 import ProductDrawer from "./components/ProductDrawer";
@@ -10,11 +11,22 @@ import { useChat } from "./useChat";
 
 export default function App() {
   const chat = useChat();
-  const { resultSets, selectedResultSet, turnRunning, loadingResults } = chat.state;
+  const { started, resultSets, selectedResultSet, turnRunning, loadingResults } = chat.state;
   const [openProduct, setOpenProduct] = useState<string | null>(null);
+  // Featured products fill the results until the conversation has its own: undefined while loading, null if it failed.
+  const [featured, setFeatured] = useState<ResultSet | null>();
+  useEffect(() => {
+    getFeatured().then(setFeatured, () => setFeatured(null));
+  }, []);
+
   const resultSet = selectedResultSet === null ? null : resultSets[selectedResultSet];
-  const results = resultSet && {
-    resultSet,
+  // Until the session is restored, it's unknown whether the conversation has results, so nothing flashes first.
+  const welcome = started && !resultSet;
+  const shown = resultSet ?? (welcome ? featured : null);
+  const loading = loadingResults || !started || (welcome && featured === undefined);
+  const intro = welcome && <EmptyState className="px-6 pt-10 pb-6" />; // the wide panel's heading before any results
+  const results = shown && {
+    resultSet: shown,
     onOpenProduct: setOpenProduct,
     onSuggestion: chat.send,
     turnRunning,
@@ -32,10 +44,19 @@ export default function App() {
           </section>
           <section aria-label="Results" className="order-first min-h-0 min-w-0 bg-surface-muted lg:order-none">
             {/* CSS picks the layout, so resizing never re-mounts or loses state. */}
-            <div className="hidden h-full lg:block">
-              {loadingResults ? <SkeletonCards /> : results ? <ResultsPanel {...results} /> : <EmptyState className="h-full justify-center px-6" />}
+            <div className="hidden h-full overflow-hidden lg:block">
+              {loading ? (
+                <>
+                  {intro}
+                  <SkeletonCards />
+                </>
+              ) : results ? (
+                <ResultsPanel {...results} intro={intro} />
+              ) : (
+                intro
+              )}
             </div>
-            <div className="lg:hidden">{loadingResults ? <SkeletonCards compact /> : results && <ResultsStrip {...results} />}</div>
+            <div className="lg:hidden">{loading ? <SkeletonCards compact /> : results && <ResultsStrip {...results} />}</div>
           </section>
         </main>
       </div>

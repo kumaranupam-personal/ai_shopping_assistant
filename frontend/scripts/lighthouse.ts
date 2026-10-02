@@ -1,5 +1,6 @@
 // `npm run lighthouse`: builds the app, serves the production build and checks Lighthouse desktop scores against the
-// quality bar in docs/06-frontend.md. A minimal stand-in API answers the first page load, so no backend is needed.
+// quality bar in docs/06-frontend.md. A minimal stand-in API answers the first page load (a session and the featured
+// products), so no backend is needed.
 import { createServer } from "node:http";
 
 import { chromium } from "@playwright/test";
@@ -8,6 +9,8 @@ import lighthouse from "lighthouse";
 import desktopConfig from "lighthouse/core/config/desktop-config.js";
 import { build, preview } from "vite";
 
+import { FEATURED } from "../tests/mock-api.ts";
+
 const MINIMUM = { performance: 90, accessibility: 95, "best-practices": 95 };
 
 const api = createServer((request, response) => {
@@ -15,6 +18,8 @@ const api = createServer((request, response) => {
   response.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (request.method === "POST" && request.url === "/api/sessions") {
     response.writeHead(201, { "Content-Type": "application/json" }).end(JSON.stringify({ session_id: "lighthouse" }));
+  } else if (request.method === "GET" && request.url === "/api/featured") {
+    response.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(FEATURED));
   } else {
     response.writeHead(request.method === "OPTIONS" ? 204 : 404).end();
   }

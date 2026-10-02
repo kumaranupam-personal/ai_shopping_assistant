@@ -20,6 +20,13 @@ export const LADAKH_TURN: ScriptedTurn = {
   reply: "Here are 8 warm jackets in size L under ₹8,000.",
 };
 
+/** What GET /api/featured returns: a few recorded cards under the fixed headline. */
+export const FEATURED = {
+  headline: "Popular picks",
+  suggestions: [],
+  products: (["JKT-00001", "JKT-00002", "JKT-00003"] as const).map((id) => products[id].card),
+};
+
 export const WATERPROOF_TURN: ScriptedTurn = {
   headline: "Waterproof warm jackets, size L, under ₹8,000",
   suggestions: ["Compare top 2"],
@@ -56,6 +63,7 @@ export async function mockApi(page: Page, turns: ScriptedTurn[]) {
       const entries = sessions.get(id);
       return entries ? json(200, { session_id: id, turn_count: entries.length / 3, entries }) : notFound();
     }
+    if (request.method() === "GET" && path === "/featured") return json(200, FEATURED);
     if (request.method() === "GET" && path.startsWith("/products/")) {
       const product = products[decodeURIComponent(path.slice("/products/".length)) as keyof typeof products];
       return product ? json(200, product) : json(404, { error: { code: "product_not_found", message: "This product doesn't exist." } });

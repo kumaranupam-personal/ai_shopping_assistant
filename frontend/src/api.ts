@@ -72,6 +72,10 @@ export function restoreSession(sessionId: string) {
   );
 }
 
+export function getFeatured() {
+  return request<ResultSet>("/api/featured");
+}
+
 export function getProduct(productId: string) {
   return request<Product>(`/api/products/${encodeURIComponent(productId)}`);
 }

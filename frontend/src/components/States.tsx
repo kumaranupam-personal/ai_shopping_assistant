@@ -31,20 +31,26 @@ export function SkeletonCards({ compact }: { compact?: boolean }) {
       </div>
     );
   }
+  // The headline bar matches the results panel's, so the real results arrive without shifting the grid.
   return (
-    <div aria-hidden className="p-4">
-      <CardGrid>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-line bg-surface">
-            <div className="aspect-square bg-line" />
-            <div className="flex flex-col gap-2 p-3">
-              <div className="h-3 w-1/3 rounded bg-line" />
-              <div className="h-3 w-4/5 rounded bg-line" />
-              <div className="h-3 w-1/2 rounded bg-line" />
+    <div aria-hidden className="animate-pulse">
+      <div className="border-b border-line px-4 py-3">
+        <div className="h-7 w-48 max-w-full rounded bg-line" />
+      </div>
+      <div className="p-4">
+        <CardGrid>
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="overflow-hidden rounded-xl border border-line bg-surface">
+              <div className="aspect-square bg-line" />
+              <div className="flex flex-col gap-2 p-3">
+                <div className="h-3 w-1/3 rounded bg-line" />
+                <div className="h-3 w-4/5 rounded bg-line" />
+                <div className="h-3 w-1/2 rounded bg-line" />
+              </div>
             </div>
-          </div>
-        ))}
-      </CardGrid>
+          ))}
+        </CardGrid>
+      </div>
     </div>
   );
 }

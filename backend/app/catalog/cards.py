@@ -1,8 +1,12 @@
-"""Product cards built from catalog data only (docs/05-api.md, Product card shape)."""
+"""Product cards built from catalog data only (docs/05-api.md, Product card shape and GET /api/featured)."""
 
+import sqlite3
+
+from app.catalog.store import product_from_row
 from app.catalog.taxonomy import CATEGORIES, attribute_label, format_attribute_value
 
 CARD_FIELDS = ("id", "title", "brand", "price", "mrp", "rating", "review_count", "image_url")
+FEATURED_MIN_REVIEWS = 100
 
 
 def attribute_details(product: dict, names: tuple[str, ...] | None = None) -> list[dict]:
@@ -23,3 +27,17 @@ def build_card(product: dict) -> dict:
         "in_stock": product["stock"] > 0,
         "highlights": highlights,
     }
+
+
+def featured_cards(conn: sqlite3.Connection) -> list[dict]:
+    """One card per category, in taxonomy order: the best-rated in-stock product with enough reviews to trust it."""
+    cards = []
+    for category in CATEGORIES:
+        row = conn.execute(
+            "SELECT * FROM products WHERE category = ? AND stock > 0 AND review_count >= ? "
+            "ORDER BY rating DESC, review_count DESC, id LIMIT 1",
+            (category, FEATURED_MIN_REVIEWS),
+        ).fetchone()
+        if row:
+            cards.append(build_card(product_from_row(row)))
+    return cards
