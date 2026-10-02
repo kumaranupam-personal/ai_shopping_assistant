@@ -157,6 +157,16 @@ def diversify(ids: list[str], brand: dict[str, str]) -> list[str]:
     return taken + skipped
 
 
+def matching_ids(index: SearchIndex, filters: Filters, ids: list[str]) -> set[str]:
+    """The given products that pass the filters, using the same conditions as search. Unknown filter values raise."""
+    warnings: list[str] = []
+    where, params = _where(filters, warnings)
+    if warnings:
+        raise ValueError("; ".join(warnings))
+    rows = index.conn.execute(f"SELECT id FROM products WHERE id IN ({', '.join('?' * len(ids))}) AND {where}", [*ids, *params])
+    return {row["id"] for row in rows}
+
+
 def search_products(
     index: SearchIndex, query: str = "", filters: Filters | None = None, sort: Sort = "relevance", limit: int = 10
 ) -> dict:

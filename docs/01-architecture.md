@@ -76,7 +76,8 @@ ai_shopping_assistant/
     tests/                   backend tests
     evals/
       cases.yaml
-      run.py
+      run.py                 eval runner
+      checks.py              grounding check and case expectations
       results/               eval run outputs, git-ignored
   frontend/
     package.json
@@ -115,5 +116,5 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 5. `uv run python -m app` starts the API server on `PORT` with auto-reload.
 6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
-8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money.
+8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. Case IDs as arguments run only those cases, and `--cases <path>` reads another case file.
 9. `npm install && npm run dev` serves the UI on port 5173. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.

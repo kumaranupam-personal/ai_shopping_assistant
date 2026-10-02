@@ -1,0 +1,197 @@
+"""Runs the eval cases against the real agent and the demo catalog, in-process (docs/07-evaluation.md).
+
+`uv run python -m evals.run [--cases PATH] [CASE_ID ...]` calls the provider named by LLM_PROVIDER and costs money.
+"""
+
+import argparse
+import asyncio
+import json
+import math
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.agent.loop import run_turn
+from app.agent.session import SessionStore
+from app.config import Settings
+from app.llm.base import LLMProvider, ToolResult
+from app.llm.registry import build_provider
+from app.search.engine import Filters, matching_ids
+from app.search.index import SearchIndex, load_index
+from evals.checks import TurnResult, expect_failures, grounding_violations, tool_facts, user_amounts
+
+EVALS_DIR = Path(__file__).resolve().parent
+TARGETS = {"pass_rate": 0.9, "grounding_violations": 0, "latency_p50_s": 8.0, "latency_p95_s": 15.0}
+
+
+class Expect(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    shown: dict | None = None
+    min_shown: int | None = None
+    clarifies: bool = False
+    declines: bool = False
+    mentions: list[str] = []
+    reply_language: Literal["english", "hinglish"] | None = None
+
+
+class Case(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    description: str
+    turns: list[str] = Field(min_length=1)
+    expect: Expect = Expect()
+
+
+class Recorder:
+    """Wraps the provider to see each turn's tool calls and tool results, through the neutral types only."""
+
+    def __init__(self, provider: LLMProvider):
+        self.provider, self.name = provider, provider.name
+        self.tools: list[str] = []
+        self.results: list[ToolResult] = []
+
+    async def complete(self, system, history, tools):
+        response = await self.provider.complete(system, history, tools)
+        self.tools += [call.name for call in response.tool_calls]
+        return response
+
+    def user_message(self, text):
+        return self.provider.user_message(text)
+
+    def tool_results_message(self, results):
+        self.results += results
+        return self.provider.tool_results_message(results)
+
+
+def load_cases(path: Path, ids: list[str]) -> list[Case]:
+    cases = [Case.model_validate(item) for item in yaml.safe_load(path.read_text(encoding="utf-8"))]
+    unknown = set(ids) - {case.id for case in cases}
+    if unknown:
+        raise SystemExit(f"Unknown case IDs: {sorted(unknown)}")
+    return [case for case in cases if not ids or case.id in ids]
+
+
+async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tuple[str, str]], case: Case, settings: Settings) -> dict:
+    """Runs a case's turns in one session, then grades the final turn. Grounding is checked on every turn."""
+    recorder = Recorder(provider)
+    store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
+    session = store.create(provider.name)
+    user_numbers: set[float] = set()
+    turns, cache_reads, error, last = [], [], None, TurnResult()
+    for text in case.turns:
+        events, recorder.tools = [], []
+        user_numbers |= user_amounts(text)
+        started = time.perf_counter()
+        try:
+            record = await run_turn(recorder, index, store.begin_turn(session.id), text, lambda e, d: events.append((e, d)))
+        except Exception as e:  # noqa: BLE001 - a failed turn fails the case, and the run goes on
+            error = f"{type(e).__name__}: {e}"
+            break
+        shown = [d for e, d in events if e == "products"]
+        last = TurnResult(
+            reply="\n".join(d["text"] for e, d in events if e == "text"),
+            tools=recorder.tools,
+            shown=[card["id"] for card in shown[-1]["products"]] if shown else None,
+        )
+        tool_ids, tool_prices = tool_facts([r.content for r in recorder.results])  # the whole conversation so far
+        cache_reads += [usage.cache_read_tokens for _, usage in record.calls]
+        turns.append({
+            "user": text,
+            **vars(last),
+            "latency_s": round(time.perf_counter() - started, 2),
+            "model_calls": len(record.calls),
+            "input_tokens": sum(u.input_tokens for _, u in record.calls),
+            "output_tokens": sum(u.output_tokens for _, u in record.calls),
+            "cache_read_tokens": sum(u.cache_read_tokens for _, u in record.calls),
+            "grounding": grounding_violations(last.reply, catalog, tool_ids, tool_prices, user_numbers),
+        })
+
+    def matching(conditions: dict, ids: list[str]) -> set[str]:
+        return matching_ids(index, Filters(**conditions), ids)
+
+    expect = case.expect.model_dump(exclude_unset=True)
+    failures = [error] if error else expect_failures(expect, last, matching)
+    return {
+        "id": case.id,
+        "description": case.description,
+        "scored": bool(expect),
+        "passed": not failures and not any(t["grounding"] for t in turns),
+        "failures": failures,
+        "cache_misses": sum(1 for reads in cache_reads[1:] if reads == 0),  # every call after a conversation's first
+        "turns": turns,
+    }
+
+
+def percentile(values: list[float], p: float) -> float:
+    """Nearest-rank percentile."""
+    ordered = sorted(values)
+    return ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)] if ordered else 0.0
+
+
+def summarize(results: list[dict]) -> dict:
+    scored = [r for r in results if r["scored"]]
+    turns = [t for r in results for t in r["turns"]]
+    latencies = [t["latency_s"] for t in turns]
+    cache_reported = any(t["cache_read_tokens"] for t in turns)
+
+    def mean(key: str) -> float:
+        return round(sum(t[key] for t in turns) / len(turns)) if turns else 0
+
+    summary = {
+        "cases": len(results),
+        "scored": len(scored),
+        "passed": sum(r["passed"] for r in scored),
+        "pass_rate": round(sum(r["passed"] for r in scored) / len(scored), 3) if scored else 0.0,
+        "grounding_violations": sum(len(t["grounding"]) for t in turns),
+        "latency_p50_s": percentile(latencies, 50),
+        "latency_p95_s": percentile(latencies, 95),
+        "mean_input_tokens": mean("input_tokens"),
+        "mean_output_tokens": mean("output_tokens"),
+        "mean_cache_read_tokens": mean("cache_read_tokens"),
+        "cache_misses": sum(r["cache_misses"] for r in results) if cache_reported else None,
+    }
+    summary["targets_met"] = (
+        summary["pass_rate"] >= TARGETS["pass_rate"]
+        and summary["grounding_violations"] <= TARGETS["grounding_violations"]
+        and summary["latency_p50_s"] < TARGETS["latency_p50_s"]
+        and summary["latency_p95_s"] < TARGETS["latency_p95_s"]
+        and not summary["cache_misses"]
+    )
+    return summary
+
+
+async def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run the eval cases against the configured LLM provider.")
+    parser.add_argument("ids", nargs="*", help="case IDs to run (default: all)")
+    parser.add_argument("--cases", type=Path, default=EVALS_DIR / "cases.yaml")
+    args = parser.parse_args(argv)
+
+    settings = Settings()
+    cases = load_cases(args.cases, args.ids)
+    provider, index = build_provider(settings), load_index(settings.data_dir)
+    catalog = [(row["id"], row["title"]) for row in index.conn.execute("SELECT id, title FROM products")]
+
+    results = []
+    for case in cases:
+        result = await run_case(provider, index, catalog, case, settings)
+        results.append(result)
+        grounding = [v for t in result["turns"] for v in t["grounding"]]
+        print(f"{'PASS' if result['passed'] else 'FAIL'} {case.id}", *(f"  - {f}" for f in result["failures"] + grounding), sep="\n")
+
+    summary = summarize(results)
+    out = EVALS_DIR / "results" / f"{datetime.now():%Y%m%d-%H%M%S}-{provider.name}.json"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(json.dumps({"provider": provider.name, "model": provider.model, "summary": summary, "cases": results}, indent=2, ensure_ascii=False))
+    print(json.dumps(summary, indent=2), f"Results: {out}", sep="\n")
+    return 0 if summary["targets_met"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(main()))

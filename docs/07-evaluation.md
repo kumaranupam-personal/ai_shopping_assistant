@@ -14,6 +14,7 @@
 - Frontend: Playwright, running against a mocked API that replays recorded event streams, checks every quality-bar item in `06-frontend.md` that can be automated (the listed widths in both themes, the drag-resize sweep, layout shift, and console errors). Lighthouse runs on the production build.
 - API: with a stubbed agent, the event order and error codes match `05-api.md`, and the session rules from `04-agent.md` hold (busy, full, expired, rollback on failure, cancellation and rollback on client disconnect). The featured list follows its selection rule. Restoring a session returns only committed turns, and its cards reflect the current catalog: a price changed after the turn shows the new price, and a removed product is left out.
 - Session restore in the browser: reloading restores messages, result markers and the latest result set. A new tab starts a new session. An expired session shows the notice. Reloading during a turn puts the interrupted message back in the composer.
+- Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM.
 - Featured products in the browser: they show on first load in both layouts, the first result set replaces them, a new chat brings them back, and a restored session with results doesn't show them.
 
 ## Eval suite
@@ -22,7 +23,7 @@
 
 - `id` and a one-line `description`.
 - `turns`: an ordered list of user messages.
-- `expect`: checks applied to the final turn. Every key is optional:
+- `expect`: checks applied to the final turn. Every key is optional, and a case with none is unscored: it still counts toward grounding, latency and tokens, but not toward the pass rate.
   - `shown`: the conditions that every product in the final turn's last `show_products` call must meet, using the same `filters` syntax as `03-search.md`.
   - `min_shown`: the minimum number of products in that call.
   - `clarifies`: true when the final turn should make no `show_products` call and its reply should contain a question mark.

@@ -53,6 +53,7 @@ class LLMResponse:
 
 class LLMProvider(Protocol):
     name: str
+    model: str
 
     async def complete(self, system: str, history: list, tools: list[ToolSpec]) -> LLMResponse: ...
 

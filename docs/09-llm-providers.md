@@ -41,6 +41,7 @@ The agent is independent of any one provider. It calls the interface defined her
 A protocol with:
 
 - `name`: the provider name used in config.
+- `model`: the model ID the adapter calls, recorded in eval results.
 - `async complete(system, history, tools) -> LLMResponse`: one model call. Model, effort and max tokens come from config, which the adapter reads at construction.
 - `user_message(text)`: returns a native user message.
 - `tool_results_message(results)`: returns one native message carrying all results from a single assistant turn, in call order.
