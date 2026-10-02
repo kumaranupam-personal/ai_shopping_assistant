@@ -7,7 +7,8 @@ from app.config import Settings
 from app.llm.base import ToolCall
 from app.search.engine import Filters, matching_ids
 from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from evals.run import EVALS_DIR, Case, load_cases, run_case
+from app.llm.base import Usage
+from evals.run import EVALS_DIR, Case, cache_misses, load_cases, run_case
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -35,10 +36,16 @@ def test_tool_facts_collect_ids_and_prices_from_any_result_shape():
 
 
 def test_grounding_flags_invented_amounts_and_unreturned_products():
-    catalog = [("J1", "TrekNorth Summit Jacket"), ("J2", "Himfrost Rain Jacket")]
-    reply_text = "The TrekNorth Summit Jacket is ₹1,000, under your ₹3k budget. The Himfrost Rain Jacket is ₹2,000."
+    catalog = [("J1", "TrekNorth Summit Jacket"), ("J2", "Himfrost Rain Jacket"), ("J3", "Himfrost Rain Jacket"), ("J4", "Snowline Parka")]
+    reply_text = "The TrekNorth Summit Jacket is ₹1,000, under your ₹3k budget. J4 is ₹2,000."
     violations = grounding_violations(reply_text, catalog, {"J1"}, {1000.0}, user_amounts("under 3k"))
-    assert violations == ["amount ₹2,000 is in no tool result and wasn't typed by the user", "product J2 was named but no tool returned it"]
+    assert violations == ["amount ₹2,000 is in no tool result and wasn't typed by the user", "product J4 was named but no tool returned it"]
+
+
+def test_a_title_shared_by_several_products_is_grounded_when_any_of_them_was_returned():
+    catalog = [("J2", "Himfrost Rain Jacket"), ("J3", "Himfrost Rain Jacket"), ("J4", "Snowline Parka")]
+    assert grounding_violations("Try the Himfrost Rain Jacket.", catalog, {"J3"}, set(), set()) == []
+    assert grounding_violations("Try the Snowline Parka.", catalog, {"J3"}, set(), set()) == ["title 'Snowline Parka' was named but no tool returned it"]
 
 
 @pytest.mark.parametrize(("text", "language"), [("Yeh jackets aapke budget mein hain.", "hinglish"), ("These are warm.", "english")])
@@ -97,3 +104,17 @@ def test_the_case_file_is_valid(index):
     for case in cases:
         if case.expect.shown is not None:
             matching_ids(index, Filters(**case.expect.shown), ["J1"])  # raises on an unknown filter value
+
+
+@pytest.mark.parametrize(
+    ("calls", "misses"),
+    [
+        ([Usage(3000, 0, 0), Usage(3000, 0, 0)], 0),  # below the minimum: can't be cached, so not a miss
+        ([Usage(5000, 0, 0), Usage(5000, 0, 0)], 1),  # large enough, nothing read
+        ([Usage(5000, 0, 0), Usage(1000, 0, 4000)], 0),  # read from the cache
+        ([Usage(5000, 0, 0)], 0),  # a conversation's first call is never a miss
+    ],
+)
+def test_a_cache_miss_counts_only_calls_large_enough_to_cache(calls, misses):
+    assert cache_misses(calls, min_cache_tokens=4096) == misses
+    assert cache_misses(calls, min_cache_tokens=None) == 0  # best-effort caching isn't checked

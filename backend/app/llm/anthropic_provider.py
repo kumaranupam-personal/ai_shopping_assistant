@@ -37,6 +37,7 @@ def with_cache_marker(history: list) -> list:
 
 class AnthropicProvider:
     name = "anthropic"
+    min_cache_tokens = 512
 
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic | None = None):
         # The key is passed explicitly so the SDK never reads ANTHROPIC_API_KEY on its own.

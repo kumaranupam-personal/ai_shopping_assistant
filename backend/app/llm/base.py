@@ -31,7 +31,7 @@ class ToolCall:
 @dataclass(frozen=True)
 class ToolResult:
     call_id: str
-    content: str  # JSON string
+    content: str  # the tool's JSON string, or a one-line error message when is_error
     is_error: bool = False
 
 
@@ -54,6 +54,7 @@ class LLMResponse:
 class LLMProvider(Protocol):
     name: str
     model: str
+    min_cache_tokens: int | None  # the smallest input the provider caches for the default model; None if best-effort
 
     async def complete(self, system: str, history: list, tools: list[ToolSpec]) -> LLMResponse: ...
 

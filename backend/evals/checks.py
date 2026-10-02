@@ -74,17 +74,18 @@ def tool_facts(contents: list[str]) -> tuple[set[str], set[float]]:
 def grounding_violations(
     reply: str, catalog: list[tuple[str, str]], tool_ids: set[str], tool_prices: set[float], user_numbers: set[float]
 ) -> list[str]:
-    """Amounts must come from a tool result or the user; named products (by ID or exact title) from a tool result."""
+    """Amounts must come from a tool result or the user; named products (by ID or exact title) from a tool result.
+
+    Titles can repeat in a catalog, so a title is grounded when any product with that title was returned.
+    """
     violations = [
         f"amount ₹{amount:,.0f} is in no tool result and wasn't typed by the user"
         for amount in rupee_amounts(reply)
         if amount not in tool_prices and amount not in user_numbers
     ]
-    violations += [
-        f"product {product_id} was named but no tool returned it"
-        for product_id, title in catalog
-        if (product_id in reply or title in reply) and product_id not in tool_ids
-    ]
+    returned_titles = {title for product_id, title in catalog if product_id in tool_ids}
+    violations += [f"product {product_id} was named but no tool returned it" for product_id, _ in catalog if product_id in reply and product_id not in tool_ids]
+    violations += [f"title {title!r} was named but no tool returned it" for title in {t for _, t in catalog} if title in reply and title not in returned_titles]
     return violations
 
 

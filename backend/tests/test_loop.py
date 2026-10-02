@@ -14,7 +14,8 @@ from app.llm.base import LLMResponse, LLMUpstreamError, ToolCall, Usage
 class ScriptedProvider:
     """Returns prepared responses in order and records what each call received."""
 
-    name = "scripted"
+    name = model = "scripted"
+    min_cache_tokens = 0
 
     def __init__(self, *responses):
         self.responses, self.calls = list(responses), []

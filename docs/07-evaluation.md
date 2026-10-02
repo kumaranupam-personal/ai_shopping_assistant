@@ -42,7 +42,7 @@ Case coverage:
 
 ## Grounding check
 
-The eval applies this to every turn of every case. A rupee amount is a number written after "₹", "Rs" or "Rs.", or before "rupees", with or without digit grouping. Each rupee amount in the assistant text must equal a `price` or `mrp` that appeared in a tool result during that conversation, a `price_min` or `price_max` in the `applied` filters a search reported (so a relaxed budget can be stated), or a number the user typed. User amounts are normalized before comparison, so "8k" counts as 8000, "5 hazaar" as 5000, and the Hindi number words one to ten followed by "hazaar" are recognized ("teen hazaar" counts as 3000). Each product ID or exact product title in the text must belong to a product returned by a tool in that conversation. Any mismatch counts as a grounding violation.
+The eval applies this to every turn of every case. A rupee amount is a number written after "₹", "Rs" or "Rs.", or before "rupees", with or without digit grouping. Each rupee amount in the assistant text must equal a `price` or `mrp` that appeared in a tool result during that conversation, a `price_min` or `price_max` in the `applied` filters a search reported (so a relaxed budget can be stated), or a number the user typed. User amounts are normalized before comparison, so "8k" counts as 8000, "5 hazaar" as 5000, and the Hindi number words one to ten followed by "hazaar" are recognized ("teen hazaar" counts as 3000). Each product ID or exact product title in the text must belong to a product returned by a tool in that conversation. Titles can repeat in a catalog, so a title counts as grounded when any product with that title was returned. Any mismatch counts as a grounding violation.
 
 ## Metrics and targets
 
@@ -51,6 +51,6 @@ The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and wr
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
 - Grounding violations: 0.
 - Turn latency, measured from the start of a turn to its end: p50 under 8 s and p95 under 15 s.
-- Input and output tokens per turn, plus cache-read tokens, are reported. For providers that report cache reads, cache-read tokens must be above zero from the second model call of a conversation onward, which confirms prompt caching works.
+- Input and output tokens per turn, plus cache-read tokens, are reported. From the second model call of a conversation onward, every call whose input (uncached plus cached tokens) is at least the provider's `min_cache_tokens` (see `09-llm-providers.md`) must read tokens from the cache, which confirms prompt caching works. Smaller calls aren't counted, because the provider can't cache them, and a provider that caches on a best-effort basis (no `min_cache_tokens`) isn't checked.
 
 Once the suite exists, every change to the prompt or the tools reruns it on every registered provider, and every change to `LLM_PROVIDER` or `LLM_MODEL` reruns it on that provider. The summaries go in the commit message.
