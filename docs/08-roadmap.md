@@ -49,23 +49,30 @@ Build the phases in order. Each phase is done only when its criteria pass.
 
 - Part 1: ending a turn right after `show_products` and the shorter-reply rule from `04-agent.md`, and history caching from `09-llm-providers.md`.
 - Part 2: the featured endpoint from `05-api.md` and the featured products in `06-frontend.md`.
-- Done when the tests in `07-evaluation.md` pass, the turn record (see `04-agent.md`) of a live search turn shows 2 model calls instead of 3, with cache reads above zero on the second, and the featured products show on first load in both layouts.
+- Done when the tests in `07-evaluation.md` pass, the turn record (see `04-agent.md`) of a live search turn shows 2 model calls instead of 3, with the second call reading more tokens from the cache than the system prompt and tools alone, which shows the history is cached, and the featured products show on first load in both layouts.
 
-## Phase 7: Evaluation
+## Phase 7: Evaluation baseline
 
 - Part 1: the eval runner and grounding check from `07-evaluation.md`.
 - Part 2: the eval cases.
-- Later parts: prompt and tool-description tuning, one change per commit.
-- Done when every target in `07-evaluation.md` is met. If one fails, iterate on the prompt and tool descriptions before changing the search code.
+- Done when the suite runs end to end on the Anthropic adapter and writes its results file, which becomes the baseline. Meeting the targets waits for Phase 9, so this phase changes no prompt or tool description.
 
-## Phase 8: Second provider
+## Phase 8: OpenAI and Gemini providers
 
-- Part 1: a second adapter, following "Adding a provider" in `09-llm-providers.md`. OpenAI is the suggested choice.
-- Done when the eval targets in `07-evaluation.md` are met with `LLM_PROVIDER` set to the new adapter, and nothing outside `app/llm/` changed apart from the docs.
+Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
+
+- Part 1: the OpenAI adapter, selected with `LLM_PROVIDER=openai`.
+- Part 2: the Gemini adapter, selected with `LLM_PROVIDER=gemini`.
+- Done when, for each new adapter, its tests pass, the suite runs end to end with `LLM_PROVIDER` set to it, and every case that passes on the baseline but fails on it is explained as either an adapter bug (fixed in this phase) or a model difference (left for Phase 9). Nothing changes outside `app/llm/`, its tests, the dependency files and the docs.
+
+## Phase 9: Tuning
+
+- Parts: prompt and tool-description tuning, one change per commit, rerunning the suite as `07-evaluation.md` requires.
+- Done when every target in `07-evaluation.md` is met on all three providers, which completes step 3 of "Adding a provider" for OpenAI and Gemini. If a target fails, iterate on the prompt and tool descriptions before changing the search code.
 
 ## Stretch goals
 
-These come after Phase 8 and are each specified in a new doc before being built.
+These come after Phase 9 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

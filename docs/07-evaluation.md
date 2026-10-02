@@ -50,6 +50,6 @@ The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and wr
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
 - Grounding violations: 0.
 - Turn latency, measured from the start of a turn to its end: p50 under 8 s and p95 under 15 s.
-- Input and output tokens per turn, plus cache-read tokens, are reported. For providers that report cache reads, cache-read tokens must be above zero from the second model call onward, which confirms prompt caching works.
+- Input and output tokens per turn, plus cache-read tokens, are reported. For providers that report cache reads, cache-read tokens must be above zero from the second model call of a conversation onward, which confirms prompt caching works.
 
-Every change to the prompt, the tools, `LLM_PROVIDER` or `LLM_MODEL` reruns the suite, and the summary goes in the commit message.
+Once the suite exists, every change to the prompt or the tools reruns it on every registered provider, and every change to `LLM_PROVIDER` or `LLM_MODEL` reruns it on that provider. The summaries go in the commit message.

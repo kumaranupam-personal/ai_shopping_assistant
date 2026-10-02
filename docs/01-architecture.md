@@ -26,7 +26,7 @@ The model chooses which products to show and writes prose about them. It never s
 - Python 3.12, managed with `uv`.
 - FastAPI and Uvicorn for the API server. Server-sent events use FastAPI's built-in `StreamingResponse`, with no extra library.
 - Pydantic, which FastAPI already depends on, for product validation during ingestion, and `pydantic-settings` for reading configuration.
-- Provider SDKs, used only inside their adapters. The Anthropic Python SDK is the first.
+- The Python SDK of each provider in `09-llm-providers.md`, used only inside that provider's adapter.
 - SQLite from the Python standard library, with FTS5 for keyword search.
 - `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
@@ -51,6 +51,8 @@ ai_shopping_assistant/
         base.py              provider interface and shared types
         registry.py          builds the adapter named by LLM_PROVIDER
         anthropic_provider.py
+        openai_provider.py
+        gemini_provider.py
       agent/
         loop.py              runs one agent turn
         prompt.py            system prompt text
