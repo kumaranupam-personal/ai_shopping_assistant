@@ -27,7 +27,7 @@ Span durations are the latencies.
 |---|---|
 | span name and `langfuse.trace.name` | `turn` |
 | `langfuse.session.id` | the session ID |
-| `langfuse.trace.tags` | `["api"]`, `["cli"]`, or `["eval", <case ID>]`, passed by the caller of `run_turn` |
+| `langfuse.trace.tags` | `["api"]`, `["cli"]`, or `["eval", <case ID>]`, passed by the caller of `run_turn`, followed by the provider's `name`, such as `["eval", "jackets-ladakh", "gemini"]` |
 | `langfuse.version` | the prompt version from `07-evaluation.md` |
 | `langfuse.trace.metadata.turn` | the session's `turn_count` plus one, taken when the turn starts |
 | `langfuse.trace.metadata.provider` | the provider's `name` |

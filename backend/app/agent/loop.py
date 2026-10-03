@@ -57,7 +57,7 @@ async def run_turn(
     root_attributes = {
         "langfuse.trace.name": "turn",
         "langfuse.session.id": turn.session.id,
-        "langfuse.trace.tags": options.tags,
+        "langfuse.trace.tags": [*options.tags, provider.name],  # the provider, so a trace shows it at a glance
         "langfuse.version": PROMPT_VERSION,
         "langfuse.trace.metadata.turn": turn.session.turn_count + 1,
         "langfuse.trace.metadata.provider": provider.name,

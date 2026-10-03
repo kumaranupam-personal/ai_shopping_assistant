@@ -63,7 +63,7 @@ def test_a_turn_is_a_root_span_with_a_span_per_model_and_tool_call(traced, index
     assert all(span.parent.span_id == root.context.span_id for span in children)
     # With message text off, no attribute holds a message, reply, tool argument or tool result.
     assert attributes(root) == {
-        "langfuse.trace.name": "turn", "langfuse.session.id": session.id, "langfuse.trace.tags": ("api",),
+        "langfuse.trace.name": "turn", "langfuse.session.id": session.id, "langfuse.trace.tags": ("api", "scripted"),
         "langfuse.version": PROMPT_VERSION, "langfuse.trace.metadata.turn": 1,
         "langfuse.trace.metadata.provider": "scripted", "langfuse.trace.metadata.outcome": "done",
     }
@@ -146,7 +146,7 @@ def test_eval_turns_are_tagged_with_their_case_and_always_carry_message_text(tra
     case = Case(id="refine-brand", description="d", turns=["hi"])
     asyncio.run(run_case(ScriptedProvider(reply("Hello! What are you shopping for?")), index, [], case, Settings(_env_file=None)))
     root, _ = traced.spans()
-    assert root.attributes["langfuse.trace.tags"] == ("eval", "refine-brand")
+    assert root.attributes["langfuse.trace.tags"] == ("eval", "refine-brand", "scripted")  # the provider comes last
     assert root.attributes["langfuse.observation.input"] == "hi"  # although TRACE_MESSAGE_TEXT is off
 
 

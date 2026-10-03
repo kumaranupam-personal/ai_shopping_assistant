@@ -32,7 +32,7 @@ _tracer: trace.Tracer = trace.NoOpTracer()
 class TraceOptions:
     """What the caller of a turn adds to its trace."""
 
-    tags: list[str]  # where the turn ran: ["api"], ["cli"] or ["eval", <case ID>]
+    tags: list[str]  # where the turn ran: ["api"], ["cli"] or ["eval", <case ID>]; the provider is added after them
     message_text: bool  # whether messages, replies, tool arguments and tool results are recorded
 
 
