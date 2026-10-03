@@ -18,6 +18,7 @@ Loop rules:
 - A `refusal` stop reason ends the turn with `done`. A fixed polite message is sent as a `text` event and added as an `assistant` entry.
 - The system prompt is static. Nothing that changes per request, such as dates or IDs, goes into it, so providers can cache it.
 - The loop returns a turn record with the latency and the `usage` of every model call. The eval runner reads it, and the API ignores it.
+- The loop traces the turn as described in `10-observability.md`.
 
 ## Required behaviors
 
