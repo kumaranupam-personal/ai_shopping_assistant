@@ -1,0 +1,37 @@
+# Runs the backend and frontend tests on every push and pull request. Neither calls an LLM provider, so no secrets
+# are needed; the paid eval suite stays a manual command (docs/07-evaluation.md).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Also part of the build Playwright runs, but checked here first so a type error fails with a clear message.
+      - run: npx tsc --noEmit -p .
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
