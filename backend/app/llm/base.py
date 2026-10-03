@@ -61,14 +61,15 @@ class Prices:
     cache_read: float
     cache_write: float
 
+    def costs(self, usage: Usage) -> dict[str, float]:
+        """The USD cost of each usage bucket, keyed by the Usage field name."""
+        rates = {"input_tokens": self.input, "output_tokens": self.output,
+                 "cache_read_tokens": self.cache_read, "cache_write_tokens": self.cache_write}
+        return {name: getattr(usage, name) * rate / 1_000_000 for name, rate in rates.items()}
+
     def cost(self, usage: Usage) -> float:
         """The USD cost of one call's usage."""
-        return (
-            usage.input_tokens * self.input
-            + usage.output_tokens * self.output
-            + usage.cache_read_tokens * self.cache_read
-            + usage.cache_write_tokens * self.cache_write
-        ) / 1_000_000
+        return sum(self.costs(usage).values())
 
 
 @dataclass(frozen=True)

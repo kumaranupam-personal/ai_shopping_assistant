@@ -4,10 +4,11 @@ import json
 import pytest
 
 from app.config import Settings
+from app.agent.prompt import PROMPT_VERSION, prompt_snapshot, prompt_version
 from app.llm.base import Prices, ToolCall, Usage
 from app.search.engine import Filters, matching_ids
 from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from evals.run import EVALS_DIR, Case, cache_misses, git_state, load_cases, prompt_snapshot, prompt_version, run_case, summarize
+from evals.run import EVALS_DIR, Case, cache_misses, git_state, load_cases, run_case, summarize
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -136,7 +137,7 @@ def test_a_cache_miss_counts_only_calls_large_enough_to_cache(calls, misses):
 def test_prompt_version_changes_with_any_word_of_the_prompt_or_a_tool():
     snapshot = prompt_snapshot()
     version = prompt_version(snapshot)
-    assert len(version) == 12 and version == prompt_version(prompt_snapshot())  # stable for the same prompt
+    assert len(version) == 12 and version == prompt_version(prompt_snapshot()) == PROMPT_VERSION  # stable
     assert [tool["name"] for tool in snapshot["tools"]] == ["search_products", "get_product_details", "compare_products", "show_products"]
     edited_tool = {**snapshot, "tools": [{**snapshot["tools"][0], "description": "Search."}, *snapshot["tools"][1:]]}
     edited_prompt = {**snapshot, "system_prompt": snapshot["system_prompt"] + " "}

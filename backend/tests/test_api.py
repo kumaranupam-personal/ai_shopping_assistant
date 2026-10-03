@@ -16,7 +16,7 @@ from app.search.index import load_index
 from tests.conftest import CATALOG, jacket
 from tests.test_embed import FakeModel
 from tests.test_ingest import write_lines
-from tests.test_loop import SEARCH, SHOW, ScriptedProvider, reply
+from tests.test_loop import OPTIONS, SEARCH, SHOW, ScriptedProvider, reply
 
 MAX_TURNS = 2
 HAPPY_TURN = (reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
@@ -153,7 +153,7 @@ def test_client_disconnect_cancels_and_rolls_back_the_turn(make_client, index):
     session_id = new_session(client)
 
     async def disconnect_after_first_event():
-        stream = stream_turn(BlockingProvider(reply(stop="tool_use", calls=[SEARCH])), index, store, session_id, "hi")
+        stream = stream_turn(BlockingProvider(reply(stop="tool_use", calls=[SEARCH])), index, store, session_id, "hi", OPTIONS)
         first = await anext(stream)
         await stream.aclose()  # what the server does when the client goes away
         return first
@@ -207,7 +207,7 @@ def test_cors_allows_the_configured_origin(make_client):
 def test_a_stream_that_is_never_read_leaves_the_session_free(make_client, index):
     client = make_client()
     session_id = new_session(client)
-    stream_turn(ScriptedProvider(), index, client.app.state.store, session_id, "hi")  # client gone before streaming
+    stream_turn(ScriptedProvider(), index, client.app.state.store, session_id, "hi", OPTIONS)  # client gone before streaming
     assert session(client, session_id).busy is False
 
 
@@ -218,7 +218,7 @@ def test_a_turn_that_loses_the_race_gets_an_error_event(make_client, index):
     store.begin_turn(session_id)  # another request started a turn after this one was checked
 
     async def read_all():
-        return [frame async for frame in stream_turn(ScriptedProvider(), index, store, session_id, "hi")]
+        return [frame async for frame in stream_turn(ScriptedProvider(), index, store, session_id, "hi", OPTIONS)]
 
     assert parse_events("".join(asyncio.run(read_all()))) == [
         ("error", {"code": "turn_in_progress", "message": "A reply is still being generated for this chat."})

@@ -9,6 +9,7 @@ from app.config import Settings
 from app.llm.base import LLMConfigError
 from app.llm.registry import build_provider
 from app.search.index import CatalogNotReadyError, load_index
+from app.tracing import TraceOptions, setup_tracing, shutdown_tracing
 
 
 def print_event(event: str, data: dict) -> None:
@@ -30,16 +31,21 @@ async def main() -> None:
     index = load_index(settings.data_dir)
     store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
     session = store.create(provider.name)
+    options = TraceOptions(["cli"], settings.trace_message_text)
+    tracing = setup_tracing(settings)
     print("Shopping assistant. Type a message, or press Enter on an empty line to quit.")
-    while text := (await asyncio.to_thread(input, "\n> ")).strip():
-        try:
-            await run_turn(provider, index, store.begin_turn(session.id), text, print_event)
-        except (SessionNotFoundError, SessionFullError) as e:  # idle past SESSION_TTL_MINUTES, or out of turns
-            session = store.create(provider.name)
-            reason = "expired" if isinstance(e, SessionNotFoundError) else "reached its message limit"
-            print(f"  [This chat {reason}, so a new one started. Send your message again.]")
-        except Exception as e:  # noqa: BLE001 - show the failure and keep chatting
-            print(f"  [error: {type(e).__name__}: {e}]")
+    try:
+        while text := (await asyncio.to_thread(input, "\n> ")).strip():
+            try:
+                await run_turn(provider, index, store.begin_turn(session.id), text, print_event, options)
+            except (SessionNotFoundError, SessionFullError) as e:  # idle past SESSION_TTL_MINUTES, or out of turns
+                session = store.create(provider.name)
+                reason = "expired" if isinstance(e, SessionNotFoundError) else "reached its message limit"
+                print(f"  [This chat {reason}, so a new one started. Send your message again.]")
+            except Exception as e:  # noqa: BLE001 - show the failure and keep chatting
+                print(f"  [error: {type(e).__name__}: {e}]")
+    finally:
+        shutdown_tracing(tracing)  # flushes the remaining spans, also on Ctrl+C or Ctrl+D
 
 
 if __name__ == "__main__":

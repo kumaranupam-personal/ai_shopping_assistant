@@ -49,7 +49,7 @@ When the outcome isn't `done`, the span's status is `ERROR` with the outcome as 
 | `langfuse.observation.metadata.stop_reason` | the response's `stop_reason` |
 | `langfuse.observation.output` | the response's text parts and tool calls (names and arguments), only with message text on |
 
-The request (the history) is never sent. A call that raises sets status `ERROR` with the exception's class name.
+The request (the history) is never sent. A call that raises sets status `ERROR` with `cancelled` or the exception's class name, as the root span does.
 
 ### Tool spans
 
@@ -74,7 +74,7 @@ For the API and the terminal chat, `TRACE_MESSAGE_TEXT` (see `01-architecture.md
 
 ## Cost
 
-Costs come from `provider.prices` (see `09-llm-providers.md`, Prices): each bucket's cost is its token count times its price, and `total` is `prices.cost(usage)`, so Langfuse shows the same cost as the eval results. When `provider.prices` is unset, `cost_details` is left out.
+Costs come from `provider.prices` (see `09-llm-providers.md`, Prices): the buckets are `prices.costs(usage)` and `total` is `prices.cost(usage)`, so Langfuse shows the same cost as the eval results. When `provider.prices` is unset, `cost_details` is left out.
 
 ## Export
 
@@ -82,4 +82,4 @@ Costs come from `provider.prices` (see `09-llm-providers.md`, Prices): each buck
 - For Langfuse Cloud, the endpoint is the project region's host followed by `/api/public/otel`, such as `https://cloud.langfuse.com/api/public/otel`. The headers are `Authorization=Basic <base64 of public key:secret key>,x-langfuse-ingestion-version=4`.
 - When `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, nothing is set up and OpenTelemetry's no-op tracer is used.
 - Export happens in the background. A failed export drops its spans, and no tracing error ever reaches the turn.
-- The API shuts the tracer provider down when it stops, which flushes it. The terminal chat and the eval runner flush it before they exit.
+- The API, the terminal chat and the eval runner shut the tracer provider down before they exit, which flushes it.

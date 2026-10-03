@@ -39,7 +39,8 @@ The agent is independent of any one provider. It calls the interface defined her
 ### Prices
 
 - `input`, `output`, `cache_read` and `cache_write`: USD per million tokens of each `usage` bucket.
-- `cost(usage)`: the USD cost of one call's usage, the sum of each bucket's tokens times its price.
+- `costs(usage)`: the USD cost of each bucket of one call's usage, its tokens times its price.
+- `cost(usage)`: the USD cost of one call's usage, the sum of `costs(usage)`.
 
 Each adapter holds a price table, keyed by model ID, with at least its default model. The prices are copied from the provider's pricing page. For a model priced by prompt-size tiers, the table holds the smallest tier.
 

@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     max_turns_per_session: PositiveInt = 30
     cors_origins: str = "http://localhost:5173"
     port: PositiveInt = 8000
+    otel_exporter_otlp_endpoint: str | None = None  # unset turns tracing off
+    otel_exporter_otlp_headers: str | None = None
+    trace_message_text: bool = False
 
     def api_key(self, provider: str) -> str | None:
         """The key for a provider, from LLM_<PROVIDER>_API_KEY, so every provider's key can be set at once."""
