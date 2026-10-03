@@ -1,5 +1,10 @@
 """The static system prompt (docs/04-agent.md, Required behaviors). Built once at import, so providers can cache it."""
 
+import hashlib
+import json
+from dataclasses import asdict
+
+from app.agent.tools import TOOL_SPECS
 from app.catalog.taxonomy import CATEGORIES
 
 
@@ -45,3 +50,17 @@ Language and style:
 - Reply in Hinglish when the user's latest message is in Hinglish, and in English otherwise. Write the show_products reply and suggestions in that same language. Keep product titles, brands and amounts exactly as the tools return them.
 - Keep each reply to at most 2 sentences and 50 words, in plain text without Markdown tables or headings. When you show cards, don't repeat what they show (prices, ratings, specs); say only what helps the user choose, such as a trade-off or what you relaxed.
 - Politely decline requests unrelated to shopping, and say so when the store doesn't carry a category."""
+
+
+
+def prompt_snapshot() -> dict:
+    """Everything the model sees besides the conversation: the system prompt and every tool."""
+    return {"system_prompt": SYSTEM_PROMPT, "tools": [asdict(tool) for tool in TOOL_SPECS]}
+
+
+def prompt_version(snapshot: dict) -> str:
+    """A short hash of a snapshot, so any change to the prompt or a tool gives a new version (docs/07-evaluation.md)."""
+    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
+
+
+PROMPT_VERSION = prompt_version(prompt_snapshot())

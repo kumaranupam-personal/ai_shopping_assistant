@@ -76,9 +76,16 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 1: optional `image_url` and the demo data without images from `02-catalog.md`, `category` and `colors` on the card from `05-api.md`, and the product tiles from `06-frontend.md`.
 - Done when the tests in `07-evaluation.md` pass and every demo product shows its tile, in its own color, in both layouts and both themes.
 
+## Phase 11: Observability
+
+- Part 1: `cache_write_tokens`, `Prices` and the price tables from `09-llm-providers.md`, and cost in the eval results from `07-evaluation.md`. The suite rerun that `07-evaluation.md` requires for these adapter changes waits until after Part 2, so the runs are traced.
+- Part 2: tracing from `10-observability.md` and its configuration variables from `01-architecture.md`.
+- After Part 2, a live API conversation is checked in a Langfuse Cloud project first: each turn shows as one trace with its generation and tool observations nested in order, its usage and cost by bucket, and its tags, and the session groups the conversation's turns. This confirms the attribute encodings in `10-observability.md`. Only then does the suite rerun on all three providers, with tracing configured.
+- Done when the tests in `07-evaluation.md` pass, the live check holds, and each provider's rerun has written its results file and shows in Langfuse with costs matching that file.
+
 ## Stretch goals
 
-These come after Phase 10 and are each specified in a new doc before being built.
+These come after Phase 11 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

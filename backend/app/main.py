@@ -21,6 +21,7 @@ from app.llm.base import LLMProvider, LLMUpstreamError
 from app.llm.registry import build_provider
 from app.search.index import SearchIndex, load_index
 from app.sse import format_event
+from app.tracing import TraceOptions, setup_tracing, shutdown_tracing
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def stream_error_code(error: BaseException) -> str:
 
 
 async def stream_turn(
-    provider: LLMProvider, index: SearchIndex, store: SessionStore, session_id: str, text: str
+    provider: LLMProvider, index: SearchIndex, store: SessionStore, session_id: str, text: str, options: TraceOptions
 ) -> AsyncIterator[str]:
     """Streams one turn's events, ending with `done` or `error`. Closing the stream cancels the turn.
 
@@ -75,7 +76,7 @@ async def stream_turn(
     async def run():
         try:
             turn = store.begin_turn(session_id)
-            return await run_turn(provider, index, turn, text, lambda event, data: queue.put_nowait(format_event(event, data)))
+            return await run_turn(provider, index, turn, text, lambda event, data: queue.put_nowait(format_event(event, data)), options)
         finally:
             queue.put_nowait(None)  # end of the turn's events
 
@@ -105,7 +106,9 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         app.state.index = index or load_index(settings.data_dir)
         app.state.store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
         app.state.featured = {"headline": "Popular picks", "suggestions": [], "products": featured_cards(app.state.index.conn)}
+        tracing = setup_tracing(settings)
         yield
+        shutdown_tracing(tracing)  # flushes the remaining spans
 
     # Endpoints are async so all session-store access stays on the event loop thread.
     app = FastAPI(title="AI shopping assistant", lifespan=lifespan)
@@ -147,7 +150,8 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         state = request.app.state
         state.store.check_can_start(body.session_id)  # unknown, busy and full sessions get an HTTP error
-        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message)
+        options = TraceOptions(["api"], settings.trace_message_text)
+        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message, options)
         return StreamingResponse(stream, media_type="text/event-stream")
 
     @app.get("/api/featured")

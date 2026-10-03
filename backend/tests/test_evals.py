@@ -4,11 +4,11 @@ import json
 import pytest
 
 from app.config import Settings
-from app.llm.base import ToolCall
+from app.agent.prompt import PROMPT_VERSION, prompt_snapshot, prompt_version
+from app.llm.base import Prices, ToolCall, Usage
 from app.search.engine import Filters, matching_ids
 from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from app.llm.base import Usage
-from evals.run import EVALS_DIR, Case, cache_misses, git_state, load_cases, prompt_snapshot, prompt_version, run_case
+from evals.run import EVALS_DIR, Case, cache_misses, git_state, load_cases, run_case, summarize
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -83,9 +83,16 @@ def test_matching_ids_uses_search_conditions_and_rejects_unknown_values(index):
         matching_ids(index, Filters(color="purple"), ["J1"])
 
 
-def test_a_case_runs_end_to_end_and_is_graded(index):
+@pytest.mark.parametrize(
+    ("prices", "cost"),
+    # Each call uses Usage(100, 20, 80): 100 x $1 + 20 x $2 + 80 x $0.50 per million tokens, twice.
+    [(Prices(input=1, output=2, cache_read=0.5, cache_write=0), 0.00036), (None, None)],
+    ids=["priced model", "model without prices"],
+)
+def test_a_case_runs_end_to_end_and_is_graded(index, prices, cost):
     show = ToolCall("c2", "show_products", {"product_ids": ["J3", "J1"], "headline": "Warm jackets", "reply": "Both are warm, from ₹1,000."})
     provider = ScriptedProvider(reply(stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[show]))
+    provider.prices = prices
     case = Case(id="c", description="d", turns=["warm jacket under 3k"],
                 expect={"shown": {"category": "jackets", "price_max": 3000}, "min_shown": 2, "mentions": ["warm"]})
     catalog = [(row["id"], row["title"]) for row in index.conn.execute("SELECT id, title FROM products")]
@@ -95,6 +102,12 @@ def test_a_case_runs_end_to_end_and_is_graded(index):
     [turn] = result["turns"]
     assert turn["tools"] == ["search_products", "show_products"] and turn["shown"] == ["J3", "J1"]
     assert turn["model_calls"] == 2 and turn["grounding"] == []  # ₹1,000 is J1's price, from the search result
+    assert (turn["input_tokens"], turn["output_tokens"], turn["cache_read_tokens"], turn["cache_write_tokens"]) == (200, 40, 160, 0)
+    summary = summarize([result])
+    if cost is None:  # no prices: cost is left out of the turn and the summary
+        assert "cost_usd" not in turn and "total_cost_usd" not in summary
+    else:
+        assert turn["cost_usd"] == summary["mean_cost_usd"] == summary["total_cost_usd"] == pytest.approx(cost)
 
 
 def test_the_case_file_is_valid(index):
@@ -112,6 +125,7 @@ def test_the_case_file_is_valid(index):
         ([Usage(3000, 0, 0), Usage(3000, 0, 0)], 0),  # below the minimum: can't be cached, so not a miss
         ([Usage(5000, 0, 0), Usage(5000, 0, 0)], 1),  # large enough, nothing read
         ([Usage(5000, 0, 0), Usage(1000, 0, 4000)], 0),  # read from the cache
+        ([Usage(5000, 0, 0), Usage(1000, 0, 0, 4000)], 1),  # cache writes count toward the size, but aren't a read
         ([Usage(5000, 0, 0)], 0),  # a conversation's first call is never a miss
     ],
 )
@@ -123,7 +137,7 @@ def test_a_cache_miss_counts_only_calls_large_enough_to_cache(calls, misses):
 def test_prompt_version_changes_with_any_word_of_the_prompt_or_a_tool():
     snapshot = prompt_snapshot()
     version = prompt_version(snapshot)
-    assert len(version) == 12 and version == prompt_version(prompt_snapshot())  # stable for the same prompt
+    assert len(version) == 12 and version == prompt_version(prompt_snapshot()) == PROMPT_VERSION  # stable
     assert [tool["name"] for tool in snapshot["tools"]] == ["search_products", "get_product_details", "compare_products", "show_products"]
     edited_tool = {**snapshot, "tools": [{**snapshot["tools"][0], "description": "Search."}, *snapshot["tools"][1:]]}
     edited_prompt = {**snapshot, "system_prompt": snapshot["system_prompt"] + " "}

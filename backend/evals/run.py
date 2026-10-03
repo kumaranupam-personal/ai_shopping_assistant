@@ -5,13 +5,12 @@
 
 import argparse
 import asyncio
-import hashlib
 import json
 import math
 import subprocess
 import sys
 import time
-from dataclasses import asdict
+from dataclasses import fields
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -20,19 +19,20 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.loop import run_turn
-from app.agent.prompt import SYSTEM_PROMPT
+from app.agent.prompt import PROMPT_VERSION, prompt_snapshot
 from app.agent.session import SessionStore
-from app.agent.tools import TOOL_SPECS
 from app.config import BACKEND_DIR, Settings
 from app.llm.base import LLMProvider, ToolResult, Usage
 from app.llm.registry import build_provider
 from app.search.engine import Filters, matching_ids
 from app.search.index import SearchIndex, load_index
+from app.tracing import TraceOptions, setup_tracing, shutdown_tracing
 from evals.checks import TurnResult, expect_failures, grounding_violations, tool_facts, user_amounts
 
 EVALS_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = EVALS_DIR / "results"
 TARGETS = {"pass_rate": 0.9, "grounding_violations": 0, "latency_p50_s": 8.0, "latency_p95_s": 15.0}
+USAGE_FIELDS = [f.name for f in fields(Usage)]  # input_tokens, output_tokens, cache_read_tokens, cache_write_tokens
 
 
 class Expect(BaseModel):
@@ -59,7 +59,8 @@ class Recorder:
     """Wraps the provider to see each turn's tool calls and tool results, through the neutral types only."""
 
     def __init__(self, provider: LLMProvider):
-        self.provider, self.name, self.model, self.min_cache_tokens = provider, provider.name, provider.model, provider.min_cache_tokens
+        self.provider, self.name, self.model = provider, provider.name, provider.model
+        self.min_cache_tokens, self.prices = provider.min_cache_tokens, provider.prices
         self.tools: list[str] = []  # both lists only grow; a turn's share is the slice it added
         self.results: list[ToolResult] = []
 
@@ -74,16 +75,6 @@ class Recorder:
     def tool_results_message(self, results):
         self.results += results
         return self.provider.tool_results_message(results)
-
-
-def prompt_snapshot() -> dict:
-    """Everything the model sees besides the conversation: the system prompt and every tool."""
-    return {"system_prompt": SYSTEM_PROMPT, "tools": [asdict(tool) for tool in TOOL_SPECS]}
-
-
-def prompt_version(snapshot: dict) -> str:
-    """A short hash of a snapshot, so any change to the prompt or a tool gives a new version."""
-    return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
 
 
 def git_state(cwd: Path = BACKEND_DIR) -> tuple[str | None, bool | None]:
@@ -106,7 +97,8 @@ def cache_misses(calls: list[Usage], min_cache_tokens: int | None) -> int:
         return 0
     return sum(
         1 for usage in calls[1:]
-        if usage.input_tokens + usage.cache_read_tokens >= min_cache_tokens and usage.cache_read_tokens == 0
+        if usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens >= min_cache_tokens
+        and usage.cache_read_tokens == 0
     )
 
 
@@ -124,13 +116,14 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
     store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
     session = store.create(provider.name)
     user_numbers: set[float] = set()
+    options = TraceOptions(["eval", case.id], message_text=True)  # the messages are the eval cases, never private
     turns, calls, error, last = [], [], None, TurnResult()
     for text in case.turns:
         events, first_tool = [], len(recorder.tools)
         user_numbers |= user_amounts(text)
         started = time.perf_counter()
         try:
-            record = await run_turn(recorder, index, store.begin_turn(session.id), text, lambda e, d: events.append((e, d)))
+            record = await run_turn(recorder, index, store.begin_turn(session.id), text, lambda e, d: events.append((e, d)), options)
         except Exception as e:  # noqa: BLE001 - a failed turn fails the case, and the run goes on
             error = f"{type(e).__name__}: {e}"
             break
@@ -141,15 +134,16 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
             shown=[card["id"] for card in shown[-1]["products"]] if shown else None,
         )
         tool_ids, tool_prices = tool_facts([r.content for r in recorder.results])  # the whole conversation so far
-        calls += [usage for _, usage in record.calls]
+        usages = [usage for _, usage in record.calls]
+        calls += usages
         turns.append({
             "user": text,
             **vars(last),
             "latency_s": round(time.perf_counter() - started, 2),
-            "model_calls": len(record.calls),
-            "input_tokens": sum(u.input_tokens for _, u in record.calls),
-            "output_tokens": sum(u.output_tokens for _, u in record.calls),
-            "cache_read_tokens": sum(u.cache_read_tokens for _, u in record.calls),
+            "model_calls": len(usages),
+            **{name: sum(getattr(u, name) for u in usages) for name in USAGE_FIELDS},
+            # Left out when the provider has no prices for the model.
+            **({"cost_usd": round(sum(map(provider.prices.cost, usages)), 6)} if provider.prices else {}),
             "grounding": grounding_violations(last.reply, catalog, tool_ids, tool_prices, user_numbers),
         })
 
@@ -191,11 +185,12 @@ def summarize(results: list[dict]) -> dict:
         "grounding_violations": sum(len(t["grounding"]) for t in turns),
         "latency_p50_s": percentile(latencies, 50),
         "latency_p95_s": percentile(latencies, 95),
-        "mean_input_tokens": mean("input_tokens"),
-        "mean_output_tokens": mean("output_tokens"),
-        "mean_cache_read_tokens": mean("cache_read_tokens"),
+        **{f"mean_{name}": mean(name) for name in USAGE_FIELDS},
         "cache_misses": sum(r["cache_misses"] for r in results),
     }
+    if turns and all("cost_usd" in t for t in turns):  # every turn has a cost, or the model has no prices
+        total = sum(t["cost_usd"] for t in turns)
+        summary |= {"mean_cost_usd": round(total / len(turns), 6), "total_cost_usd": round(total, 6)}
     summary["targets_met"] = (
         summary["pass_rate"] >= TARGETS["pass_rate"]
         and summary["grounding_violations"] <= TARGETS["grounding_violations"]
@@ -214,18 +209,20 @@ async def main(argv: list[str] | None = None) -> int:
 
     settings = Settings()
     cases = load_cases(args.cases, args.ids)
-    snapshot = prompt_snapshot()
-    version = prompt_version(snapshot)
+    snapshot, version = prompt_snapshot(), PROMPT_VERSION
     commit, dirty = git_state()
     provider, index = build_provider(settings), load_index(settings.data_dir)
     catalog = [(row["id"], row["title"]) for row in index.conn.execute("SELECT id, title FROM products")]
 
-    results = []
-    for case in cases:
-        result = await run_case(provider, index, catalog, case, settings)
-        results.append(result)
-        grounding = [v for t in result["turns"] for v in t["grounding"]]
-        print(f"{'PASS' if result['passed'] else 'FAIL'} {case.id}", *(f"  - {f}" for f in result["failures"] + grounding), sep="\n")
+    results, tracing = [], setup_tracing(settings)
+    try:
+        for case in cases:
+            result = await run_case(provider, index, catalog, case, settings)
+            results.append(result)
+            grounding = [v for t in result["turns"] for v in t["grounding"]]
+            print(f"{'PASS' if result['passed'] else 'FAIL'} {case.id}", *(f"  - {f}" for f in result["failures"] + grounding), sep="\n")
+    finally:
+        shutdown_tracing(tracing)  # flushes the remaining spans
 
     summary = summarize(results)
     (RESULTS_DIR / "prompts").mkdir(parents=True, exist_ok=True)

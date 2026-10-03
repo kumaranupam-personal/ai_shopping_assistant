@@ -9,6 +9,7 @@
 - **Search service**: an in-process Python module that combines SQL filters, keyword search and vector search. See `03-search.md`.
 - **Catalog store**: a SQLite database plus a vector file, both built offline by ingesting a product file. See `02-catalog.md`.
 - **Demo data generator**: a separate folder outside the runtime app that produces the demo product file. See `02-catalog.md`.
+- **Tracing**: every agent turn is exported as an OpenTelemetry trace to Langfuse Cloud. See `10-observability.md`.
 
 ## Request flow
 
@@ -30,6 +31,7 @@ The model chooses which products to show and writes prose about them. It never s
 - SQLite from the Python standard library, with FTS5 for keyword search.
 - `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
+- The OpenTelemetry SDK and its OTLP HTTP exporter for tracing (see `10-observability.md`).
 - `pytest` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
 - Node 24 LTS for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
 
@@ -48,6 +50,7 @@ ai_shopping_assistant/
       config.py              reads configuration variables
       main.py                FastAPI app and routes
       sse.py                 event formatting
+      tracing.py             sets up the OpenTelemetry exporter
       llm/
         base.py              provider interface and shared types
         registry.py          builds the adapter named by LLM_PROVIDER
@@ -102,6 +105,11 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 - `MAX_TURNS_PER_SESSION`: user messages allowed per session. Default `30`.
 - `CORS_ORIGINS`: comma-separated allowed origins. Default `http://localhost:5173`.
 - `PORT`: API server port. Default `8000`.
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: base URL of the OTLP trace backend. Default: unset, which turns tracing off.
+- `OTEL_EXPORTER_OTLP_HEADERS`: comma-separated `key=value` headers sent with every export. Default: unset.
+- `TRACE_MESSAGE_TEXT`: `true` or `false`, whether traces from the API and the terminal chat include message text. Default `false`.
+
+Their values for Langfuse, and what message text covers, are in `10-observability.md`.
 
 The frontend reads one variable:
 

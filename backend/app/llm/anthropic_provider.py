@@ -7,6 +7,7 @@ from app.llm.base import (
     REQUEST_TIMEOUT_SECONDS,
     LLMResponse,
     LLMUpstreamError,
+    Prices,
     ToolCall,
     ToolResult,
     ToolSpec,
@@ -18,6 +19,8 @@ DEFAULT_MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 STOP_REASONS = {"end_turn", "tool_use", "max_tokens", "refusal"}
 CACHE = {"type": "ephemeral"}
+# From https://platform.claude.com/docs/en/about-claude/pricing. Cache writes are the 5-minute ones, which CACHE makes.
+PRICES = {DEFAULT_MODEL: Prices(input=4, output=20, cache_read=0.20, cache_write=5)}
 
 
 def echoable(content: list) -> list:
@@ -51,6 +54,7 @@ class AnthropicProvider:
         # The key is passed explicitly so the SDK never reads ANTHROPIC_API_KEY on its own.
         self.client = client or anthropic.AsyncAnthropic(api_key=settings.api_key(self.name), timeout=REQUEST_TIMEOUT_SECONDS)
         self.model = settings.llm_model or DEFAULT_MODEL
+        self.prices = PRICES.get(self.model)
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens
 
@@ -79,10 +83,11 @@ class AnthropicProvider:
             tool_calls=[ToolCall(b.id, b.name, b.input) for b in content if b.type == "tool_use"],
             stop_reason=message.stop_reason if message.stop_reason in STOP_REASONS else "end_turn",
             native_message={"role": "assistant", "content": content},
-            usage=Usage(
+            usage=Usage(  # input_tokens already excludes cache reads and writes
                 message.usage.input_tokens,
                 message.usage.output_tokens,
                 message.usage.cache_read_input_tokens or 0,
+                message.usage.cache_creation_input_tokens or 0,
             ),
         )
 

@@ -9,6 +9,7 @@ from app.llm.base import (
     REQUEST_TIMEOUT_SECONDS,
     LLMResponse,
     LLMUpstreamError,
+    Prices,
     StopReason,
     ToolCall,
     ToolResult,
@@ -18,6 +19,8 @@ from app.llm.base import (
 )
 
 DEFAULT_MODEL = "gpt-6-astra"
+# Standard tier, prompts up to 272K tokens, from https://developers.openai.com/api/docs/pricing.
+PRICES = {DEFAULT_MODEL: Prices(input=10, output=50, cache_read=1, cache_write=12.50)}
 
 
 def flatten(history: list) -> list:
@@ -43,6 +46,7 @@ class OpenAIProvider:
         # The key is passed explicitly so the SDK never reads OPENAI_API_KEY on its own.
         self.client = client or openai.AsyncOpenAI(api_key=settings.api_key(self.name), timeout=REQUEST_TIMEOUT_SECONDS)
         self.model = settings.llm_model or DEFAULT_MODEL
+        self.prices = PRICES.get(self.model)
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens
 
@@ -87,9 +91,10 @@ class OpenAIProvider:
         )
         usage = Usage()
         if response.usage:
-            cached = response.usage.input_tokens_details.cached_tokens
-            # OpenAI counts cached tokens inside input_tokens; the neutral Usage counts only uncached input.
-            usage = Usage(response.usage.input_tokens - cached, response.usage.output_tokens, cached)
+            details = response.usage.input_tokens_details
+            # OpenAI counts cache reads and writes inside input_tokens; the neutral Usage keeps them apart.
+            uncached = response.usage.input_tokens - details.cached_tokens - details.cache_write_tokens
+            usage = Usage(uncached, response.usage.output_tokens, details.cached_tokens, details.cache_write_tokens)
         return LLMResponse(text, tool_calls, stop_reason, native_message=list(response.output), usage=usage)
 
     def user_message(self, text: str) -> dict:

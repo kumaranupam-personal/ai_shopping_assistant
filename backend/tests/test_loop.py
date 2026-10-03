@@ -9,6 +9,7 @@ from app.agent.session import SessionStore
 from app.agent.tools import TOOL_SPECS
 from app.catalog.taxonomy import CATEGORIES
 from app.llm.base import LLMResponse, LLMUpstreamError, ToolCall, Usage
+from app.tracing import TraceOptions
 
 
 class ScriptedProvider:
@@ -16,6 +17,7 @@ class ScriptedProvider:
 
     name = model = "scripted"
     min_cache_tokens = 0
+    prices = None
 
     def __init__(self, *responses):
         self.responses, self.calls = list(responses), []
@@ -39,6 +41,7 @@ def reply(*text, stop="end_turn", calls=()):
     return LLMResponse(list(text), list(calls), stop, native, Usage(100, 20, 80))
 
 
+OPTIONS = TraceOptions(["test"], message_text=False)
 SEARCH = ToolCall("c1", "search_products", {"query": "warm jacket", "category": "jackets", "price_max": 3000})
 SHOW = ToolCall("c2", "show_products", {"product_ids": ["J3", "J1"], "headline": "Warm jackets", "reply": "Here are 2 warm jackets."})
 
@@ -51,7 +54,7 @@ def store():
 def run(provider, index, store, session, text="warm jacket under 3k"):
     events = []
     turn = store.begin_turn(session.id)
-    record = asyncio.run(run_turn(provider, index, turn, text, lambda *e: events.append(e)))
+    record = asyncio.run(run_turn(provider, index, turn, text, lambda *e: events.append(e), OPTIONS))
     return record, events
 
 
