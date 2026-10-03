@@ -1,5 +1,7 @@
 # AI Shopping Assistant
 
+[![CI](https://github.com/kumaranupam-personal/ai_shopping_assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/kumaranupam-personal/ai_shopping_assistant/actions/workflows/ci.yml)
+
 A conversational shopping agent. Describe what you want in plain English or Hinglish ("garam jacket chahiye, 8k tak"), and the agent searches the catalog, shows matching products as cards, and refines the results as the conversation goes on.
 
 <!-- TODO: add a demo GIF here (the example conversation: Ladakh jacket → "only waterproof" → "compare the first two" → "aur sasta dikhao") -->

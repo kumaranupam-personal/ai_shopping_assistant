@@ -38,6 +38,7 @@ The model chooses which products to show and writes prose about them. It never s
 ```
 ai_shopping_assistant/
   .gitignore                 ignores .env, generated files and build output
+  .github/workflows/ci.yml   runs the backend and frontend tests on every push and pull request
   docs/                      this specification
   backend/
     pyproject.toml
