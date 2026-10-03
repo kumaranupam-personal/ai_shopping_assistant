@@ -72,7 +72,17 @@ Targets: pass rate ≥ 90%, 0 grounding violations, latency p50 < 8 s and p95 < 
 
 Costs come from each provider's published prices and match the per-call costs Langfuse shows for the same traces. Prompt caching does most of the saving: Anthropic and OpenAI read about 7,200 and 4,100 tokens per turn from the cache, leaving only a handful uncached, while Gemini's best-effort implicit caching read none in this run. A full 26-turn run costs $0.44 on Anthropic, $0.62 on OpenAI and $0.14 on Gemini.
 
-<!-- TODO: link public Langfuse traces of eval turns here, e.g. jackets-ladakh on each provider -->
+### Public traces
+
+The same eval turn ("I'm going trekking in Ladakh in December, need a jacket under 8k, size L.") on each provider, as public Langfuse traces. Each shows the conversation, both model calls with their tokens, cache use and cost, and the search and display tool calls.
+
+| Provider (model) | Latency | Cost | Trace |
+|---|---|---|---|
+| Anthropic (`claude-opus-5-5`) | 6.6 s | $0.036 | [View trace](https://cloud.langfuse.com/project/cmus314rs0f4sad0c0vp141i2/traces/75b11d64c0c6d0b97cb8a4ec276318ff?observation=3a5d1a6bdd6852c2&timestamp=2026-10-03T09:02:40.725Z&traceId=75b11d64c0c6d0b97cb8a4ec276318ff) |
+| OpenAI (`gpt-6-astra`) | 7.7 s | $0.049 | [View trace](https://cloud.langfuse.com/project/cmus314rs0f4sad0c0vp141i2/traces/1988f5946fb8a08d88a8c14105eebee0?observation=85b55db05a5cc1b0&timestamp=2026-10-03T09:02:49.601Z&traceId=1988f5946fb8a08d88a8c14105eebee0) |
+| Gemini (`gemini-3.8-flash`) | 3.5 s | $0.005 | [View trace](https://cloud.langfuse.com/project/cmus314rs0f4sad0c0vp141i2/traces/c6ff1442372c47b11ea4edbbd2f34ed3?observation=94ce0a2ef9e9bac6&timestamp=2026-10-03T09:00:25.010Z&traceId=c6ff1442372c47b11ea4edbbd2f34ed3) |
+
+These are single turns, recorded separately from the full runs above, so their figures are one sample each.
 
 The gains came from prompt and tool-description changes only, one change per commit, with every change rerun on all three providers: quoting amounts exactly instead of computing or rounding them, and separating filters the user stated from ones the agent inferred, so relaxation drops the inferred ones first and raises the budget by 15% at most once.
 
