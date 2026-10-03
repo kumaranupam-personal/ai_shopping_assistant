@@ -16,7 +16,7 @@
 - Session restore in the browser: reloading restores messages, result markers and the latest result set. A new tab starts a new session. An expired session shows the notice. Reloading during a turn puts the interrupted message back in the composer.
 - Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM.
 - Product tiles in the browser: a card without an image, and a card whose image fails to load, show a tile with their category's icon in their first color's wash.
-- Tracing: with an in-memory span exporter, a turn's spans and their attributes match `10-observability.md`, for a successful, a failed and a cancelled turn, a raising provider call, a tool error result, message text on and off, and a model without prices. With no endpoint configured, nothing is exported, and a failing exporter never fails a turn.
+- Tracing: with an in-memory span exporter, a turn's spans and their attributes match `10-observability.md`, for a successful, a failed and a cancelled turn, a raising provider call, a tool error result, message text on and off, the eval runner's turns, and a model without prices. With no endpoint configured, nothing is exported, and a failing exporter never fails a turn.
 - Cost: `Prices.cost` matches a hand-computed example over all four usage buckets, and each adapter fills `cache_write_tokens` as `09-llm-providers.md` describes.
 - Featured products in the browser: they show on first load in both layouts, the first result set replaces them, a new chat brings them back, and a restored session with results doesn't show them.
 

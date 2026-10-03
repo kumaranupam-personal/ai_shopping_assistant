@@ -107,7 +107,7 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 - `PORT`: API server port. Default `8000`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: base URL of the OTLP trace backend. Default: unset, which turns tracing off.
 - `OTEL_EXPORTER_OTLP_HEADERS`: comma-separated `key=value` headers sent with every export. Default: unset.
-- `TRACE_MESSAGE_TEXT`: `true` or `false`, whether traces include message text. Default `false`.
+- `TRACE_MESSAGE_TEXT`: `true` or `false`, whether traces from the API and the terminal chat include message text. Default `false`.
 
 Their values for Langfuse, and what message text covers, are in `10-observability.md`.
 

@@ -78,9 +78,10 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 
 ## Phase 11: Observability
 
-- Part 1: `cache_write_tokens`, `Prices` and the price tables from `09-llm-providers.md`, and cost in the eval results from `07-evaluation.md`, rerunning the suite as `07-evaluation.md` requires.
+- Part 1: `cache_write_tokens`, `Prices` and the price tables from `09-llm-providers.md`, and cost in the eval results from `07-evaluation.md`. The suite rerun that `07-evaluation.md` requires for these adapter changes waits until after Part 2, so the runs are traced.
 - Part 2: tracing from `10-observability.md` and its configuration variables from `01-architecture.md`.
-- Done when the tests in `07-evaluation.md` pass, and in a Langfuse Cloud project a live API turn shows as one trace with its generation and tool observations nested in order, its usage and cost by bucket matching the eval runner's figures, its tags, and its session grouping the conversation's turns. This confirms the attribute encodings in `10-observability.md`.
+- After Part 2, a live API conversation is checked in a Langfuse Cloud project first: each turn shows as one trace with its generation and tool observations nested in order, its usage and cost by bucket, and its tags, and the session groups the conversation's turns. This confirms the attribute encodings in `10-observability.md`. Only then does the suite rerun on all three providers, with tracing configured.
+- Done when the tests in `07-evaluation.md` pass, the live check holds, and each provider's rerun has written its results file and shows in Langfuse with costs matching that file.
 
 ## Stretch goals
 

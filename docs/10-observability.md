@@ -70,7 +70,7 @@ An error result (see `04-agent.md`, Error handling) sets status `ERROR` with the
 
 ## Message text
 
-`TRACE_MESSAGE_TEXT` (see `01-architecture.md`) controls every attribute marked "only with message text on" above. When it's off, those attributes are left out, so no message, reply, tool argument or tool result leaves the server.
+For the API and the terminal chat, `TRACE_MESSAGE_TEXT` (see `01-architecture.md`) controls every attribute marked "only with message text on" above. When it's off, those attributes are left out, so no message, reply, tool argument or tool result leaves the server. The eval runner always has message text on, because its messages are the eval cases.
 
 ## Cost
 
