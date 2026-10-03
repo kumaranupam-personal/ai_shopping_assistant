@@ -16,6 +16,7 @@ class ScriptedProvider:
 
     name = model = "scripted"
     min_cache_tokens = 0
+    prices = None
 
     def __init__(self, *responses):
         self.responses, self.calls = list(responses), []

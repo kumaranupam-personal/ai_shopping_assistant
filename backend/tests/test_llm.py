@@ -17,7 +17,7 @@ from app.config import Settings
 from app.llm.anthropic_provider import FALLBACK_BETA, AnthropicProvider
 from app.llm.gemini_provider import HTTP_OPTIONS, GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
-from app.llm.base import REQUEST_TIMEOUT_SECONDS, LLMConfigError, LLMUpstreamError, ToolCall, ToolResult, ToolSpec, Usage, is_upstream_failure
+from app.llm.base import REQUEST_TIMEOUT_SECONDS, LLMConfigError, LLMUpstreamError, Prices, ToolCall, ToolResult, ToolSpec, Usage, is_upstream_failure
 from app.llm.registry import build_provider
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
@@ -30,11 +30,12 @@ TOOL = ToolSpec(
 )
 
 
-def message(content, stop_reason="end_turn", cache_read=7):
+def message(content, stop_reason="end_turn", cache_read=7, cache_write=50):
     return BetaMessage.model_validate({
         "id": "msg_1", "type": "message", "role": "assistant", "model": "claude-opus-5-5", "content": content,
         "stop_reason": stop_reason, "stop_sequence": None,
-        "usage": {"input_tokens": 120, "output_tokens": 30, "cache_read_input_tokens": cache_read},
+        "usage": {"input_tokens": 120, "output_tokens": 30, "cache_read_input_tokens": cache_read,
+                  "cache_creation_input_tokens": cache_write},
     })
 
 
@@ -100,7 +101,7 @@ def test_response_is_parsed_into_llm_response():
     assert response.text == ["Searching now."]
     assert response.tool_calls == [ToolCall("toolu_1", "search_products", {"query": "warm jacket"})]
     assert response.stop_reason == "tool_use"
-    assert response.usage == Usage(120, 30, 7)
+    assert response.usage == Usage(120, 30, 7, 50)  # Anthropic reports cache reads and writes outside input_tokens
     # Thinking and tool-use blocks are kept unchanged for the next request.
     assert response.native_message["role"] == "assistant"
     assert [b.type for b in response.native_message["content"]] == ["thinking", "text", "tool_use"]
@@ -111,8 +112,8 @@ def test_response_is_parsed_into_llm_response():
     [("end_turn", "end_turn"), ("max_tokens", "max_tokens"), ("refusal", "refusal"), ("stop_sequence", "end_turn")],
 )
 def test_stop_reasons_map_to_neutral_names(stop_reason, expected):
-    response, _ = complete(message([{"type": "text", "text": "ok"}], stop_reason=stop_reason, cache_read=None))
-    assert response.stop_reason == expected and response.usage.cache_read_tokens == 0
+    response, _ = complete(message([{"type": "text", "text": "ok"}], stop_reason=stop_reason, cache_read=None, cache_write=None))
+    assert response.stop_reason == expected and response.usage == Usage(120, 30, 0, 0)  # unreported counts are 0
 
 
 def test_fallback_keeps_only_text_before_the_switch_point():
@@ -199,7 +200,14 @@ def test_registry_rejects_unknown_providers_and_missing_keys(overrides, message)
 def test_registry_builds_the_configured_adapter(name, adapter, default_model):
     provider = build_provider(Settings(_env_file=None, llm_provider=name, **{f"llm_{name}_api_key": f"{name}-key"}))
     assert isinstance(provider, adapter) and provider.name == name and provider.model == default_model
-    assert build_provider(keyed(llm_provider=name, llm_model="other")).model == "other"
+    assert provider.prices is not None  # every adapter prices its default model
+    other = build_provider(keyed(llm_provider=name, llm_model="other"))
+    assert other.model == "other" and other.prices is None  # a model the price table doesn't have
+
+
+def test_prices_cost_every_usage_bucket():
+    # 1,000 x $4 + 500 x $20 + 10,000 x $0.20 + 2,000 x $5, per million tokens
+    assert Prices(input=4, output=20, cache_read=0.20, cache_write=5).cost(Usage(1000, 500, 10_000, 2000)) == pytest.approx(0.026)
 
 
 @pytest.mark.parametrize("adapter", [AnthropicProvider, OpenAIProvider])
@@ -225,12 +233,12 @@ def test_only_provider_adapters_import_a_provider_sdk():
     assert offenders == []
 
 
-def openai_response(output, incomplete=None, cached=4000):
+def openai_response(output, incomplete=None, cached=4000, written=600):
     return Response.model_validate({
         "id": "resp_1", "created_at": 0, "model": "gpt-6-astra", "object": "response", "parallel_tool_calls": True,
         "tool_choice": "auto", "tools": [], "output": output,
         "incomplete_details": {"reason": incomplete} if incomplete else None,
-        "usage": {"input_tokens": 5000, "input_tokens_details": {"cached_tokens": cached, "cache_write_tokens": 0},
+        "usage": {"input_tokens": 5000, "input_tokens_details": {"cached_tokens": cached, "cache_write_tokens": written},
                   "output_tokens": 30, "output_tokens_details": {"reasoning_tokens": 10}, "total_tokens": 5030},
     })
 
@@ -261,7 +269,7 @@ def test_openai_response_is_parsed_into_llm_response():
     response, _ = complete(openai_response([REASONING, text_item(OUTPUT_TEXT), CALL]), adapter=OpenAIProvider)
     assert response.text == ["Searching now."] and response.stop_reason == "tool_use"
     assert response.tool_calls == [ToolCall("call_1", "search_products", {"query": "warm jacket"})]
-    assert response.usage == Usage(1000, 30, 4000)  # cached tokens are taken out of input_tokens
+    assert response.usage == Usage(400, 30, 4000, 600)  # cache reads and writes are taken out of input_tokens
     # Every output item, reasoning included, goes back unchanged on the next call.
     assert [item.type for item in response.native_message] == ["reasoning", "message", "function_call"]
 
@@ -330,7 +338,7 @@ def test_gemini_response_is_parsed_into_llm_response():
     response, _ = complete(gemini_response(THOUGHT, SEARCHING, FUNCTION_CALL), adapter=GeminiProvider)
     assert response.text == ["Searching now."] and response.stop_reason == "tool_use"  # thoughts aren't reply text
     assert response.tool_calls == [ToolCall("search_products|fc_1", "search_products", {"query": "warm jacket"})]
-    assert response.usage == Usage(1000, 40, 4000)  # cached tokens out of the prompt; thinking counts as output
+    assert response.usage == Usage(1000, 40, 4000, 0)  # cached tokens out of the prompt; thinking is output; no writes
     # The whole content goes back unchanged, so the thought signature reaches the next call.
     assert response.native_message.parts[0].thought_signature == b"sig"
 

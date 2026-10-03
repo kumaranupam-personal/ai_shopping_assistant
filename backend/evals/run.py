@@ -11,7 +11,7 @@ import math
 import subprocess
 import sys
 import time
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -33,6 +33,7 @@ from evals.checks import TurnResult, expect_failures, grounding_violations, tool
 EVALS_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = EVALS_DIR / "results"
 TARGETS = {"pass_rate": 0.9, "grounding_violations": 0, "latency_p50_s": 8.0, "latency_p95_s": 15.0}
+USAGE_FIELDS = [f.name for f in fields(Usage)]  # input_tokens, output_tokens, cache_read_tokens, cache_write_tokens
 
 
 class Expect(BaseModel):
@@ -106,7 +107,8 @@ def cache_misses(calls: list[Usage], min_cache_tokens: int | None) -> int:
         return 0
     return sum(
         1 for usage in calls[1:]
-        if usage.input_tokens + usage.cache_read_tokens >= min_cache_tokens and usage.cache_read_tokens == 0
+        if usage.input_tokens + usage.cache_read_tokens + usage.cache_write_tokens >= min_cache_tokens
+        and usage.cache_read_tokens == 0
     )
 
 
@@ -141,15 +143,16 @@ async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tupl
             shown=[card["id"] for card in shown[-1]["products"]] if shown else None,
         )
         tool_ids, tool_prices = tool_facts([r.content for r in recorder.results])  # the whole conversation so far
-        calls += [usage for _, usage in record.calls]
+        usages = [usage for _, usage in record.calls]
+        calls += usages
         turns.append({
             "user": text,
             **vars(last),
             "latency_s": round(time.perf_counter() - started, 2),
-            "model_calls": len(record.calls),
-            "input_tokens": sum(u.input_tokens for _, u in record.calls),
-            "output_tokens": sum(u.output_tokens for _, u in record.calls),
-            "cache_read_tokens": sum(u.cache_read_tokens for _, u in record.calls),
+            "model_calls": len(usages),
+            **{name: sum(getattr(u, name) for u in usages) for name in USAGE_FIELDS},
+            # Left out when the provider has no prices for the model.
+            **({"cost_usd": round(sum(map(provider.prices.cost, usages)), 6)} if provider.prices else {}),
             "grounding": grounding_violations(last.reply, catalog, tool_ids, tool_prices, user_numbers),
         })
 
@@ -191,11 +194,12 @@ def summarize(results: list[dict]) -> dict:
         "grounding_violations": sum(len(t["grounding"]) for t in turns),
         "latency_p50_s": percentile(latencies, 50),
         "latency_p95_s": percentile(latencies, 95),
-        "mean_input_tokens": mean("input_tokens"),
-        "mean_output_tokens": mean("output_tokens"),
-        "mean_cache_read_tokens": mean("cache_read_tokens"),
+        **{f"mean_{name}": mean(name) for name in USAGE_FIELDS},
         "cache_misses": sum(r["cache_misses"] for r in results),
     }
+    if turns and all("cost_usd" in t for t in turns):  # every turn has a cost, or the model has no prices
+        total = sum(t["cost_usd"] for t in turns)
+        summary |= {"mean_cost_usd": round(total / len(turns), 6), "total_cost_usd": round(total, 6)}
     summary["targets_met"] = (
         summary["pass_rate"] >= TARGETS["pass_rate"]
         and summary["grounding_violations"] <= TARGETS["grounding_violations"]

@@ -11,6 +11,7 @@ from app.llm.base import (
     REQUEST_TIMEOUT_SECONDS,
     LLMResponse,
     LLMUpstreamError,
+    Prices,
     StopReason,
     ToolCall,
     ToolResult,
@@ -27,6 +28,9 @@ except ImportError:
     TRANSPORT_ERRORS = (httpx.TransportError,)
 
 DEFAULT_MODEL = "gemini-3.8-flash"
+# Paid tier, from https://ai.google.dev/gemini-api/docs/pricing. These introductory prices end on 2026-12-31; from
+# 2027-01-01 they double (input 1.50, output 7.50, cache read 0.15). Implicit caching has no write charge.
+PRICES = {DEFAULT_MODEL: Prices(input=0.75, output=3.75, cache_read=0.075, cache_write=0)}
 HTTP_OPTIONS = types.HttpOptions(
     timeout=REQUEST_TIMEOUT_SECONDS * 1000,  # milliseconds, per attempt
     retry_options=types.HttpRetryOptions(attempts=3),  # the original request plus 2 retries, like the other adapters
@@ -58,6 +62,7 @@ class GeminiProvider:
         # The key is passed explicitly so the SDK never reads GOOGLE_API_KEY or GEMINI_API_KEY on its own.
         self.client = client or genai.Client(api_key=settings.api_key(self.name), vertexai=False, http_options=HTTP_OPTIONS)
         self.model = settings.llm_model or DEFAULT_MODEL
+        self.prices = PRICES.get(self.model)
         self.effort = settings.llm_effort
         self.max_tokens = settings.llm_max_tokens
 

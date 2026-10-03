@@ -44,9 +44,31 @@ class ToolResult:
 
 @dataclass(frozen=True)
 class Usage:
-    input_tokens: int = 0
+    """Token counts of one model call, in buckets that never overlap."""
+
+    input_tokens: int = 0  # neither read from nor written to the cache
     output_tokens: int = 0
     cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
+
+
+@dataclass(frozen=True)
+class Prices:
+    """USD per million tokens of each usage bucket."""
+
+    input: float
+    output: float
+    cache_read: float
+    cache_write: float
+
+    def cost(self, usage: Usage) -> float:
+        """The USD cost of one call's usage."""
+        return (
+            usage.input_tokens * self.input
+            + usage.output_tokens * self.output
+            + usage.cache_read_tokens * self.cache_read
+            + usage.cache_write_tokens * self.cache_write
+        ) / 1_000_000
 
 
 @dataclass(frozen=True)
@@ -62,6 +84,7 @@ class LLMProvider(Protocol):
     name: str
     model: str
     min_cache_tokens: int | None  # the smallest input the provider caches for the default model; None if best-effort
+    prices: Prices | None  # the configured model's prices; None when the adapter's price table doesn't have it
 
     async def complete(self, system: str, history: list, tools: list[ToolSpec]) -> LLMResponse: ...
 
