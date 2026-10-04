@@ -11,15 +11,20 @@ import { useChat } from "./useChat";
 
 export default function App() {
   const chat = useChat();
-  const { started, resultSets, selectedResultSet, turnRunning, loadingResults } = chat.state;
+  const { started, resultSets, selectedResultSet, enteringResultSet, turnRunning, loadingResults } = chat.state;
   const [openProduct, setOpenProduct] = useState<string | null>(null);
   // Featured products fill the results until the conversation has its own: undefined while loading, null if it failed.
   const [featured, setFeatured] = useState<ResultSet | null>();
   useEffect(() => {
     getFeatured().then(setFeatured, () => setFeatured(null));
   }, []);
+  // The featured cards play the entrance only on their first appearance, not when a new chat brings them back.
+  const [featuredFirstShowing, setFeaturedFirstShowing] = useState(true);
 
   const resultSet = selectedResultSet === null ? null : resultSets[selectedResultSet];
+  useEffect(() => {
+    if (resultSet) setFeaturedFirstShowing(false);
+  }, [resultSet]);
   // Until the session is restored, it's unknown whether the conversation has results, so nothing flashes first.
   const welcome = started && !resultSet;
   const shown = resultSet ?? (welcome ? featured : null);
@@ -30,6 +35,8 @@ export default function App() {
     onOpenProduct: setOpenProduct,
     onSuggestion: chat.send,
     turnRunning,
+    featured: !resultSet,
+    animate: resultSet ? selectedResultSet === enteringResultSet : featuredFirstShowing,
   };
   return (
     <div className="h-dvh">

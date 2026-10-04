@@ -17,9 +17,12 @@
   --accent-soft: var(--color-indigo-50);
   --accent-soft-fg: var(--color-indigo-900);
   --success: var(--color-green-700);
+  --success-soft: var(--color-green-50);
   --danger: var(--color-red-600);
   --danger-soft: var(--color-red-50);
   --star: var(--color-amber-500);
+  --tile-wash: 26%;
+  --hero-glow: 25%;
   color-scheme: light;
 }
 
@@ -36,15 +39,20 @@
   --accent-soft: color-mix(in oklab, var(--color-indigo-400) 18%, transparent);
   --accent-soft-fg: var(--color-indigo-100);
   --success: var(--color-green-400);
+  --success-soft: color-mix(in oklab, var(--color-green-400) 16%, transparent);
   --danger: var(--color-red-400);
   --danger-soft: color-mix(in oklab, var(--color-red-400) 15%, transparent);
   --star: var(--color-amber-400);
+  --tile-wash: 34%;
+  --hero-glow: 40%;
   color-scheme: dark;
 }
 
 @theme inline {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --animate-enter: enter 180ms ease-out;
+  --animate-rise: rise 420ms ease-out both; /* "both" keeps a card hidden until its stagger delay ends */
+  --animate-typing: typing 1.2s ease-in-out infinite;
   --animate-drawer-up: drawer-up 200ms ease-out;
   --animate-drawer-left: drawer-left 200ms ease-out;
   --color-page: var(--page);
@@ -59,16 +67,43 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-soft-fg: var(--accent-soft-fg);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-star: var(--star);
 }
 
-/* Product tiles: a wash of the product's color over the surface, and its icon in a deeper shade toward the text color,
-   so each of the catalog's colors adapts to both themes. --swatch is a CSS color name, set per tile. */
+/* Product tiles: a wash of the tile color over the surface (26% light, 34% dark), and its icon in a shade mixed halfway
+   toward the text color, so each of the catalog's colors adapts to both themes. --swatch is a CSS color name per tile. */
 .product-tile {
-  background: color-mix(in oklab, var(--swatch) 18%, var(--surface));
-  color: color-mix(in oklab, var(--swatch) 55%, var(--fg));
+  background: color-mix(in oklab, var(--swatch) var(--tile-wash), var(--surface));
+  color: color-mix(in oklab, var(--swatch) 50%, var(--fg));
+}
+
+/* The hero's glow (docs/06-frontend.md, Surfaces): an accent wash from the top centre that fades out inside the hero,
+   so it scrolls away with it and never meets the sticky headline bar. */
+.hero-glow {
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, color-mix(in oklab, var(--accent) var(--hero-glow), transparent), transparent);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes enter {
@@ -112,6 +147,8 @@
   *::after {
     transition-duration: 0s !important;
     animation-duration: 0s !important;
+    animation-delay: 0s !important; /* staggered cards appear at once */
+    animation-iteration-count: 1 !important; /* looping motion, like the typing dots, stays still */
     scroll-behavior: auto !important;
   }
 }

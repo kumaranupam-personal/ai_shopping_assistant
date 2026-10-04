@@ -19,6 +19,7 @@ type ChatState = {
   messages: Message[];
   resultSets: ResultSet[];
   selectedResultSet: number | null;
+  enteringResultSet: number | null; // the set a `products` event just added, whose cards play the entrance once
   turnRunning: boolean;
   status: string;
   loadingResults: boolean; // a search started this turn and its cards haven't arrived yet
@@ -53,6 +54,7 @@ const initialState: ChatState = {
   messages: [],
   resultSets: [],
   selectedResultSet: null,
+  enteringResultSet: null,
   turnRunning: false,
   status: "",
   loadingResults: false,
@@ -96,7 +98,7 @@ function reducer(state: ChatState, action: Action): ChatState {
         return { ...state, status: event.data.text, loadingResults: state.loadingResults || event.data.text.startsWith("Searching") };
       }
       if (event.event === "text") return { ...state, messages: [...state.messages, { kind: "assistant", text: event.data.text }] };
-      if (event.event === "products") return addResultSet(state, event.data);
+      if (event.event === "products") return { ...addResultSet(state, event.data), enteringResultSet: state.resultSets.length };
       return state; // done and error are handled by the send loop
     }
     case "failed":
@@ -110,7 +112,7 @@ function reducer(state: ChatState, action: Action): ChatState {
     case "turnEnded":
       return { ...state, turnRunning: false, status: "", loadingResults: false };
     case "select":
-      return { ...state, selectedResultSet: action.index };
+      return { ...state, selectedResultSet: action.index, enteringResultSet: null }; // reselecting never replays the entrance
     case "setDraft":
       return { ...state, draft: action.draft };
     case "notice":

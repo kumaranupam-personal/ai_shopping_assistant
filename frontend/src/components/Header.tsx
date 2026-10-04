@@ -6,7 +6,9 @@ export default function Header({ onNewChat }: { onNewChat: () => void }) {
   return (
     <header className="flex min-w-0 items-center justify-between gap-3 border-b border-line px-4">
       <div className="flex min-w-0 items-center gap-2">
-        <ShoppingBag aria-hidden className="size-5 shrink-0 text-accent" />
+        <span className="grid size-7.5 shrink-0 place-items-center rounded-lg bg-accent text-accent-fg">
+          <ShoppingBag aria-hidden className="size-4" />
+        </span>
         <span className="truncate font-semibold">AI Shopping Assistant</span>
       </div>
       <div className="flex shrink-0 items-center gap-2">

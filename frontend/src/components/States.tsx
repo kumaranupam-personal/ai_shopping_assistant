@@ -6,11 +6,12 @@ import { TURNSTILE_CONTAINER, TURNSTILE_SITE_KEY } from "../turnstile";
 import { CardGrid } from "./ProductGrid";
 import { STRIP, STRIP_CARD } from "./ResultsStrip";
 
+/** The wide results panel's hero before any results, on the glow from docs/06-frontend.md (Surfaces). */
 export function EmptyState({ className }: { className?: string }) {
   return (
-    <div className={clsx("flex flex-col items-center gap-1 text-center", className)}>
-      <h2 className="text-lg font-semibold">What are you shopping for?</h2>
-      <p className="text-sm text-fg-muted">Describe what you need in your own words, in English or Hinglish.</p>
+    <div className={clsx("flex flex-col items-center gap-1 text-center hero-glow", className)}>
+      <h2 className="text-[30px] leading-tight font-bold tracking-tight">What are you shopping for?</h2>
+      <p className="mt-1 text-base text-fg-muted">Describe what you need in your own words, in English or Hinglish.</p>
     </div>
   );
 }
