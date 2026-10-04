@@ -21,6 +21,7 @@ export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }
         selectedResultSet={state.selectedResultSet}
         onSelectResultSet={chat.selectResultSet}
         onRetry={chat.retry}
+        onNewChat={chat.newChat}
       />
       <StatusLine running={state.turnRunning} status={state.status} />
       <p aria-live="polite" className="sr-only">

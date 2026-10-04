@@ -102,7 +102,7 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 - `LLM_MAX_TOKENS`: maximum output tokens per model call. Default `16000`.
 - `DATA_DIR`: directory with built catalog files. Default `data`.
 - `SESSION_TTL_MINUTES`: idle time before a session expires. Default `60`.
-- `MAX_TURNS_PER_SESSION`: user messages allowed per session. Default `30`.
+- `MAX_TURNS_PER_SESSION`: user messages allowed per session. Default `15`.
 - `CORS_ORIGINS`: comma-separated allowed origins. Default `http://localhost:5173`.
 - `PORT`: API server port. Default `8000`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: base URL of the OTLP trace backend. Default: unset, which turns tracing off.

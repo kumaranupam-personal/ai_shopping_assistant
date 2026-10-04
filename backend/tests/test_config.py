@@ -8,7 +8,7 @@ def test_defaults_apply_when_nothing_is_set():
     s = Settings(_env_file=None)
     assert (s.llm_provider, s.llm_model, s.llm_effort) == ("anthropic", None, "low")
     assert [s.api_key(p) for p in ("anthropic", "openai", "gemini")] == [None, None, None]
-    assert (s.llm_max_tokens, s.session_ttl_minutes, s.max_turns_per_session, s.port) == (16000, 60, 30, 8000)
+    assert (s.llm_max_tokens, s.session_ttl_minutes, s.max_turns_per_session, s.port) == (16000, 60, 15, 8000)
     assert s.cors_origins == "http://localhost:5173"
     assert s.data_dir == BACKEND_DIR / "data"
 

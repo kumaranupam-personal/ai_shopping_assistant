@@ -106,6 +106,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Expiry while chatting:** if sending returns `session_not_found`, the client does the same as for a restore failure and keeps the unsent text in the composer.
 - **Reload during a turn:** the interrupted turn isn't in the restored transcript, because the server cancels it. If `pendingMessage` is set, the client puts that text back in the composer, so the user can resend it with one keypress, and clears `pendingMessage`.
 - **Busy after reload:** if sending returns `turn_in_progress`, as a 409 or as an `error` event, because the cancelled turn hasn't finished rolling back, the client retries automatically after 1 second, up to 3 times, before showing the error.
+- **Message limit:** if sending returns `session_full`, the error row shows the server's message with a "New chat" button instead of "Retry", because resending can't succeed.
 - **New chat:** creates a new session, replaces the stored ID and clears the conversation, with no notice.
 
 ## Stream handling

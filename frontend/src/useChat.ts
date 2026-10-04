@@ -6,7 +6,7 @@ import { ApiError, createSession, restoreSession, streamChat, type Entry, type R
 export type Message =
   | { kind: "user" | "assistant"; text: string }
   | { kind: "marker"; resultSet: number } // "Showed {n} products: {headline}"
-  | { kind: "error"; text: string; retryText: string };
+  | { kind: "error"; text: string; retryText: string | null }; // null when resending can't succeed (session_full)
 
 type ChatState = {
   started: boolean; // the page-load restore or create has finished, successfully or not
@@ -26,7 +26,7 @@ type Action =
   | { type: "restored"; entries: Entry[]; draft: string }
   | { type: "send"; text: string; addUserMessage: boolean }
   | { type: "event"; event: StreamEvent }
-  | { type: "failed"; text: string; message: string }
+  | { type: "failed"; text: string | null; message: string }
   | { type: "turnEnded" }
   | { type: "select"; index: number }
   | { type: "setDraft"; draft: string }
@@ -172,7 +172,7 @@ export function useChat() {
       try {
         for (let attempt = 0; ; attempt++) {
           // Assigned inside the event callback, so TypeScript must not narrow them to their initial values.
-          let busy = false as boolean;
+          let code = null as string | null;
           let failure = null as string | null;
           try {
             await streamChat(
@@ -180,7 +180,7 @@ export function useChat() {
               text,
               (event) => {
                 if (event.event === "error") {
-                  busy = event.data.code === "turn_in_progress";
+                  code = event.data.code;
                   failure = event.data.message;
                 } else dispatch({ type: "event", event });
               },
@@ -195,14 +195,14 @@ export function useChat() {
                 error = sessionError; // couldn't start a new one: show it as this turn's failure
               }
             }
-            busy = error instanceof ApiError && error.code === "turn_in_progress";
+            code = error instanceof ApiError ? error.code : null;
             failure = error instanceof Error ? error.message : "Something went wrong. Try again.";
           }
-          if (busy && attempt < BUSY_RETRIES) {
+          if (code === "turn_in_progress" && attempt < BUSY_RETRIES) {
             await sleep(BUSY_RETRY_MS);
             continue;
           }
-          if (failure !== null) dispatch({ type: "failed", text, message: failure });
+          if (failure !== null) dispatch({ type: "failed", text: code === "session_full" ? null : text, message: failure });
           return;
         }
       } finally {

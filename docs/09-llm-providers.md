@@ -113,7 +113,7 @@ Every adapter times out each attempt after 60 seconds and retries a failed attem
 `app/llm/gemini_provider.py`, selected with `LLM_PROVIDER=gemini`.
 
 - Uses the async Google GenAI client with the Gemini Developer API (`vertexai` off) and `models.generate_content`, sending the whole history on each call. It doesn't use the newer Interactions API, because this SDK version exposes that API's errors only through private modules.
-- The default model is `gemini-3.8-flash`.
+- The default model is `gemini-3.8-flash`. The price table also holds `gemini-3.5-flash-lite`, a cheaper model chosen through `LLM_MODEL`.
 - `LLM_EFFORT` maps to `thinking_config.thinking_level` with the same value, and `LLM_MAX_TOKENS` to `max_output_tokens`.
 - The system prompt goes in `system_instruction`. Each ToolSpec becomes a function declaration whose `parameters_json_schema` is the schema unchanged. Function calling mode is `AUTO`, and the SDK's automatic function calling is off, because the agent loop runs the tools.
 - Caching is implicit, so no cache parameters are sent. Inputs under 4,096 tokens aren't cached, which covers a conversation's first turns, and Google doesn't guarantee a hit above that, so `min_cache_tokens` is unset and the eval runner doesn't check Gemini's cache reads. Gemini counts cached tokens inside `prompt_token_count`, so the adapter subtracts `cached_content_token_count` and reports it as `cache_read_tokens`. Implicit caching has no write charge, so `cache_write_tokens` is 0. Output tokens include thinking tokens, as with the other providers.

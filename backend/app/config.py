@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     llm_max_tokens: PositiveInt = 16000
     data_dir: Path = Path("data")
     session_ttl_minutes: PositiveInt = 60
-    max_turns_per_session: PositiveInt = 30
+    max_turns_per_session: PositiveInt = 15
     cors_origins: str = "http://localhost:5173"
     port: PositiveInt = 8000
     otel_exporter_otlp_endpoint: str | None = None  # unset turns tracing off
