@@ -6,8 +6,13 @@ Every path is under `/api`. Request and response bodies are JSON, except for the
 
 ### POST /api/sessions
 
-- Request body: none.
+- Request body: optional, `{"turnstile_token": "<token>"}`. The token is required only when Turnstile is on (see `11-abuse-protection.md`), and ignored otherwise.
 - Response 201: `{"session_id": "<uuid>"}`.
+- Response 403: `verification_failed`.
+- Response 422: `invalid_request`, when the body is malformed.
+- Response 429: `rate_limited`.
+- Response 503: `server_busy`.
+- The order in which these checks run is in `11-abuse-protection.md`.
 
 ### GET /api/sessions/{id}
 
@@ -28,7 +33,9 @@ Restores a session's conversation after a page reload.
 - Response 404: `session_not_found`.
 - Response 409: `turn_in_progress`. In the rare case that another turn starts between this check and the start of the stream, the stream instead ends with an `error` event carrying `turn_in_progress`.
 - Response 422: `invalid_request`, when the body is malformed or the message is empty or too long.
-- Response 429: `session_full`.
+- Response 429: `session_full` or `rate_limited`.
+- Response 503: `chat_unavailable` or `server_busy`.
+- The order in which these checks run is in `11-abuse-protection.md`.
 
 ### GET /api/featured
 
@@ -102,3 +109,9 @@ The server builds status text from tool inputs, never from model prose:
 - `upstream_error`: the LLM provider failed after retries.
 - `internal_error`: any other unexpected failure. The message is generic and the details go only to server logs.
 - `product_not_found`: the product ID is unknown.
+- `rate_limited`: the client IP is over a rate limit. The response carries a `Retry-After` header.
+- `verification_failed`: the Turnstile check failed or couldn't be completed.
+- `server_busy`: the server is at its limit of live sessions or running turns. Trying again shortly may work.
+- `chat_unavailable`: chat is switched off or today's budget is spent, so no message can be sent until it's back.
+
+The checks behind the last four codes are in `11-abuse-protection.md`.

@@ -10,11 +10,12 @@
 - **Catalog store**: a SQLite database plus a vector file, both built offline by ingesting a product file. See `02-catalog.md`.
 - **Demo data generator**: a separate folder outside the runtime app that produces the demo product file. See `02-catalog.md`.
 - **Tracing**: every agent turn is exported as an OpenTelemetry trace to Langfuse Cloud. See `10-observability.md`.
+- **Abuse protection**: rate limits, caps, a daily budget and a human check in the API server, for running as a public demo. See `11-abuse-protection.md`.
 
 ## Request flow
 
 1. The frontend sends the user message to the chat endpoint with its session ID.
-2. The API server loads the session and runs one agent turn, which alternates model calls and tool calls (see `04-agent.md`).
+2. The API server runs the checks in `11-abuse-protection.md`, which include loading the session, and then runs one agent turn, which alternates model calls and tool calls (see `04-agent.md`).
 3. Tools query the catalog through the search service. The display tool sends product cards and the reply that comes with them to the client over the open stream, and any other model text is streamed after each model call.
 4. The turn is committed to the session when it succeeds and rolled back otherwise, and the stream closes.
 
@@ -32,7 +33,8 @@ The model chooses which products to show and writes prose about them. It never s
 - `fastembed` with the model `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) for embeddings. It runs on ONNX Runtime, so no PyTorch install is needed. The model downloads once, on first use, into `DATA_DIR/models`.
 - NumPy for vector similarity. The catalog is small enough for exact search, so no vector database is needed.
 - The OpenTelemetry SDK and its OTLP HTTP exporter for tracing (see `10-observability.md`).
-- `pytest` for tests, `httpx` for FastAPI's test client, and `pyyaml` for eval cases.
+- `httpx` for the Turnstile verification call (see `11-abuse-protection.md`) and for FastAPI's test client.
+- `pytest` for tests and `pyyaml` for eval cases.
 - Node 24 LTS for the frontend toolchain. The frontend libraries are listed in `06-frontend.md`.
 
 ## Repository layout
@@ -51,6 +53,7 @@ ai_shopping_assistant/
       main.py                FastAPI app and routes
       sse.py                 event formatting
       tracing.py             sets up the OpenTelemetry exporter
+      limits.py              rate limits, caps, daily budget and Turnstile check
       llm/
         base.py              provider interface and shared types
         registry.py          builds the adapter named by LLM_PROVIDER
@@ -111,9 +114,22 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 
 Their values for Langfuse, and what message text covers, are in `10-observability.md`.
 
-The frontend reads one variable:
+- `CLIENT_IP_HEADER`: request header that carries the client IP, such as `CF-Connecting-IP`. Default: unset, which uses the TCP peer address.
+- `RATE_LIMIT_SESSIONS_PER_HOUR`: new sessions per client IP per rolling hour. Default `0` (off).
+- `RATE_LIMIT_CHAT_PER_MINUTE`: messages per client IP per rolling minute. Default `0` (off).
+- `RATE_LIMIT_CHAT_PER_DAY`: messages per client IP per rolling 24 hours. Default `0` (off).
+- `MAX_SESSIONS`: unexpired sessions allowed in the store. Default `0` (off).
+- `MAX_CONCURRENT_TURNS`: turns allowed to run at once across all sessions. Default `0` (off).
+- `DAILY_BUDGET_USD`: model spend in USD allowed per UTC day before chat pauses, greater than 0 when set. Default: unset, which means no budget.
+- `CHAT_ENABLED`: `true` or `false`, the chat kill switch. Default `true`.
+- `TURNSTILE_SECRET`: Cloudflare Turnstile secret key. Default: unset, which turns the human check off.
+
+How these settings apply, and suggested production values, are in `11-abuse-protection.md`.
+
+The frontend reads these variables:
 
 - `VITE_API_BASE_URL`: API server base URL. Default `http://localhost:8000`.
+- `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key. Default: unset, which loads no widget.
 
 ## Local development
 

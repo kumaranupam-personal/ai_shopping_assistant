@@ -18,6 +18,8 @@
 - Product tiles in the browser: a card without an image, and a card whose image fails to load, show a tile with their category's icon in their first color's wash.
 - Tracing: with an in-memory span exporter, a turn's spans and their attributes match `10-observability.md`, for a successful, a failed and a cancelled turn, a raising provider call, a tool error result, message text on and off, the eval runner's turns, and a model without prices. With no endpoint configured, nothing is exported, and a failing exporter never fails a turn.
 - Cost: `Prices.cost` matches a hand-computed example over all four usage buckets, and each adapter fills `cache_write_tokens` as `09-llm-providers.md` describes.
+- Abuse protection: with limits set, each check in `11-abuse-protection.md` rejects with its code in the documented order, sliding windows admit requests again once old ones leave, a limit of 0 is off, `Retry-After` is correct, the client IP comes from `CLIENT_IP_HEADER` or the peer, model calls in failed turns count toward the daily budget, and startup fails for a budget without prices. Turnstile is tested against a stubbed verification call: off without a secret, and with one, a missing, rejected or timed-out token gives `verification_failed`. With no limits configured, every existing test passes unchanged.
+- Abuse protection in the browser: `chat_unavailable` shows the server's message with no button, and a refused session creation shows the server's message as the notice.
 - Featured products in the browser: they show on first load in both layouts, the first result set replaces them, a new chat brings them back, and a restored session with results doesn't show them.
 
 ## Eval suite

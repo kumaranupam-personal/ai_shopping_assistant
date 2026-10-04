@@ -13,12 +13,13 @@ A web app where a user describes what they want to buy in natural language, conv
 - Understand and reply in Hinglish as well as English.
 - Stay independent of any one LLM provider, with the provider chosen by configuration.
 - Be measurable: an eval suite reports pass rate, grounding violations, latency and cost, and every turn is traced.
+- Be safe to run as a public demo: the API limits how much visitors can make it spend.
 
 ## Non-goals
 
 - Real payments, checkout, cart, user accounts or authentication.
 - Live product-feed integration, real-world brands or real product imagery.
-- Production deployment, horizontal scaling or persistent sessions across server restarts.
+- Horizontal scaling or persistent sessions across server restarts. The app runs as one process.
 - Personalization from user history.
 - Switching LLM providers in the middle of a conversation.
 - Devanagari script and languages other than English and Hinglish.
@@ -59,3 +60,4 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `08-roadmap.md`: build order, done criteria, stretch goals.
 - `09-llm-providers.md`: provider interface, boundary rules, registry, per-provider adapter details.
 - `10-observability.md`: turn tracing scope, trace shape and span attributes, message text, cost in traces, export to Langfuse.
+- `11-abuse-protection.md`: client IP, rate limits, session and turn caps, daily budget, kill switch, Turnstile, proxy requirements, suggested production values.

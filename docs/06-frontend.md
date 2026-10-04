@@ -107,6 +107,9 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Reload during a turn:** the interrupted turn isn't in the restored transcript, because the server cancels it. If `pendingMessage` is set, the client puts that text back in the composer, so the user can resend it with one keypress, and clears `pendingMessage`.
 - **Busy after reload:** if sending returns `turn_in_progress`, as a 409 or as an `error` event, because the cancelled turn hasn't finished rolling back, the client retries automatically after 1 second, up to 3 times, before showing the error.
 - **Message limit:** if sending returns `session_full`, the error row shows the server's message with a "New chat" button instead of "Retry", because resending can't succeed.
+- **Chat unavailable:** if sending returns `chat_unavailable`, the error row shows the server's message with no button, because neither resending nor a new chat can succeed until the server allows chat again.
+- **Human check:** the Turnstile widget described in `11-abuse-protection.md` sits in the banner row under the header.
+- **Session creation failure:** if creating a session fails on page load or for New chat, the client shows a dismissible notice. It carries the server's message when the response has an error body, such as `rate_limited` or `verification_failed`. Otherwise it reads "Can't reach the store right now. Reload the page to try again." on page load, and "Can't reach the store right now. Try again in a moment." for New chat, which keeps the current conversation. When creating a session fails while replacing an expired one during a send, the error row from "Errors" shows instead.
 - **New chat:** creates a new session, replaces the stored ID and clears the conversation, with no notice.
 
 ## Stream handling

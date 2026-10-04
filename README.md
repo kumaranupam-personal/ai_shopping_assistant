@@ -132,4 +132,4 @@ The app serves any catalog that follows the product schema and taxonomy in [`doc
 
 ## Documentation
 
-The full specification lives in [`docs/`](docs/00-overview.md): architecture, catalog, search, agent, API, frontend, evaluation, roadmap, LLM providers and observability. Each fact lives in exactly one document.
+The full specification lives in [`docs/`](docs/00-overview.md): architecture, catalog, search, agent, API, frontend, evaluation, roadmap, LLM providers, observability and abuse protection. Each fact lives in exactly one document.
