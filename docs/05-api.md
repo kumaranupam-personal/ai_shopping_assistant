@@ -34,7 +34,7 @@ Restores a session's conversation after a page reload.
 - Response 409: `turn_in_progress`. In the rare case that another turn starts between this check and the start of the stream, the stream instead ends with an `error` event carrying `turn_in_progress`.
 - Response 422: `invalid_request`, when the body is malformed or the message is empty or too long.
 - Response 429: `session_full` or `rate_limited`.
-- Response 503: `chat_unavailable` or `server_busy`.
+- Response 503: `chat_unavailable` or `server_busy`. Like `turn_in_progress`, `server_busy` can instead end the stream as an `error` event when the running-turn cap fills after the check.
 - The order in which these checks run is in `11-abuse-protection.md`.
 
 ### GET /api/featured

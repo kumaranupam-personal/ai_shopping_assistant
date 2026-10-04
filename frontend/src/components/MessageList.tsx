@@ -92,16 +92,16 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry, onNewCha
       );
     }
     case "error": {
-      const { retryText } = message;
+      const { retryText, action: offer } = message;
       return (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 self-start rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
           <span className={text}>{message.text}</span>
-          {retryText === null ? (
-            // The chat hit its message limit, so resending can't succeed.
+          {offer === "newChat" && (
             <button type="button" onClick={onNewChat} className={action}>
               <Plus aria-hidden className="size-3.5" /> New chat
             </button>
-          ) : (
+          )}
+          {offer === "retry" && (
             <button type="button" onClick={() => onRetry(retryText)} className={action}>
               <RotateCcw aria-hidden className="size-3.5" /> Retry
             </button>

@@ -27,7 +27,7 @@ Each endpoint runs its checks in the order listed, after the request body passes
 2. **Daily budget:** with `DAILY_BUDGET_USD` set, once the day's spend (see Daily budget) has reached it: `chat_unavailable`.
 3. **Message rate:** at most `RATE_LIMIT_CHAT_PER_MINUTE` requests per client IP in any rolling minute and `RATE_LIMIT_CHAT_PER_DAY` in any rolling 24 hours. Over either: `rate_limited`.
 4. The session checks from `04-agent.md`, Session rules (`session_not_found`, `turn_in_progress`, `session_full`).
-5. **Concurrent turns:** at most `MAX_CONCURRENT_TURNS` turns running at once across all sessions. Over it: `server_busy`. A turn counts from the moment its request passes this check until its stream ends.
+5. **Concurrent turns:** at most `MAX_CONCURRENT_TURNS` turns running at once across all sessions. Over it: `server_busy`. A turn counts as running while its session is busy (see `04-agent.md`, Conversation state). If the cap fills between this check and the start of the turn, the stream instead ends with an `error` event carrying `server_busy`.
 
 ## Rate windows
 
@@ -52,7 +52,7 @@ Each endpoint runs its checks in the order listed, after the request body passes
 
 Cloudflare Turnstile checks that a browser, not a script, is creating a session. The backend check is on whenever `TURNSTILE_SECRET` is set, and the frontend widget whenever `VITE_TURNSTILE_SITE_KEY` is set at build time. Set both or neither: a secret without a site key rejects every new session, and a site key without a secret sends tokens the backend ignores. Production sets both; local runs set neither, or use Cloudflare's published test keys.
 
-- **Frontend:** with a site key, the frontend loads `https://challenges.cloudflare.com/turnstile/v0/api.js` and renders one widget with `appearance: "interaction-only"`, so it's invisible unless Cloudflare asks the visitor to interact. Before every `POST /api/sessions` (page load, New chat, and replacing an expired session) it gets a fresh token and sends it as `turnstile_token`. Restoring a session needs no token. Without a site key, no Cloudflare script loads.
+- **Frontend:** with a site key, the frontend loads `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit` and renders one widget with `appearance: "interaction-only"`, so it's invisible unless Cloudflare asks the visitor to interact. Before every `POST /api/sessions` (page load, New chat, and replacing an expired session) it gets a fresh token and sends it as `turnstile_token`. Restoring a session needs no token. If the script can't load or the widget fails, the request goes without a token and the server answers `verification_failed`. Without a site key, no Cloudflare script loads.
 - **Backend:** the API sends the token, `TURNSTILE_SECRET` and the client IP to `https://challenges.cloudflare.com/turnstile/v0/siteverify` with a 5-second timeout. The session is created only when the response has `success` true. A missing token, a rejected token, a timeout or a network failure all give `verification_failed`.
 - Tokens are single-use and expire after 5 minutes, which is why each session creation gets a new one right before it. A token is checked only when its session is created, so its expiry never limits how long a conversation lasts; the session rules in `04-agent.md` do.
 - Turnstile guards session creation only. A verified session is then held to the chat checks above.

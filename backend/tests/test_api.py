@@ -1,6 +1,7 @@
 import asyncio
 import json
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -10,7 +11,7 @@ from app.catalog.embed import embed
 from app.catalog.ingest import ingest
 from app.catalog.store import open_catalog
 from app.config import Settings
-from app.llm.base import LLMUpstreamError
+from app.llm.base import LLMConfigError, LLMUpstreamError, Prices
 from app.main import create_app, stream_turn
 from app.search.index import load_index
 from tests.conftest import CATALOG, jacket
@@ -26,9 +27,9 @@ HAPPY_TURN = (reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop
 def make_client(index):
     clients = []
 
-    def make(*responses):
-        settings = Settings(_env_file=None, max_turns_per_session=MAX_TURNS)
-        client = TestClient(create_app(settings, ScriptedProvider(*responses), index))
+    def make(*responses, provider=None, **overrides):
+        settings = Settings(_env_file=None, max_turns_per_session=MAX_TURNS, **overrides)
+        client = TestClient(create_app(settings, provider or ScriptedProvider(*responses), index))
         clients.append(client.__enter__())  # runs the app's startup
         return client
 
@@ -223,3 +224,155 @@ def test_a_turn_that_loses_the_race_gets_an_error_event(make_client, index):
     assert parse_events("".join(asyncio.run(read_all()))) == [
         ("error", {"code": "turn_in_progress", "message": "A reply is still being generated for this chat."})
     ]
+
+
+# Abuse protection (docs/11-abuse-protection.md)
+
+
+def rejection(response):
+    return response.status_code, response.json()["error"]["code"]
+
+
+def priced(*responses):
+    provider = ScriptedProvider(*responses)
+    provider.prices = Prices(input=1000, output=1000, cache_read=1000, cache_write=0)  # $0.2 per scripted call
+    return provider
+
+
+def test_the_kill_switch_comes_before_every_other_chat_check(make_client):
+    client = make_client(chat_enabled=False)
+    assert rejection(chat(client, "missing")[0]) == (503, "chat_unavailable")
+
+
+def test_a_spent_budget_pauses_chat_before_the_rate_and_session_checks(make_client):
+    client = make_client(provider=priced(), daily_budget_usd=1, rate_limit_chat_per_minute=1)
+    client.app.state.budget.add(1)
+    for _ in range(2):  # a rate check would have rejected the second
+        assert rejection(chat(client, "missing")[0]) == (503, "chat_unavailable")
+
+
+def test_model_calls_in_failed_turns_count_toward_the_budget(make_client):
+    client = make_client(provider=priced(reply(stop="tool_use", calls=[SEARCH]), LLMUpstreamError("down")), daily_budget_usd=0.2)
+    _, events = chat(client, new_session(client))
+    assert events[-1][1]["code"] == "upstream_error"
+    assert client.app.state.budget.spent == pytest.approx(0.2)
+    assert rejection(chat(client, new_session(client))[0]) == (503, "chat_unavailable")
+
+
+def test_a_budget_without_prices_stops_startup(index):
+    with pytest.raises(LLMConfigError, match="DAILY_BUDGET_USD"):
+        TestClient(create_app(Settings(_env_file=None, daily_budget_usd=1), ScriptedProvider(), index)).__enter__()
+
+
+def test_the_chat_rate_counts_requests_that_later_checks_reject(make_client, caplog):
+    client = make_client(rate_limit_chat_per_minute=1)
+    assert rejection(chat(client, "missing")[0]) == (404, "session_not_found")  # passed the rate check, so it counts
+    response, _ = chat(client, "missing")
+    assert rejection(response) == (429, "rate_limited") and response.headers["retry-after"] == "60"
+    assert "Rejected rate_limited for testclient" in caplog.text
+
+
+def test_the_running_turn_cap_comes_after_the_session_checks(make_client):
+    client = make_client(max_concurrent_turns=1)
+    running, waiting, full = new_session(client), new_session(client), new_session(client)
+    session(client, running).busy = True
+    session(client, full).turn_count = MAX_TURNS
+    assert rejection(chat(client, running)[0]) == (409, "turn_in_progress")
+    assert rejection(chat(client, full)[0]) == (429, "session_full")
+    assert rejection(chat(client, waiting)[0]) == (503, "server_busy")
+
+
+def test_a_turn_that_loses_the_race_for_the_last_running_place_gets_an_error_event(make_client, index):
+    client = make_client(max_concurrent_turns=1)
+    store = client.app.state.store
+    session_id = new_session(client)
+    store.begin_turn(new_session(client))  # another turn started after this request was checked
+
+    async def read_all():
+        return [frame async for frame in stream_turn(ScriptedProvider(), index, store, session_id, "hi", OPTIONS)]
+
+    assert parse_events("".join(asyncio.run(read_all())))[0][1]["code"] == "server_busy"
+    assert session(client, session_id).busy is False
+
+
+def test_session_creation_checks_the_rate_before_the_live_session_cap(make_client):
+    client = make_client(rate_limit_sessions_per_hour=1, max_sessions=1)
+    new_session(client)
+    response = client.post("/api/sessions")
+    assert rejection(response) == (429, "rate_limited") and response.headers["retry-after"] == "3600"
+    client = make_client(max_sessions=1)
+    new_session(client)
+    assert rejection(client.post("/api/sessions")) == (503, "server_busy")
+
+
+def test_per_ip_limits_key_on_the_configured_header_or_the_peer(make_client):
+    client = make_client(rate_limit_sessions_per_hour=1, client_ip_header="CF-Connecting-IP")
+    for ip in ("1.1.1.1", "2.2.2.2"):
+        assert client.post("/api/sessions", headers={"CF-Connecting-IP": ip}).status_code == 201
+    assert rejection(client.post("/api/sessions", headers={"CF-Connecting-IP": "1.1.1.1"})) == (429, "rate_limited")
+    assert client.post("/api/sessions").status_code == 201  # without the header: the TCP peer
+
+
+def stub_cloudflare(client, answer):
+    """Routes the Turnstile check to `answer(request)` instead of Cloudflare, recording each request's form."""
+    calls = []
+
+    def handler(request):
+        calls.append(dict(httpx.QueryParams(request.content.decode())))
+        return answer(request)
+
+    client.app.state.http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    return calls
+
+
+def accept(_request):
+    return httpx.Response(200, json={"success": True})
+
+
+def test_without_a_secret_turnstile_is_off_and_tokens_are_ignored(make_client):
+    client = make_client()
+    calls = stub_cloudflare(client, accept)
+    assert client.post("/api/sessions", json={"turnstile_token": "anything"}).status_code == 201
+    assert calls == []
+
+
+def test_an_accepted_token_creates_a_session(make_client):
+    client = make_client(turnstile_secret="secret", client_ip_header="CF-Connecting-IP")
+    calls = stub_cloudflare(client, accept)
+    response = client.post("/api/sessions", json={"turnstile_token": "good"}, headers={"CF-Connecting-IP": "1.1.1.1"})
+    assert response.status_code == 201
+    assert calls == [{"secret": "secret", "response": "good", "remoteip": "1.1.1.1"}]
+
+
+def timeout(request):
+    raise httpx.ReadTimeout("slow", request=request)
+
+
+@pytest.mark.parametrize(
+    ("body", "answer"),
+    [
+        (None, accept),  # no token at all
+        ({"turnstile_token": "bad"}, lambda _: httpx.Response(200, json={"success": False})),
+        ({"turnstile_token": "good"}, timeout),
+        ({"turnstile_token": "good"}, lambda _: httpx.Response(500, text="oops")),
+    ],
+    ids=["missing", "rejected", "timeout", "server-error"],
+)
+def test_a_token_cloudflare_does_not_accept_gets_verification_failed(make_client, body, answer):
+    client = make_client(turnstile_secret="secret")
+    stub_cloudflare(client, answer)
+    assert rejection(client.post("/api/sessions", json=body)) == (403, "verification_failed")
+    assert client.app.state.store.sessions == {}
+
+
+def test_the_human_check_runs_after_the_session_rate_and_before_the_live_session_cap(make_client):
+    client = make_client(turnstile_secret="secret", rate_limit_sessions_per_hour=2, max_sessions=1)
+    calls = stub_cloudflare(client, lambda request: httpx.Response(200, json={"success": b"good" in request.content}))
+    assert client.post("/api/sessions", json={"turnstile_token": "good"}).status_code == 201
+    assert rejection(client.post("/api/sessions", json={"turnstile_token": "bad"})) == (403, "verification_failed")
+    assert rejection(client.post("/api/sessions", json={"turnstile_token": "good"})) == (429, "rate_limited")
+    assert len(calls) == 2  # the rate check stopped the third before Cloudflare was asked
+
+
+def test_a_malformed_session_body_gets_invalid_request(make_client):
+    assert rejection(make_client().post("/api/sessions", json={"turnstile_token": 5})) == (422, "invalid_request")

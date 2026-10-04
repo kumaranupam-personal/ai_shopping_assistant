@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import PositiveInt, field_validator
+from pydantic import NonNegativeInt, PositiveFloat, PositiveInt, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +28,16 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str | None = None  # unset turns tracing off
     otel_exporter_otlp_headers: str | None = None
     trace_message_text: bool = False
+    # Abuse protection (docs/11-abuse-protection.md). A count limit of 0 is off.
+    client_ip_header: str | None = None  # unset uses the TCP peer address
+    rate_limit_sessions_per_hour: NonNegativeInt = 0
+    rate_limit_chat_per_minute: NonNegativeInt = 0
+    rate_limit_chat_per_day: NonNegativeInt = 0
+    max_sessions: NonNegativeInt = 0
+    max_concurrent_turns: NonNegativeInt = 0
+    daily_budget_usd: PositiveFloat | None = None  # unset means no budget
+    chat_enabled: bool = True
+    turnstile_secret: str | None = None  # unset turns the human check off
 
     def api_key(self, provider: str) -> str | None:
         """The key for a provider, from LLM_<PROVIDER>_API_KEY, so every provider's key can be set at once."""

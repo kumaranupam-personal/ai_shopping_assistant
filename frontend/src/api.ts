@@ -64,8 +64,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json();
 }
 
-export async function createSession(): Promise<string> {
-  return (await request<{ session_id: string }>("/api/sessions", { method: "POST" })).session_id;
+/** Creates a session, sending a Turnstile token when there is one (docs/11-abuse-protection.md). */
+export async function createSession(turnstileToken?: string): Promise<string> {
+  const init: RequestInit = turnstileToken
+    ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnstile_token: turnstileToken }) }
+    : { method: "POST" };
+  return (await request<{ session_id: string }>("/api/sessions", init)).session_id;
 }
 
 export function restoreSession(sessionId: string) {

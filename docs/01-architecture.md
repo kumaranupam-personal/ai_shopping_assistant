@@ -53,7 +53,7 @@ ai_shopping_assistant/
       main.py                FastAPI app and routes
       sse.py                 event formatting
       tracing.py             sets up the OpenTelemetry exporter
-      limits.py              rate limits, caps, daily budget and Turnstile check
+      limits.py              client IP, rate limits, daily budget and Turnstile check
       llm/
         base.py              provider interface and shared types
         registry.py          builds the adapter named by LLM_PROVIDER
@@ -64,7 +64,7 @@ ai_shopping_assistant/
         loop.py              runs one agent turn
         prompt.py            system prompt text
         tools.py             tool functions
-        session.py           session store
+        session.py           session store, with its live-session and running-turn caps
       search/
         engine.py            search_products implementation
         index.py             loads database and vectors at startup

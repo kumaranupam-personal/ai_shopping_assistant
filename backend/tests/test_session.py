@@ -1,6 +1,6 @@
 import pytest
 
-from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
+from app.agent.session import ServerBusyError, SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
 
 
 class Clock:
@@ -87,3 +87,27 @@ def test_rollback_restores_the_state_before_the_turn(store):
     assert session.history == ["turn 1"]
     assert session.transcript == [{"type": "user", "text": "first"}]
     assert (session.shown_ids, session.turn_count, session.busy) == (["J1"], 1, False)
+
+
+def test_live_session_cap_counts_only_unexpired_sessions(clock):
+    store = SessionStore(ttl_minutes=60, max_turns=2, max_sessions=2, clock=clock)
+    store.create("anthropic"), store.create("anthropic")
+    with pytest.raises(ServerBusyError):
+        store.create("anthropic")
+    clock.now = 61 * 60  # both expire, freeing their places
+    store.create("anthropic")
+
+
+def test_running_turn_cap_counts_busy_sessions_after_the_session_checks(store):
+    store.max_running = 1
+    running, waiting, full = store.create("anthropic"), store.create("anthropic"), store.create("anthropic")
+    store.begin_turn(running.id)
+    full.turn_count = 2
+    with pytest.raises(TurnInProgressError):  # the session checks come first
+        store.check_can_start(running.id)
+    with pytest.raises(SessionFullError):
+        store.check_can_start(full.id)
+    with pytest.raises(ServerBusyError):
+        store.begin_turn(waiting.id)
+    store.sessions[running.id].busy = False  # the running turn ended
+    store.begin_turn(waiting.id)
