@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowDown, LayoutGrid, RotateCcw } from "lucide-react";
+import { ArrowDown, LayoutGrid, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { ResultSet } from "../api";
@@ -7,6 +7,8 @@ import type { Message } from "../useChat";
 
 const NEAR_BOTTOM_PX = 48;
 const isAtBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+// An explicit scroll behavior overrides the CSS reduced-motion rule, so it is chosen here.
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 type Props = {
   messages: Message[];
@@ -14,9 +16,10 @@ type Props = {
   selectedResultSet: number | null;
   onSelectResultSet: (index: number) => void;
   onRetry: (text: string) => void;
+  onNewChat: () => void;
 };
 
-export default function MessageList({ messages, resultSets, selectedResultSet, onSelectResultSet, onRetry }: Props) {
+export default function MessageList({ messages, resultSets, selectedResultSet, onSelectResultSet, onRetry, onNewChat }: Props) {
   const list = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
 
@@ -35,7 +38,7 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
         <ol className="flex flex-col gap-3">
           {messages.map((message, i) => (
             <li key={i} className="flex min-w-0 animate-enter flex-col">
-              <MessageRow message={message} resultSets={resultSets} selected={selectedResultSet} onSelect={onSelectResultSet} onRetry={onRetry} />
+              <MessageRow message={message} resultSets={resultSets} selected={selectedResultSet} onSelect={onSelectResultSet} onRetry={onRetry} onNewChat={onNewChat} />
             </li>
           ))}
         </ol>
@@ -43,7 +46,7 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
       {!atBottom && (
         <button
           type="button"
-          onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" })}
+          onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" })}
           className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium shadow-sm"
         >
           <ArrowDown aria-hidden className="size-3.5" /> Jump to latest
@@ -59,11 +62,13 @@ type RowProps = {
   selected: number | null;
   onSelect: (index: number) => void;
   onRetry: (text: string) => void;
+  onNewChat: () => void;
 };
 
-function MessageRow({ message, resultSets, selected, onSelect, onRetry }: RowProps) {
+function MessageRow({ message, resultSets, selected, onSelect, onRetry, onNewChat }: RowProps) {
   // Long unbroken text (pasted URLs) wraps instead of widening the panel.
   const text = "whitespace-pre-line [overflow-wrap:anywhere]";
+  const action = "flex items-center gap-1 font-medium underline-offset-2 hover:underline";
   switch (message.kind) {
     case "user":
       return <p className={clsx(text, "max-w-[85%] self-end rounded-2xl rounded-br-md bg-accent-soft px-4 py-2 text-accent-soft-fg")}>{message.text}</p>;
@@ -88,14 +93,23 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry }: RowPro
         </button>
       );
     }
-    case "error":
+    case "error": {
+      const { retryText, action: offer } = message;
       return (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 self-start rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
           <span className={text}>{message.text}</span>
-          <button type="button" onClick={() => onRetry(message.retryText)} className="flex items-center gap-1 font-medium underline-offset-2 hover:underline">
-            <RotateCcw aria-hidden className="size-3.5" /> Retry
-          </button>
+          {offer === "newChat" && (
+            <button type="button" onClick={onNewChat} className={action}>
+              <Plus aria-hidden className="size-3.5" /> New chat
+            </button>
+          )}
+          {offer === "retry" && (
+            <button type="button" onClick={() => onRetry(retryText)} className={action}>
+              <RotateCcw aria-hidden className="size-3.5" /> Retry
+            </button>
+          )}
         </div>
       );
+    }
   }
 }

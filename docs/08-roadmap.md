@@ -83,9 +83,15 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - After Part 2, a live API conversation is checked in a Langfuse Cloud project first: each turn shows as one trace with its generation and tool observations nested in order, its usage and cost by bucket, and its tags, and the session groups the conversation's turns. This confirms the attribute encodings in `10-observability.md`. Only then does the suite rerun on all three providers, with tracing configured.
 - Done when the tests in `07-evaluation.md` pass, the live check holds, and each provider's rerun has written its results file and shows in Langfuse with costs matching that file.
 
+## Phase 12: Abuse protection
+
+- Part 1: client IP, rate limits, live-session and concurrent-turn caps, the daily budget and the kill switch from `11-abuse-protection.md`, with their configuration variables from `01-architecture.md` and error codes from `05-api.md`.
+- Part 2: Turnstile on the backend and the frontend, and the frontend's handling of the new error codes from `06-frontend.md`.
+- Done when the tests in `07-evaluation.md` pass, a local run with no limits configured behaves exactly as before, and a local run with Cloudflare's test keys and small limits shows each rejection in the browser.
+
 ## Stretch goals
 
-These come after Phase 11 and are each specified in a new doc before being built.
+These come after Phase 12 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { WifiOff, X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
+import { TURNSTILE_CONTAINER, TURNSTILE_SITE_KEY } from "../turnstile";
 import { CardGrid } from "./ProductGrid";
 import { STRIP, STRIP_CARD } from "./ResultsStrip";
 
@@ -74,6 +75,8 @@ export function Banners({ notice, onDismiss }: { notice: string | null; onDismis
           <WifiOff aria-hidden className="size-4 shrink-0" /> You're offline. Reconnect to keep chatting.
         </p>
       )}
+      {/* Turnstile's widget (docs/11-abuse-protection.md); empty unless Cloudflare asks the visitor to interact. */}
+      {TURNSTILE_SITE_KEY && <div id={TURNSTILE_CONTAINER} className="flex justify-center empty:hidden" />}
       {notice && (
         <p className="flex items-center justify-between gap-3 border-b border-line bg-accent-soft px-4 py-2 text-sm text-accent-soft-fg">
           {notice}

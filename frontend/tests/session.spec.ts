@@ -1,7 +1,7 @@
 // Session restore in the browser (docs/07-evaluation.md; docs/06-frontend.md, Session lifecycle).
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-import { LADAKH_TURN, chatRows, message, mockApi, send, sessionReady } from "./mock-api";
+import { API, LADAKH_TURN, chatRows, message, mockApi, send, sessionReady } from "./mock-api";
 
 test("reloading restores messages, result markers and the latest result set", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
@@ -48,4 +48,54 @@ test("reloading during a turn puts the interrupted message back in the composer"
   await page.reload();
   await expect(page.getByLabel("Message")).toHaveValue("warm jacket under 8k");
   await expect(chatRows(page)).toHaveCount(0);
+});
+
+test("a chat at its message limit offers New chat instead of Retry", async ({ page }) => {
+  await mockApi(page, [LADAKH_TURN]);
+  const limit = "This chat has reached its message limit. Start a new chat.";
+  await refuse(page, "/chat", 429, "session_full", limit);
+  await page.goto("/");
+  await sessionReady(page);
+  await page.getByLabel("Message").fill("one more jacket");
+  await page.getByLabel("Message").press("Enter");
+  const chat = page.getByRole("region", { name: "Chat" });
+  await expect(chat.getByRole("alert")).toContainText(limit);
+  await expect(chat.getByRole("button", { name: "Retry" })).toHaveCount(0);
+  await chat.getByRole("button", { name: "New chat" }).click();
+  await expect(chatRows(page)).toHaveCount(0);
+});
+
+/** Answers one API path with an error body, as the server's abuse checks do (docs/11-abuse-protection.md). */
+async function refuse(page: Page, path: string, status: number, code: string, message: string) {
+  await page.route(`${API}${path}`, (route) =>
+    route.request().method() === "OPTIONS"
+      ? route.fallback()
+      : route.fulfill({
+          status,
+          headers: { "Access-Control-Allow-Origin": "*" },
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code, message } }),
+        }),
+  );
+}
+
+test("paused chat shows the server's message with no button", async ({ page }) => {
+  await mockApi(page, [LADAKH_TURN]);
+  const paused = "Chat is paused right now. Please come back later.";
+  await refuse(page, "/chat", 503, "chat_unavailable", paused);
+  await page.goto("/");
+  await sessionReady(page);
+  await page.getByLabel("Message").fill("warm jacket");
+  await page.getByLabel("Message").press("Enter");
+  const alert = page.getByRole("region", { name: "Chat" }).getByRole("alert");
+  await expect(alert).toHaveText(paused);
+  await expect(alert.getByRole("button")).toHaveCount(0);
+});
+
+test("a refused session creation shows the server's message as the notice", async ({ page }) => {
+  await mockApi(page, [LADAKH_TURN]);
+  const limited = "You're sending requests too quickly. Try again in a moment.";
+  await refuse(page, "/sessions", 429, "rate_limited", limited);
+  await page.goto("/");
+  await expect(page.getByRole("status").getByText(limited)).toBeVisible();
 });

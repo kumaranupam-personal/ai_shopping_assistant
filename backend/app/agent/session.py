@@ -18,6 +18,10 @@ class SessionFullError(Exception):
     pass
 
 
+class ServerBusyError(Exception):
+    """The store is at its live-session or running-turn cap (docs/11-abuse-protection.md)."""
+
+
 @dataclass
 class Session:
     id: str
@@ -53,8 +57,11 @@ class Turn:
 
 
 class SessionStore:
-    def __init__(self, ttl_minutes: int, max_turns: int, clock: Callable[[], float] = time.monotonic):
+    def __init__(
+        self, ttl_minutes: int, max_turns: int, max_sessions: int = 0, max_running: int = 0, clock: Callable[[], float] = time.monotonic
+    ):
         self.ttl_seconds, self.max_turns, self.clock = ttl_minutes * 60, max_turns, clock
+        self.max_sessions, self.max_running = max_sessions, max_running  # 0 is off
         self.sessions: dict[str, Session] = {}
 
     def _purge_expired(self) -> None:
@@ -63,6 +70,8 @@ class SessionStore:
 
     def create(self, provider: str) -> Session:
         self._purge_expired()
+        if self.max_sessions and len(self.sessions) >= self.max_sessions:
+            raise ServerBusyError()
         session = Session(str(uuid.uuid4()), provider, self.clock())
         self.sessions[session.id] = session
         return session
@@ -83,6 +92,8 @@ class SessionStore:
             raise TurnInProgressError(session_id)
         if session.turn_count >= self.max_turns:
             raise SessionFullError(session_id)
+        if self.max_running and sum(s.busy for s in self.sessions.values()) >= self.max_running:
+            raise ServerBusyError()  # a running turn is a busy session
         return session
 
     def begin_turn(self, session_id: str) -> Turn:

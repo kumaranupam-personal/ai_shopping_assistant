@@ -46,7 +46,7 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 
 - Parameters: `query` (string, required), `sort` (string enum, optional), and the `filters` fields from `03-search.md` as flat optional parameters. The one exception is `attributes`, which is expressed in the portable schema as a list of objects. Each object has `name` (string, required), `any_of` (a list of strings, optional), `min` (number, optional) and `max` (number, optional). The tool converts each object into the search condition: `any_of` values are parsed according to the attribute's type, so "true" becomes a boolean and "8" a number.
 - Calls `search_products` in `03-search.md` with `limit` 10.
-- Returns the result shape from `03-search.md`, plus `applied` (the normalized filters actually used).
+- Returns the result shape from `03-search.md`, plus `applied` (the normalized filters and sort actually used).
 
 ### get_product_details
 
@@ -61,7 +61,7 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 ### show_products
 
 - Parameters: `product_ids` (a list of 1 to 8 strings), `headline` (one line, at most 80 characters), `suggestions` (a list of 0 to 4 short refinement phrases, each at most 30 characters), and `reply` (the message to the user, following rules 10 and 13).
-- Drops IDs that aren't in the catalog and keeps the given order.
+- Drops IDs that aren't in the catalog and duplicate IDs, and keeps the given order. The server enforces the parameter limits by cutting off extra IDs, headline characters and suggestions.
 - Side effect: sends a `products` event with the cards for the remaining IDs (see `05-api.md`) and then a `text` event with `reply`, records the IDs as the session's shown list, and adds a `products` entry and then an `assistant` entry to the transcript. If no IDs remain, nothing is sent or recorded.
 - Returns `{"shown": [{"position": 1, "id": "...", "title": "..."}], "not_found": [...]}`. The numbered list in the history is what makes ordinal references resolvable.
 
@@ -79,8 +79,8 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 
 Session rules:
 
-- A session expires once it has been idle longer than `SESSION_TTL_MINUTES`. Sending a message and restoring the session both count as activity. Every access to the store first removes all expired sessions.
-- A new message is rejected when `turn_count` has reached `MAX_TURNS_PER_SESSION`, or when `busy` is true. The matching error codes are in `05-api.md`.
+- A session expires once it has been idle longer than `SESSION_TTL_MINUTES`. Sending a message and restoring the session both count as activity. Every access to the store first removes all expired sessions, except one whose turn is still running.
+- A new message is rejected when `turn_count` has reached `MAX_TURNS_PER_SESSION`, or when `busy` is true. The matching error codes are in `05-api.md`. The store can also cap live sessions and running turns, as `11-abuse-protection.md` describes.
 - A turn's transcript entries are committed only when the turn ends with `done`. Until then they're held with the turn.
 - If a turn fails, or the client disconnects before it ends, the turn is cancelled. `history`, `transcript`, `shown_ids` and `turn_count` go back to their state before that turn, so a half-finished exchange is never stored.
 

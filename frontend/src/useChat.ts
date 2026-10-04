@@ -2,11 +2,16 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import { ApiError, createSession, restoreSession, streamChat, type Entry, type ResultSet, type StreamEvent } from "./api";
+import { turnstileToken } from "./turnstile";
 
 export type Message =
   | { kind: "user" | "assistant"; text: string }
   | { kind: "marker"; resultSet: number } // "Showed {n} products: {headline}"
-  | { kind: "error"; text: string; retryText: string };
+  | { kind: "error"; text: string; retryText: string; action: ErrorAction };
+
+// What an error row offers: resending can't help a full chat (New chat does) or paused chat (nothing does).
+export type ErrorAction = "retry" | "newChat" | "none";
+const ERROR_ACTIONS: Record<string, ErrorAction> = { session_full: "newChat", chat_unavailable: "none" };
 
 type ChatState = {
   started: boolean; // the page-load restore or create has finished, successfully or not
@@ -26,7 +31,7 @@ type Action =
   | { type: "restored"; entries: Entry[]; draft: string }
   | { type: "send"; text: string; addUserMessage: boolean }
   | { type: "event"; event: StreamEvent }
-  | { type: "failed"; text: string; message: string }
+  | { type: "failed"; text: string; message: string; code: string | null }
   | { type: "turnEnded" }
   | { type: "select"; index: number }
   | { type: "setDraft"; draft: string }
@@ -34,8 +39,13 @@ type Action =
 
 const EXPIRED_NOTICE = "Your previous chat expired. Starting a new one.";
 const UNREACHABLE_NOTICE = "Can't reach the store right now. Try again in a moment.";
+const LOAD_FAILED_NOTICE = "Can't reach the store right now. Reload the page to try again.";
 const BUSY_RETRIES = 3;
 const BUSY_RETRY_MS = 1000;
+
+// A refused session creation (rate limit, human check) explains itself; anything else gets the fallback.
+const failureNotice = (error: unknown, fallback: string) =>
+  error instanceof ApiError && error.code !== "http_error" ? error.message : fallback;
 
 const initialState: ChatState = {
   started: false,
@@ -90,7 +100,13 @@ function reducer(state: ChatState, action: Action): ChatState {
       return state; // done and error are handled by the send loop
     }
     case "failed":
-      return { ...state, messages: [...state.messages, { kind: "error", text: action.message, retryText: action.text }] };
+      return {
+        ...state,
+        messages: [
+          ...state.messages,
+          { kind: "error", text: action.message, retryText: action.text, action: ERROR_ACTIONS[action.code ?? ""] ?? "retry" },
+        ],
+      };
     case "turnEnded":
       return { ...state, turnRunning: false, status: "", loadingResults: false };
     case "select":
@@ -130,8 +146,9 @@ export function useChat() {
   const turn = useRef<AbortController | null>(null);
 
   const startNewSession = useCallback(async (notice?: string, draft?: string) => {
+    const id = await createSession(await turnstileToken()); // if this fails, the current chat and its turn carry on
     turn.current?.abort(); // the server cancels and rolls back an abandoned turn
-    sessionId.current = await createSession();
+    sessionId.current = id;
     storage.set("sessionId", sessionId.current);
     dispatch({ type: "reset", notice, draft });
   }, []);
@@ -157,9 +174,7 @@ export function useChat() {
         }
       }
       await startNewSession(undefined, pending);
-    })().catch(() =>
-      dispatch({ type: "reset", ready: false, notice: "Can't reach the store right now. Reload the page to try again." }),
-    );
+    })().catch((error) => dispatch({ type: "reset", ready: false, notice: failureNotice(error, LOAD_FAILED_NOTICE) }));
   }, [startNewSession]);
 
   const runTurn = useCallback(
@@ -172,7 +187,7 @@ export function useChat() {
       try {
         for (let attempt = 0; ; attempt++) {
           // Assigned inside the event callback, so TypeScript must not narrow them to their initial values.
-          let busy = false as boolean;
+          let code = null as string | null;
           let failure = null as string | null;
           try {
             await streamChat(
@@ -180,7 +195,7 @@ export function useChat() {
               text,
               (event) => {
                 if (event.event === "error") {
-                  busy = event.data.code === "turn_in_progress";
+                  code = event.data.code;
                   failure = event.data.message;
                 } else dispatch({ type: "event", event });
               },
@@ -195,14 +210,14 @@ export function useChat() {
                 error = sessionError; // couldn't start a new one: show it as this turn's failure
               }
             }
-            busy = error instanceof ApiError && error.code === "turn_in_progress";
+            code = error instanceof ApiError ? error.code : null;
             failure = error instanceof Error ? error.message : "Something went wrong. Try again.";
           }
-          if (busy && attempt < BUSY_RETRIES) {
+          if (code === "turn_in_progress" && attempt < BUSY_RETRIES) {
             await sleep(BUSY_RETRY_MS);
             continue;
           }
-          if (failure !== null) dispatch({ type: "failed", text, message: failure });
+          if (failure !== null) dispatch({ type: "failed", text, message: failure, code });
           return;
         }
       } finally {
@@ -220,7 +235,7 @@ export function useChat() {
     state,
     send: (text: string) => runTurn(text, true),
     retry: (text: string) => runTurn(text, false),
-    newChat: () => startNewSession().catch(() => dispatch({ type: "notice", notice: UNREACHABLE_NOTICE })),
+    newChat: () => startNewSession().catch((error) => dispatch({ type: "notice", notice: failureNotice(error, UNREACHABLE_NOTICE) })),
     selectResultSet: (index: number) => dispatch({ type: "select", index }),
     setDraft: (draft: string) => dispatch({ type: "setDraft", draft }),
     dismissNotice: () => dispatch({ type: "notice", notice: null }),

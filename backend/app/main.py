@@ -6,6 +6,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,11 +14,12 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agent.loop import TurnLimitError, run_turn
-from app.agent.session import SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
+from app.agent.session import ServerBusyError, SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
 from app.catalog.cards import attribute_details, build_card, featured_cards
 from app.catalog.store import fetch_products
 from app.config import Settings
-from app.llm.base import LLMProvider, LLMUpstreamError
+from app.limits import DailyBudget, MeteredProvider, RateLimit, Rejected, client_ip, log_rejection, verify_turnstile
+from app.llm.base import LLMConfigError, LLMProvider, LLMUpstreamError
 from app.llm.registry import build_provider
 from app.search.index import SearchIndex, load_index
 from app.sse import format_event
@@ -30,6 +32,7 @@ HTTP_ERRORS = {
     SessionNotFoundError: (404, "session_not_found"),
     TurnInProgressError: (409, "turn_in_progress"),
     SessionFullError: (429, "session_full"),
+    ServerBusyError: (503, "server_busy"),
 }
 MESSAGES = {
     "session_not_found": "This chat session doesn't exist or has expired.",
@@ -40,7 +43,17 @@ MESSAGES = {
     "turn_limit": "The assistant needed too many steps to answer. Try rephrasing your request.",
     "upstream_error": "The AI service is unavailable right now. Try again in a moment.",
     "internal_error": "Something went wrong. Try again.",
+    "rate_limited": "You're sending requests too quickly. Try again in a moment.",
+    "verification_failed": "We couldn't check that you're a person. Reload the page to try again.",
+    "server_busy": "The store is busy right now. Try again in a moment.",
+    "chat_unavailable": "Chat is paused right now. Please come back later.",
 }
+# Abuse-check rejections -> HTTP status (docs/11-abuse-protection.md).
+REJECTED_STATUS = {"rate_limited": 429, "verification_failed": 403, "chat_unavailable": 503}
+
+
+class SessionRequest(BaseModel):
+    turnstile_token: str | None = None
 
 
 class ChatRequest(BaseModel):
@@ -48,8 +61,8 @@ class ChatRequest(BaseModel):
     message: str = Field(max_length=1000, pattern=r"\S")  # at least one non-space character
 
 
-def error_response(status: int, code: str) -> JSONResponse:
-    return JSONResponse({"error": {"code": code, "message": MESSAGES[code]}}, status_code=status)
+def error_response(status: int, code: str, headers: dict[str, str] | None = None) -> JSONResponse:
+    return JSONResponse({"error": {"code": code, "message": MESSAGES[code]}}, status_code=status, headers=headers)
 
 
 def stream_error_code(error: BaseException) -> str:
@@ -64,7 +77,13 @@ def stream_error_code(error: BaseException) -> str:
 
 
 async def stream_turn(
-    provider: LLMProvider, index: SearchIndex, store: SessionStore, session_id: str, text: str, options: TraceOptions
+    provider: LLMProvider,
+    index: SearchIndex,
+    store: SessionStore,
+    session_id: str,
+    text: str,
+    options: TraceOptions,
+    client: str | None = None,
 ) -> AsyncIterator[str]:
     """Streams one turn's events, ending with `done` or `error`. Closing the stream cancels the turn.
 
@@ -87,6 +106,8 @@ async def stream_turn(
         await asyncio.wait({task})
         if error := task.exception():
             code = stream_error_code(error)
+            if code == "server_busy":  # the running-turn cap filled up after this request was checked
+                log_rejection(code, client)
             yield format_event("error", {"code": code, "message": MESSAGES[code]})
         else:
             yield format_event("done", {"turn": task.result().turn})
@@ -103,15 +124,26 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.provider = provider or build_provider(settings)
+        if settings.daily_budget_usd is not None:
+            if app.state.provider.prices is None:
+                raise LLMConfigError(f"DAILY_BUDGET_USD needs prices for model {app.state.provider.model!r}, which has none.")
+            app.state.provider = MeteredProvider(app.state.provider, app.state.budget)
         app.state.index = index or load_index(settings.data_dir)
-        app.state.store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
+        app.state.store = SessionStore(
+            settings.session_ttl_minutes, settings.max_turns_per_session, settings.max_sessions, settings.max_concurrent_turns
+        )
         app.state.featured = {"headline": "Popular picks", "suggestions": [], "products": featured_cards(app.state.index.conn)}
+        app.state.http = httpx.AsyncClient()  # for the Turnstile check
         tracing = setup_tracing(settings)
         yield
+        await app.state.http.aclose()
         shutdown_tracing(tracing)  # flushes the remaining spans
 
     # Endpoints are async so all session-store access stays on the event loop thread.
     app = FastAPI(title="AI shopping assistant", lifespan=lifespan)
+    app.state.budget = DailyBudget(settings.daily_budget_usd)
+    app.state.session_rate = RateLimit([(settings.rate_limit_sessions_per_hour, 3600)])
+    app.state.chat_rate = RateLimit([(settings.rate_limit_chat_per_minute, 60), (settings.rate_limit_chat_per_day, 86400)])
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
@@ -126,11 +158,25 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     @app.exception_handler(SessionNotFoundError)
     @app.exception_handler(TurnInProgressError)
     @app.exception_handler(SessionFullError)
-    async def session_error(_request: Request, error: Exception) -> JSONResponse:
-        return error_response(*HTTP_ERRORS[type(error)])
+    @app.exception_handler(ServerBusyError)
+    async def session_error(request: Request, error: Exception) -> JSONResponse:
+        status, code = HTTP_ERRORS[type(error)]
+        if code == "server_busy":
+            log_rejection(code, client_ip(request, settings.client_ip_header))
+        return error_response(status, code)
+
+    @app.exception_handler(Rejected)
+    async def rejected(request: Request, error: Rejected) -> JSONResponse:
+        log_rejection(error.code, client_ip(request, settings.client_ip_header))
+        headers = {"Retry-After": str(error.retry_after)} if error.retry_after is not None else None
+        return error_response(REJECTED_STATUS[error.code], error.code, headers)
 
     @app.post("/api/sessions", status_code=201)
-    async def create_session(request: Request) -> dict:
+    async def create_session(request: Request, body: SessionRequest | None = None) -> dict:
+        ip = client_ip(request, settings.client_ip_header)
+        request.app.state.session_rate.hit(ip)
+        if settings.turnstile_secret:
+            await verify_turnstile(request.app.state.http, settings.turnstile_secret, body and body.turnstile_token, ip)
         return {"session_id": request.app.state.store.create(request.app.state.provider.name).id}
 
     @app.get("/api/sessions/{session_id}")
@@ -149,9 +195,14 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
     @app.post("/api/chat")
     async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         state = request.app.state
-        state.store.check_can_start(body.session_id)  # unknown, busy and full sessions get an HTTP error
+        ip = client_ip(request, settings.client_ip_header)
+        # The checks in docs/11-abuse-protection.md, in order; the first that fails rejects the request.
+        if not settings.chat_enabled or state.budget.exhausted():
+            raise Rejected("chat_unavailable")
+        state.chat_rate.hit(ip)
+        state.store.check_can_start(body.session_id)  # unknown, busy, full sessions and the running-turn cap
         options = TraceOptions(["api"], settings.trace_message_text)
-        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message, options)
+        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message, options, ip)
         return StreamingResponse(stream, media_type="text/event-stream")
 
     @app.get("/api/featured")

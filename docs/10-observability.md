@@ -78,7 +78,7 @@ Costs come from `provider.prices` (see `09-llm-providers.md`, Prices): the bucke
 
 ## Export
 
-- `app/tracing.py` sets up, once per process, a tracer provider with a batch span processor and the OTLP HTTP exporter. It passes `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` from the settings to the exporter explicitly. Langfuse doesn't accept OTLP over gRPC.
+- `app/tracing.py` sets up, once per process, a tracer provider with a batch span processor and the OTLP HTTP exporter. It passes the settings to the exporter explicitly: `OTEL_EXPORTER_OTLP_ENDPOINT` with `/v1/traces` appended, because an explicit endpoint gets no path added, and `OTEL_EXPORTER_OTLP_HEADERS` split into `key=value` pairs with percent-encoded values decoded. Langfuse doesn't accept OTLP over gRPC.
 - For Langfuse Cloud, the endpoint is the project region's host followed by `/api/public/otel`, such as `https://cloud.langfuse.com/api/public/otel`. The headers are `Authorization=Basic <base64 of public key:secret key>,x-langfuse-ingestion-version=4`.
 - When `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, nothing is set up and OpenTelemetry's no-op tracer is used.
 - Export happens in the background. A failed export drops its spans, and no tracing error ever reaches the turn.

@@ -92,7 +92,7 @@ The gains came from prompt and tool-description changes only, one change per com
 - **LLM SDKs:** Anthropic, OpenAI (Responses API) and Google GenAI, each used only inside its adapter.
 - **Observability:** OpenTelemetry SDK with the OTLP HTTP exporter, sending to Langfuse Cloud.
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, `lucide-react`.
-- **Testing:** pytest (304 tests, no LLM calls), Playwright (layout at 8 widths in both themes, drag-resize, layout shift, session restore), Lighthouse.
+- **Testing:** pytest (333 tests, no LLM calls), Playwright (layout at 8 widths in both themes, drag-resize, layout shift, session restore), Lighthouse.
 
 ## Quick start
 
@@ -132,4 +132,4 @@ The app serves any catalog that follows the product schema and taxonomy in [`doc
 
 ## Documentation
 
-The full specification lives in [`docs/`](docs/00-overview.md): architecture, catalog, search, agent, API, frontend, evaluation, roadmap, LLM providers and observability. Each fact lives in exactly one document.
+The full specification lives in [`docs/`](docs/00-overview.md): architecture, catalog, search, agent, API, frontend, evaluation, roadmap, LLM providers, observability and abuse protection. Each fact lives in exactly one document.

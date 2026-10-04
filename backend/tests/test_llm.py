@@ -205,6 +205,11 @@ def test_registry_builds_the_configured_adapter(name, adapter, default_model):
     assert other.model == "other" and other.prices is None  # a model the price table doesn't have
 
 
+def test_gemini_prices_flash_lite():
+    provider = build_provider(keyed(llm_provider="gemini", llm_model="gemini-3.5-flash-lite"))
+    assert provider.prices == Prices(input=0.30, output=2.50, cache_read=0.03, cache_write=0)
+
+
 def test_prices_cost_every_usage_bucket():
     # 1,000 x $4 + 500 x $20 + 10,000 x $0.20 + 2,000 x $5, per million tokens
     assert Prices(input=4, output=20, cache_read=0.20, cache_write=5).cost(Usage(1000, 500, 10_000, 2000)) == pytest.approx(0.026)
