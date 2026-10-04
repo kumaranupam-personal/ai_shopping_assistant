@@ -33,26 +33,26 @@ Each endpoint runs its checks in the order listed, after the request body passes
 
 - Windows slide: each request that passes a rate check is timestamped, and a request passes when fewer than the limit fall inside the window.
 - A request counts once it passes its rate check, even if a later check rejects it. A request the rate check itself rejects doesn't count.
-- `rate_limited` responses carry a `Retry-After` header with the whole seconds, rounded up, until the oldest counted request leaves its window.
+- `rate_limited` responses carry a `Retry-After` header with the whole seconds, rounded up, until the oldest counted request leaves its window. When both chat windows are full, it's the later of the two.
 
 ## Daily budget
 
 - The day runs from 00:00 to 24:00 UTC.
-- Every model call in an API turn adds its cost to the day's spend as soon as it returns, using `provider.prices` (see `09-llm-providers.md`, Prices). Calls in failed and cancelled turns count too.
+- Every model call in an API turn adds its cost to the day's spend as soon as it returns, using `provider.prices` (see `09-llm-providers.md`, Prices). Calls in failed and cancelled turns count too, and a call that fails adds nothing.
 - The budget is checked when a message arrives, not during a turn, so turns already running finish and the spend can end slightly above the budget.
 - When set, `DAILY_BUDGET_USD` must be greater than 0. If it's set and the configured model has no prices, startup fails with `LLMConfigError`, because the spend couldn't be measured.
 
 ## State and logging
 
 - Rate windows, the running-turn count and the day's spend live in memory, like the session store. A restart resets all of them, including the day's spend. The app runs as one process, so one set of counters sees every request.
-- Each rejection writes one line to the server log with the code and the client IP.
+- Each rejection by a check in this doc (`rate_limited`, `verification_failed`, `server_busy` and `chat_unavailable`, including a `server_busy` stream event) writes one warning line to the server log with the code and the client IP. The session checks from `04-agent.md` aren't logged.
 - Rejections aren't traced (see `10-observability.md`, Scope).
 
 ## Turnstile
 
 Cloudflare Turnstile checks that a browser, not a script, is creating a session. The backend check is on whenever `TURNSTILE_SECRET` is set, and the frontend widget whenever `VITE_TURNSTILE_SITE_KEY` is set at build time. Set both or neither: a secret without a site key rejects every new session, and a site key without a secret sends tokens the backend ignores. Production sets both; local runs set neither, or use Cloudflare's published test keys.
 
-- **Frontend:** with a site key, the frontend loads `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit` and renders one widget with `appearance: "interaction-only"`, so it's invisible unless Cloudflare asks the visitor to interact. Before every `POST /api/sessions` (page load, New chat, and replacing an expired session) it gets a fresh token and sends it as `turnstile_token`. Restoring a session needs no token. If the script can't load or the widget fails, the request goes without a token and the server answers `verification_failed`. Without a site key, no Cloudflare script loads.
+- **Frontend:** with a site key, the frontend loads `https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit` and renders one widget with `appearance: "interaction-only"`, so it's invisible unless Cloudflare asks the visitor to interact. Before every `POST /api/sessions` (page load, New chat, and replacing an expired session) it gets a fresh token and sends it as `turnstile_token`. Restoring a session needs no token. If the script can't load, or the widget fails, times out or finds the browser unsupported, the request goes without a token and the server answers `verification_failed`. Without a site key, no Cloudflare script loads.
 - **Backend:** the API sends the token, `TURNSTILE_SECRET` and the client IP to `https://challenges.cloudflare.com/turnstile/v0/siteverify` with a 5-second timeout. The session is created only when the response has `success` true. A missing token, a rejected token, a timeout or a network failure all give `verification_failed`.
 - Tokens are single-use and expire after 5 minutes, which is why each session creation gets a new one right before it. A token is checked only when its session is created, so its expiry never limits how long a conversation lasts; the session rules in `04-agent.md` do.
 - Turnstile guards session creation only. A verified session is then held to the chat checks above.

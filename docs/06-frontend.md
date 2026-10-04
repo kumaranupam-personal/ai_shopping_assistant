@@ -9,7 +9,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 ### App shell
 
 - The shell fills the viewport using `100dvh`, which accounts for mobile browser toolbars, and is centered with a maximum width of 1680 px. Beyond that width, the page background extends and the shell stays centered.
-- The shell has two rows: the header (56 px) and the main area, which takes the remaining height. The document body never scrolls. Each panel scrolls on its own.
+- The shell has three rows: the header (56 px), a banner row for the offline banner, the human check and notices, which takes no space when empty, and the main area, which takes the remaining height. The document body never scrolls. Each panel scrolls on its own.
 - Every flex and grid child that contains a scroll area has `min-height: 0` and `min-width: 0`, so content can never push a panel past the viewport.
 - The header holds the app name on the left, and on the right a theme switch (system, light, dark) and a "New chat" button. Below 480 px, the button shows only its icon, with an accessible label.
 
@@ -23,12 +23,12 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 
 - One column: header, then a results strip, then the message list, then the status line and composer pinned to the bottom.
 - The results strip appears once a result set exists, or before that with the featured products. It's a horizontally scrolling row of compact cards with scroll snapping: a 64 px image, a one-line title and the price. At its end, a "View all ({n})" button opens the results sheet.
-- The results sheet is a full-screen panel with the headline, chips and full product grid, plus a close button. It closes on Esc, the close button, or the browser back gesture.
+- The results sheet is a full-screen panel with the headline, chips and full product grid, plus a close button. It closes on Esc, the close button, the browser back gesture, or picking a suggestion chip in it.
 - Composer padding respects `env(safe-area-inset-bottom)` on phones.
 
 ### Product grid
 
-- The grid sizes from the results panel's own width using a container query, not the viewport: `repeat(auto-fill, minmax(208px, 1fr))` with a 16 px gap, or a 12 px gap when the panel is under 640 px wide. That's 1 to 6 columns depending on the space.
+- The grid sizes from the results panel's own width using a container query, not the viewport: `repeat(auto-fill, minmax(208px, 1fr))` with a 16 px gap, or a 12 px gap when the grid area is under 640 px wide. That's 1 to 5 columns depending on the space.
 - Images and product tiles use a fixed 1:1 aspect ratio, images with `object-fit: cover`, so cards never change height while images load.
 - Titles clamp to 2 lines and brands to 1 line, with an ellipsis. Highlights wrap onto a second line rather than overflowing.
 
@@ -60,10 +60,10 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 
 - **Before the first message:** the composer shows 4 example prompts as clickable chips: "Warm jacket for a Ladakh trek under ₹8,000", "Gaming laptop with 16 GB RAM", "Waterproof trekking shoes in UK 9" and "Shaadi ke liye silk kurta, 5k tak". In the narrow layout, the heading "What are you shopping for?" and the line "Describe what you need in your own words, in English or Hinglish." sit at the top of the message list.
 - **Before the first result set:** in the wide layout, the results panel shows the same heading and line, with the featured products from `GET /api/featured` below them under their headline. In the narrow layout, the featured products fill the results strip. The skeleton cards described below hold their place while they load. If the request fails, the wide panel shows only the heading and line, and the narrow strip stays hidden. Clicking a featured card opens the drawer. The first `products` event replaces them, and they return after a new chat.
-- **While a turn runs:** the status line shows the latest `status` text with a spinner, and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
-- **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available."
+- **While a turn runs:** the status line shows the latest `status` text with a spinner ("Thinking" until the first one arrives), and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
+- **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available." Any other failure shows "Couldn't load this product. Try again."
 - **Images:** a product with an `image_url` loads it lazily, showing a neutral skeleton block while loading. A product without one, or whose image fails to load, shows its product tile.
-- **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
+- **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A stream that ends before `done` or `error` shows "The connection closed before the reply finished." A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
 
 ## Components
 
@@ -81,7 +81,7 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 
 ## Accessibility
 
-- Landmarks: `header`, `main`, and the chat and results regions, each with a label.
+- Landmarks: `header`, `main`, and the chat and results regions, which are labelled "Chat" and "Results".
 - Everything works by keyboard, with visible focus rings in the accent color.
 - The status line and newly arrived assistant messages are announced through an `aria-live="polite"` region.
 - Each card is a button whose accessible name includes the title and price.
@@ -94,9 +94,11 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - `messages`: an ordered list of user messages, assistant texts, result markers and error rows.
 - `resultSets`: every `products` payload in this session, in order.
 - `selectedResultSet`: an index into `resultSets`. Each new `products` event selects itself.
-- `featured`: the featured products, loaded once per page load. They never join `resultSets`.
+- `featured`: the featured products, loaded once per page load and held by `App`. They never join `resultSets`.
 - `turnRunning`: true from send until `done` or `error`.
 - `status`: the latest `status` text in the current turn.
+- `draft`: the composer text, which a restore or an expired session can fill.
+- `notice`: the dismissible notice in the banner row, if any.
 - `theme`: `system`, `light` or `dark`, saved in `localStorage`.
 
 ## Session lifecycle
@@ -109,8 +111,8 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - **Message limit:** if sending returns `session_full`, the error row shows the server's message with a "New chat" button instead of "Retry", because resending can't succeed.
 - **Chat unavailable:** if sending returns `chat_unavailable`, the error row shows the server's message with no button, because neither resending nor a new chat can succeed until the server allows chat again.
 - **Human check:** the Turnstile widget described in `11-abuse-protection.md` sits in the banner row under the header.
-- **Session creation failure:** if creating a session fails on page load or for New chat, the client shows a dismissible notice. It carries the server's message when the response has an error body, such as `rate_limited` or `verification_failed`. Otherwise it reads "Can't reach the store right now. Reload the page to try again." on page load, and "Can't reach the store right now. Try again in a moment." for New chat, which keeps the current conversation. When creating a session fails while replacing an expired one during a send, the error row from "Errors" shows instead.
-- **New chat:** creates a new session, replaces the stored ID and clears the conversation, with no notice.
+- **Session creation failure:** if creating a session fails on page load or for New chat, the client shows a dismissible notice. It carries the server's message when the response has an error body, such as `rate_limited` or `verification_failed`. Otherwise it reads "Can't reach the store right now. Reload the page to try again." on page load, and "Can't reach the store right now. Try again in a moment." for New chat, which keeps the current conversation and any running turn. When creating a session fails while replacing an expired one during a send, the error row from "Errors" shows instead.
+- **New chat:** creates a new session, then cancels a running turn, replaces the stored ID and clears the conversation and any unsent composer text, with no notice.
 
 ## Stream handling
 

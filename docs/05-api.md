@@ -31,8 +31,8 @@ Restores a session's conversation after a page reload.
 - Request body: `{"session_id": "<uuid>", "message": "<1 to 1000 characters>"}`.
 - Response 200: a `text/event-stream` carrying the events below, which always ends with exactly one `done` or `error` event. If the client disconnects first, the server cancels the turn as described in `04-agent.md`.
 - Response 404: `session_not_found`.
-- Response 409: `turn_in_progress`. In the rare case that another turn starts between this check and the start of the stream, the stream instead ends with an `error` event carrying `turn_in_progress`.
-- Response 422: `invalid_request`, when the body is malformed or the message is empty or too long.
+- Response 409: `turn_in_progress`. The session checks run again when the stream starts, so in the rare case that another turn starts in between, the stream instead ends with an `error` event carrying the session error, usually `turn_in_progress`.
+- Response 422: `invalid_request`, when the body is malformed or the message is empty, only whitespace, or too long.
 - Response 429: `session_full` or `rate_limited`.
 - Response 503: `chat_unavailable` or `server_busy`. Like `turn_in_progress`, `server_busy` can instead end the stream as an `error` event when the running-turn cap fills after the check.
 - The order in which these checks run is in `11-abuse-protection.md`.

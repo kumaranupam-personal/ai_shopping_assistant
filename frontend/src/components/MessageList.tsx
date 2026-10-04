@@ -7,6 +7,8 @@ import type { Message } from "../useChat";
 
 const NEAR_BOTTOM_PX = 48;
 const isAtBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+// An explicit scroll behavior overrides the CSS reduced-motion rule, so it is chosen here.
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 type Props = {
   messages: Message[];
@@ -44,7 +46,7 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
       {!atBottom && (
         <button
           type="button"
-          onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: "smooth" })}
+          onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" })}
           className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium shadow-sm"
         >
           <ArrowDown aria-hidden className="size-3.5" /> Jump to latest

@@ -39,6 +39,8 @@ The model chooses which products to show and writes prose about them. It never s
 
 ## Repository layout
 
+The tree shows the source folders and main files. The root README, lockfiles and tool config files (Vite, TypeScript, Playwright) are left out.
+
 ```
 ai_shopping_assistant/
   .gitignore                 ignores .env, generated files and build output

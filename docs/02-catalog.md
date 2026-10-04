@@ -27,7 +27,7 @@ The app serves any catalog that follows the product schema and taxonomy below. P
 Field rules (ingestion enforces all of them):
 
 - `id`: unique, 1 to 32 characters from letters, digits, hyphen and underscore.
-- `title` and `brand`: non-empty, at most 120 and 60 characters.
+- `title` and `brand`: non-blank, at most 120 and 60 characters.
 - `category`: a category from the taxonomy.
 - `price` and `mrp`: positive integer rupees, with `mrp` greater than or equal to `price`.
 - `rating`: 0.0 to 5.0 with one decimal place.
@@ -35,9 +35,10 @@ Field rules (ingestion enforces all of them):
 - `sizes`: one or more distinct values from the category's sizes, or an empty list when the category has none.
 - `colors`: 1 to 4 distinct values from the taxonomy's color list.
 - `attributes`: exactly the category's attributes, each with an allowed value.
-- `tags`: 0 to 10 lowercase strings.
-- `description`: non-empty, at most 1000 characters.
+- `tags`: 0 to 10 non-empty lowercase strings.
+- `description`: non-blank, at most 1000 characters.
 - `image_url`: optional. When present, an `http` or `https` URL.
+- Any other field rejects the line.
 
 ## Taxonomy
 
@@ -170,9 +171,9 @@ All rupee amounts shown to the user, both in agent prose and in the UI, use the 
 - IDs are a category prefix, a hyphen and a 5-digit sequence number starting at 00001 within each category. The prefixes are JKT for jackets, SHO for shoes, PHN for phones, LAP for laptops, BAG for backpacks, WCH for watches, KRT for kurtas and KIT for kitchen_appliances.
 - Price ranges in rupees: jackets 799 to 14999, shoes 499 to 12999, phones 6999 to 89999, laptops 24999 to 189999, backpacks 399 to 7999, watches 499 to 29999, kurtas 399 to 6999, kitchen_appliances 799 to 24999. Within those ranges, narrower price bands by spec (RAM for phones, use for laptops, type for jackets, shoes and kitchen appliances, occasion for kurtas) keep prices consistent with what each product is. Prices end in 9.
 - About 70% of products are discounted, by 5% to 60%.
-- Ratings are skewed so most fall between 3.5 and 4.7. `review_count` ranges from 0 to 25000 and is positively correlated with rating.
+- Ratings follow a normal curve centered at 4.1, kept between 1.0 and 5.0, so most fall between 3.5 and 4.7. `review_count` ranges from 0 to 25000 and is positively correlated with rating.
 - About 8% of products have `stock` 0.
 - Tags are derived from attributes by fixed rules. For example, jackets with `warmth` set to `extreme` get `winter`, `trekking` and `high-altitude`.
-- Descriptions are 2 to 4 sentences built from attribute-specific templates, and they never contradict `attributes`.
+- Descriptions are 2 to 4 sentences built from category templates filled with attribute values, and they never contradict `attributes`.
 - Products have no `image_url`, because the demo has no real product imagery.
 - Attribute values within a product are plausible. For example, smartwatches never have a 0 m water rating, gaming laptops always have a dedicated GPU, and a down jacket's warmth is high or extreme.

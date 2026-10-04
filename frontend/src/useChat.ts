@@ -146,8 +146,9 @@ export function useChat() {
   const turn = useRef<AbortController | null>(null);
 
   const startNewSession = useCallback(async (notice?: string, draft?: string) => {
+    const id = await createSession(await turnstileToken()); // if this fails, the current chat and its turn carry on
     turn.current?.abort(); // the server cancels and rolls back an abandoned turn
-    sessionId.current = await createSession(await turnstileToken());
+    sessionId.current = id;
     storage.set("sessionId", sessionId.current);
     dispatch({ type: "reset", notice, draft });
   }, []);
