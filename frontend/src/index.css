@@ -30,6 +30,8 @@
   --danger: #b3261e;
   --danger-soft: #fbeae8;
   --star: #b7791f;
+  /* How much of a product's first swatch tints its tile (docs/06-frontend.md, Product tiles > Tint). */
+  --tile-tint: 10%;
   /* The three shadows docs/06 allows (Surfaces), tinted with the text color so they sit softly on the warm neutrals. */
   --shadow-color: rgb(20 38 31 / 0.14);
   color-scheme: light;
@@ -61,6 +63,7 @@
   --danger: #f2a099;
   --danger-soft: #3a1f1d;
   --star: #e5b454;
+  --tile-tint: 12%;
   --shadow-color: rgb(0 0 0 / 0.45);
   color-scheme: dark;
 }
@@ -101,6 +104,11 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-star: var(--star);
+}
+
+/* A product tile's background: `tile` mixed in oklab with the swatch the tile sets as --swatch. */
+@utility tile-tint {
+  background-color: color-mix(in oklab, var(--tile), var(--swatch) var(--tile-tint));
 }
 
 @keyframes rise {

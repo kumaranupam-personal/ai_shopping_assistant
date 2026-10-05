@@ -110,9 +110,15 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 3: the recorded conversation: its three turns are run once against the real agent with message text in the traces (see `10-observability.md`), the replay's steps are copied from those traces, and each trace is made public and linked from its turn.
 - Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `12-about-page.md` holds.
 
+## Phase 16: Product tiles
+
+- Part 1: the jacket and kurta icons, the swatches, the tint, the dots in their swatches, the brand label and the small tiles from `06-frontend.md` (Product tiles and Cards).
+- Part 2: the drawer banner and the drawer's color choices in their swatches.
+- Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
+
 ## Stretch goals
 
-These come after Phase 15 and are each specified in a new doc before being built.
+These come after Phase 16 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.

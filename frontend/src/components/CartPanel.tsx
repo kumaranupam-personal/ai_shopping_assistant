@@ -177,7 +177,7 @@ function Row({ item, load, onOpen, onRemove }: RowProps) {
   return (
     <>
       <button type="button" onClick={onOpen} aria-label={name} className="group flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left">
-        <ProductImage card={card} compact className="size-16 shrink-0 rounded-lg" />
+        <ProductImage card={card} variant="small" className="size-16 shrink-0 rounded-lg" />
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="line-clamp-2 text-sm font-medium group-hover:underline group-hover:underline-offset-2">{title}</span>
           <span className="text-xs text-fg-muted">{choice}</span>

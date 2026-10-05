@@ -11,6 +11,7 @@ const FLEECE = products["JKT-00002"]; // sizes S to XXL; beige, navy, maroon
 const RAIN = products["JKT-00005"]; // out of stock
 const WATCH = products["WCH-00001"]; // no sizes; silver, black
 const DENIM = products["JKT-00006"];
+const DOWN = products["JKT-00003"]; // featured, with no image
 
 const cartButton = (page: Page) => page.getByRole("banner").getByRole("button", { name: /^Cart/ });
 const cartPanel = (page: Page) => page.getByRole("dialog", { name: "Cart" });
@@ -248,7 +249,10 @@ test("the cart survives a reload and a new chat", async ({ page }) => {
 });
 
 test("a grid card in the cart shows the mark, and a strip card doesn't", async ({ page }) => {
-  await seedCart(page, [{ id: FLEECE.id, size: "M", color: "navy" }]);
+  await seedCart(page, [
+    { id: FLEECE.id, size: "M", color: "navy" },
+    { id: DOWN.id, size: "M", color: "blue" },
+  ]);
   await mockApi(page, []);
   await page.goto("/");
   const inCart = page.getByRole("button", { name: `${FLEECE.title}, ₹4,089, in cart` });
@@ -257,6 +261,12 @@ test("a grid card in the cart shows the mark, and a strip card doesn't", async (
   const other = card(page, products["JKT-00001"].title);
   await expect(other).toHaveAccessibleName(/₹5,299$/);
   await expect(other.locator("[data-in-cart]")).toHaveCount(0);
+
+  // On a tile, the brand label stops short of the mark (docs/06-frontend.md, Product tiles > Brand label).
+  const tiled = page.getByRole("button", { name: `${DOWN.title}, ₹10,269, in cart` });
+  await expect(tiled.locator("[data-in-cart]")).toBeVisible();
+  const [label, mark] = await Promise.all([tiled.locator("[data-brand-label]").boundingBox(), tiled.locator("[data-in-cart]").boundingBox()]);
+  expect(label!.x + label!.width).toBeLessThan(mark!.x);
 
   await page.setViewportSize({ width: 400, height: 800 });
   const strip = card(page, FLEECE.title);

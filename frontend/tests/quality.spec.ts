@@ -24,10 +24,10 @@ async function openLanding(page: Page) {
 /** Resolves once an open panel has finished sliding in, so the checks see where it rests. */
 const panelSettled = (page: Page) => page.waitForFunction(() => document.querySelector("dialog[open] > div")?.getAnimations().length === 0);
 
-/** After a turn, with a product drawer open (a product with sizes, so every choice shows). */
-async function openDrawer(page: Page) {
+/** After a turn, with a product drawer open (products with sizes, so every choice shows): an image, or the tile's banner. */
+async function openDrawer(page: Page, title: string) {
   await startConversation(page);
-  await page.getByRole("button", { name: /^TrekNorth Summit Fleece Jacket, ₹/ }).filter({ visible: true }).click();
+  await page.getByRole("button", { name: new RegExp(`^${title}, ₹`) }).filter({ visible: true }).click();
   await expect(page.getByRole("dialog", { name: "Product details" }).getByRole("button", { name: "Select a size" })).toBeVisible();
   await panelSettled(page);
 }
@@ -53,7 +53,8 @@ const CART_ITEMS = [
 const STATES = {
   landing: openLanding,
   "after a turn": startConversation,
-  "with the product drawer open": openDrawer,
+  "with the product drawer open on an image": (page: Page) => openDrawer(page, "TrekNorth Summit Fleece Jacket"),
+  "with the product drawer open on a banner": (page: Page) => openDrawer(page, "Snowline Glacier Down Jacket"),
   "with the cart panel open and empty": (page: Page) => openCart(page, []),
   "with the cart panel open and items in it": (page: Page) => openCart(page, CART_ITEMS),
 };

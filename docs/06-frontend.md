@@ -50,7 +50,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
 ### Product grid
 
 - The grid sizes from its container's own width using a container query, not the viewport: `repeat(auto-fill, minmax(208px, 1fr))` with a 16 px gap, or a 12 px gap when the grid area is under 640 px wide. That's 1 to 5 columns depending on the space.
-- Images and product tiles use a fixed 1:1 aspect ratio, images with `object-fit: cover`, so cards never change height while images load.
+- On cards, images and product tiles use a fixed 1:1 aspect ratio, images with `object-fit: cover`, so cards never change height while images load.
 - Titles clamp to 2 lines and brands to 1 line, with an ellipsis. Highlight pills wrap onto a second line rather than overflowing.
 
 ### Drawer
@@ -78,7 +78,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
   | `page` | #EFEAE0 | #0A100D | the background beyond the shell |
   | `surface-muted` | #FAF8F3 | #111815 | the header, the landing, the results panel, strip and sheet |
   | `surface` | #FFFFFF | #18211D | cards, the drawer, prompt cards, chips and the landing's composer |
-  | `tile` | #EFEBE1 | #212C27 | product tiles, highlight pills and skeleton blocks |
+  | `tile` | #EFEBE1 | #212C27 | product tiles before their tint, highlight pills and skeleton blocks |
   | `line` | #E4DFD3 | #26322C | 1 px borders |
   | `line-strong` | #CFC8B8 | #3A4A42 | hovered borders, the landing composer's border and color-dot borders |
   | `fg` | #14261F | #ECF1EC | text |
@@ -102,7 +102,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
   | `star` | #B7791F | #E5B454 | rating stars |
 
 - **Accent:** the accent marks what can be acted on or is selected, and is never decorative. Outside the chat panel it's `accent`: the "New chat" button (filled, with `accent-fg` text and icon), the selected theme (`accent-soft-fg` on `accent-soft`), the landing composer when focused and its send button when active, a hovered prompt card, category chip or suggestion chip, the cart's uses listed under Cart, and focus rings. Inside the chat panel it's `panel-accent`: user messages, the selected result marker, the composer when focused and its send button when active, and focus rings.
-- **Typography:** Figtree variable for all text, except Fraunces variable, at weight 500 with its optical-size axis, for the wordmark (24 px), the landing heading (48 px, or 36 px below 640 px), results headlines (24 px), the drawer's product title (24 px), the cart panel's title (24 px) and the letter in the assistant avatar (18 px). Both fonts include the rupee sign. The Figtree text scale is 12, 14, 16 and 18 px, plus 24 px for the drawer's price, using weights 400, 500 and 600, plus 700 for the card price. Prices use tabular numbers so they line up across cards.
+- **Typography:** Figtree variable for all text, except Fraunces variable, at weight 500 with its optical-size axis, for the wordmark (24 px), the landing heading (48 px, or 36 px below 640 px), results headlines (24 px), the drawer's product title (24 px), the cart panel's title (24 px), the letter in the assistant avatar (18 px) and the brand label on product tiles (13 px). Both fonts include the rupee sign. The Figtree text scale is 12, 14, 16 and 18 px, plus 24 px for the drawer's price, using weights 400, 500 and 600, plus 700 for the card price. Prices use tabular numbers so they line up across cards.
 - **Spacing and shape:** a 4 px spacing grid. Cards have 12 px corners, controls 8 px, the landing's composer 16 px, and chips, pills and badges are fully rounded.
 - **Surfaces:** flat colors and 1 px borders. No gradients. The only shadows are on a hovered card, the landing's composer and the "Jump to latest" button.
 - **Motion:** 150 to 200 ms ease-out transitions for hover states, message entry, chip presses, the drawer and the cart panel, plus three motions with a purpose:
@@ -112,8 +112,24 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
 
   All motion is disabled under `prefers-reduced-motion`: a hovered card doesn't rise, the typing dots stay still and cards appear at once.
 - **Messages:** user messages are right-aligned bubbles in `panel-accent` with `panel-accent-fg` text. Assistant messages are left-aligned plain `panel-fg` text with no bubble, each after the assistant avatar: a 28 px `panel-raised` circle holding the letter "S", aligned with the message's first line and hidden from screen readers. Result markers and error rows have no avatar and are indented 40 px, so they line up with assistant text. A result marker is a compact row with a `panel-line` border and `panel-muted` text, or a `panel-accent` border and `panel-fg` text when selected, holding a grid icon and two lines: 14 px, then 12 px.
-- **Product tiles:** stand in for a product image. The tile is a flat `tile` background with the category's `lucide-react` icon large and centered in `fg-muted`: `Shirt` for jackets and kurtas (lucide has no jacket icon), `SportShoe` for shoes, `Smartphone` for phones, `Laptop` for laptops, `Backpack` for backpacks, `Watch` for watches and `CookingPot` for kitchen appliances. Small dots in the top-right corner show every color of the product, in the order of its `colors`, each filled with that color and given a 1 px `line-strong` border so pale colors stay visible. The 64 px strip image shows only the icon.
-- **Cards:** below the image or tile, the brand in small muted text above the title, then the price row (the price at 18 px in weight 700 and, when discounted, the crossed-out MRP at 12 px, muted), the rating row (the star in `star`, the rating in the text color at weight 600, review count in parentheses), and the highlight pills. A discounted card also shows a badge in the image's top-left corner, 8 px in from each edge: "{n}% off" at 12 px in weight 600, `success-fg` on `success`. Out-of-stock cards show a muted overlay with an "Out of stock" label, `danger` on `danger-soft`, and stay clickable. A card in the cart shows the mark described under Cart. Strip cards show none of the badge, the pills and the mark.
+- **Product tiles:** stand in for a product image on cards, in the results strip, in cart rows and in the product drawer.
+  - **Icon:** the category's line icon, centered, in `fg-muted`, a third of the tile's width. Six come from `lucide-react`: `SportShoe` for shoes, `Smartphone` for phones, `Laptop` for laptops, `Backpack` for backpacks, `Watch` for watches and `CookingPot` for kitchen appliances. Jackets use the `jacket` icon from Lucide Lab and kurtas the `kurta` icon from Hugeicons' free set. Each of those two is copied into the frontend as its own component, drawn on lucide's 24 px grid and taking the same stroke props as a lucide icon, under a comment that names its source, its copyright holder and its licence (ISC for Lucide Lab, MIT for Hugeicons).
+  - **Swatches:** every product color is drawn with its swatch from this table, in both themes, wherever a color shows: tile tints, color dots, and the product drawer's color choices.
+
+    | Color | Swatch | Color | Swatch | Color | Swatch |
+    |---|---|---|---|---|---|
+    | black | #2B2B2B | red | #B5443B | pink | #D58CA3 |
+    | white | #FFFFFF | green | #3F7D54 | maroon | #7A2E3A |
+    | grey | #8A8F93 | olive | #7A7A3C | yellow | #D9B441 |
+    | navy | #2F4170 | brown | #7A5438 | silver | #AEB4BA |
+    | blue | #3F6FB5 | beige | #C9B48F | gold | #B8923A |
+
+  - **Tint:** the tile's background is `tile` mixed, in the oklab color space, with the swatch of the product's first color: 10% of the swatch in the light theme and 12% in the dark theme. The tint is faint by design; the dots carry the product's colors.
+  - **Dots:** small dots in the top-right corner show every color of the product, in the order of its `colors`, each filled with its swatch and given a 1 px `line-strong` border so pale ones stay visible.
+  - **Brand label:** the product's brand in the tile's bottom-left corner, 10 px in from each edge, in Fraunces at 13 px in `fg`, on one line cut with an ellipsis. It stops 40 px short of the tile's right edge, which keeps it clear of the in-cart mark.
+  - **Small tiles:** the 64 px tile in the results strip and in cart rows shows only the icon on the tint, with no dots and no brand label.
+  - **Drawer banner:** in the product drawer the tile is a banner as wide as the drawer's content with a 2:1 aspect ratio and 12 px corners. Its icon is 40% of the banner's height, and it has the dots and the brand label as on cards.
+- **Cards:** below the image or tile, the title, then the price row (the price at 18 px in weight 700 and, when discounted, the crossed-out MRP at 12 px, muted), the rating row (the star in `star`, the rating in the text color at weight 600, review count in parentheses), and the highlight pills. A discounted card also shows a badge in the image's top-left corner, 8 px in from each edge: "{n}% off" at 12 px in weight 600, `success-fg` on `success`. A card that shows a product image, not a tile, also has the brand in small muted text above the title, since only a tile carries the brand label. Out-of-stock cards show a muted overlay with an "Out of stock" label, `danger` on `danger-soft`, and stay clickable. A card in the cart shows the mark described under Cart. Strip cards show none of the badge, the pills and the mark.
 - **Highlight pills:** a card shows one pill, 12 px `fg-muted` text on `tile`, for each of its `highlights` from `05-api.md`, in order, shortened by these rules:
   1. A value of "no" or "0 m" gives no pill.
   2. A value of "yes" gives the label alone.
@@ -157,7 +173,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
 - **Before the first result set:** once the conversation has a message, the featured products show in the results panel under their headline, or in the results strip in the narrow layout, as they do for a result set. The first `products` event replaces them. If the featured request failed, the results panel shows only the muted, centered line "Products Saathi finds will show here.", and the narrow strip stays hidden.
 - **While a turn runs:** the status line shows the latest `status` text with a spinner ("Thinking" until the first one arrives), and it's hidden otherwise. After the first search status in a turn, 6 skeleton cards appear in the grid, or 4 compact ones in the strip in the narrow layout, until the `products` event arrives or the turn ends.
 - **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available." Any other failure shows "Couldn't load this product. Try again."
-- **Images:** a product with an `image_url` loads it lazily, showing a skeleton block while loading. A product without one, or whose image fails to load, shows its product tile.
+- **Images:** a product with an `image_url` loads it lazily, showing a skeleton block while loading. While the product drawer loads its product, it shows a skeleton block in the banner's shape. A product without one, or whose image fails to load, shows its product tile.
 - **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A stream that ends before `done` or `error` shows "The connection closed before the reply finished." A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
 
 ## Cart
@@ -169,7 +185,7 @@ The cart is a list of products the user has picked, kept only in the browser. Th
 - **Cart button:** in the header, a 32 px square button with 8 px corners on `surface` with a `line` border, holding the `ShoppingBag` icon. When the cart has items, a fully rounded badge on its top-right corner shows their number at 12 px in weight 600, `accent-fg` on `accent`. Its accessible name is "Cart" when empty, and otherwise "Cart, {n} items" ("Cart, 1 item" for one). Clicking it opens the cart panel.
 - **Choosing in the product drawer:** once the product has loaded, the drawer shows:
   - For a product with sizes, a radio group labelled "Size": one chip per size at 14 px, on `surface` with a `line-strong` border and 8 px corners, or `accent-fg` on `accent` when selected. No size is selected at first.
-  - A radio group labelled "Color", under a heading that reads "Color: {name}" with the selected color's name capitalized: one 24 px dot per color, as on product tiles, each with the color's name as its accessible name. The selected dot has a 2 px `accent` ring 2 px away from it. The product's first color is selected at first.
+  - A radio group labelled "Color", under a heading that reads "Color: {name}" with the selected color's name capitalized: one 24 px dot per color, filled with its swatch and bordered as on product tiles, each with the color's name as its accessible name. The selected dot has a 2 px `accent` ring 2 px away from it. The product's first color is selected at first.
   - A drawer opened from a cart row starts with that item's size and color selected.
 - **Action bar:** below the drawer's scrolling content, pinned to its bottom edge, a bar on `surface` with a `line` border above it holds one full-width button, 44 px tall with 8 px corners and 14 px text in weight 600. The bar's bottom padding respects `env(safe-area-inset-bottom)`. The button is the first of these that applies:
 
@@ -208,7 +224,7 @@ The cart is a list of products the user has picked, kept only in the browser. Th
 - `ResultsStrip`: the compact horizontal strip for the narrow layout and the landing below 1024 px.
 - `SuggestionChips`: chips at 14 px on `surface` with a `line` border. Clicking a chip sends its text as the next user message. Chips are inactive while a turn is running.
 - `ProductGrid` and `ProductCard`: described under Layout and Visual design. A card shows the fields of the card shape in `05-api.md`, and clicking it opens `ProductDrawer`.
-- `ProductDrawer`: fetches `GET /api/products/{id}` and shows the image or tile, the brand, the title, the price row (the price at 24 px in weight 600, the crossed-out MRP and, when discounted, "{n}% off" as a `success` on `success-soft` pill), the rating, the description, every attribute, and the size and color choices and the action bar described under Cart.
+- `ProductDrawer`: fetches `GET /api/products/{id}` and shows the square image or the tile as its banner (see Product tiles), the brand in small muted text when it shows an image, the title, the price row (the price at 24 px in weight 600, the crossed-out MRP and, when discounted, "{n}% off" as a `success` on `success-soft` pill), the rating, the description, every attribute, and the size and color choices and the action bar described under Cart.
 - `CartPanel`: the cart panel described under Cart.
 
 ## Accessibility
