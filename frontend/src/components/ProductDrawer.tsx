@@ -52,7 +52,8 @@ export default function ProductDrawer({ productId, initial, onClose, onViewCart,
         <CloseButton onClick={onClose} />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
-        {load.status === "loading" && <div aria-label="Loading" className="aspect-square animate-pulse rounded-xl bg-tile" />}
+        {/* Shaped like the banner, which is what most products show (docs/06-frontend.md, Images). */}
+        {load.status === "loading" && <div aria-label="Loading" className="aspect-[2/1] animate-pulse rounded-xl bg-tile" />}
         {load.status === "failed" && <p className="py-8 text-center text-fg-muted">{load.message}</p>}
         {product && <Details product={product} size={chosenSize} color={chosenColor} onSize={setSize} onColor={setColor} />}
       </div>
@@ -66,10 +67,13 @@ type DetailsProps = { product: Product; size: string | null; color: string; onSi
 function Details({ product, size, color, onSize, onColor }: DetailsProps) {
   const { card } = product;
   return (
-    <div className="flex flex-col gap-5">
-      <ProductImage card={card} className="rounded-xl" />
+    <div className="group/details flex flex-col gap-5">
+      <ProductImage card={card} variant="banner" className="rounded-xl" />
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm text-fg-muted">{product.brand}</span>
+        {/* Under an image only; the banner carries the brand as its label. */}
+        <span data-brand-line className="text-sm text-fg-muted group-has-[[data-tile]]/details:hidden">
+          {product.brand}
+        </span>
         <h2 className="font-serif font-medium text-2xl leading-8">{product.title}</h2>
         <Price card={card} large />
         <Rating card={card} />

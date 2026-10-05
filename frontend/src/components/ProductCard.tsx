@@ -53,7 +53,7 @@ export default function ProductCard({ card, inCart, onOpen, className, style }: 
       style={style}
       className={clsx(
         // Hover: rise 2 px with a soft shadow and a stronger border; the rise stays off under reduced motion.
-        "relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface text-left transition-[translate,border-color,box-shadow] duration-200 ease-out hover:border-line-strong hover:shadow-card motion-safe:hover:-translate-y-0.5",
+        "group/card relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface text-left transition-[translate,border-color,box-shadow] duration-200 ease-out hover:border-line-strong hover:shadow-card motion-safe:hover:-translate-y-0.5",
         className,
       )}
     >
@@ -72,7 +72,10 @@ export default function ProductCard({ card, inCart, onOpen, className, style }: 
         </span>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1 p-3">
-        <span className="truncate text-xs text-fg-muted">{card.brand}</span>
+        {/* Only under an image: a tile carries the brand as its label (docs/06-frontend.md, Cards). */}
+        <span data-brand-line className="truncate text-xs text-fg-muted group-has-[[data-tile]]/card:hidden">
+          {card.brand}
+        </span>
         <span className="line-clamp-2 text-sm font-medium">{card.title}</span>
         <span className="mt-1">
           <Price card={card} />

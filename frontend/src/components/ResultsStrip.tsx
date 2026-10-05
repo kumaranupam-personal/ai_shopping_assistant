@@ -31,7 +31,7 @@ export default function ResultsStrip(props: ResultsProps) {
               style={enter.style}
               className={clsx(STRIP_CARD, "snap-start text-left", enter.className)}
             >
-              <ProductImage card={card} compact className="size-16 shrink-0 rounded-lg" />
+              <ProductImage card={card} variant="small" className="size-16 shrink-0 rounded-lg" />
               <span className="flex min-w-0 flex-col gap-1">
                 <span className="truncate text-sm font-medium">{card.title}</span>
                 <span className="text-sm font-semibold tabular-nums">{formatRupees(card.price)}</span>
