@@ -88,10 +88,10 @@ export async function mockApi(page: Page, turns: ScriptedTurn[]) {
 }
 
 /** Every row in the chat list: messages, result markers and error rows. */
-export const chatRows = (page: Page) => page.getByRole("region", { name: "Chat" }).getByRole("listitem");
+export const chatRows = (page: Page) => page.getByRole("region", { name: "Chat" }).getByRole("list", { name: "Conversation" }).getByRole("listitem");
 
 /** A message in the chat list (the live region repeats assistant text, so page-wide text matches twice). */
-export const message = (page: Page, text: string) => page.getByRole("region", { name: "Chat" }).getByRole("list").getByText(text);
+export const message = (page: Page, text: string) => page.getByRole("region", { name: "Chat" }).getByRole("list", { name: "Conversation" }).getByText(text);
 
 /** Resolves once the app has a session, so tests don't race its creation. */
 export const sessionReady = (page: Page) => page.waitForFunction(() => sessionStorage.getItem("sessionId"));

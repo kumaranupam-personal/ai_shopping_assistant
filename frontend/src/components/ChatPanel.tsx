@@ -1,7 +1,7 @@
 import type { useChat } from "../useChat";
+import ChatWelcome from "./ChatWelcome";
 import Composer from "./Composer";
 import MessageList from "./MessageList";
-import { EmptyState } from "./States";
 import StatusLine from "./StatusLine";
 
 export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
@@ -13,8 +13,6 @@ export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }
 
   return (
     <>
-      {/* Narrow layout: the empty state sits at the top of the chat; wide shows it in the results panel. */}
-      {fresh && <EmptyState className="px-4 pt-8 lg:hidden" />}
       <MessageList
         messages={state.messages}
         resultSets={state.resultSets}
@@ -22,6 +20,8 @@ export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }
         onSelectResultSet={chat.selectResultSet}
         onRetry={chat.retry}
         onNewChat={chat.newChat}
+        welcome={fresh && <ChatWelcome onSend={chat.send} canSend={state.ready && !state.turnRunning} />}
+        typing={state.turnRunning && last?.kind === "user"}
       />
       <StatusLine running={state.turnRunning} status={state.status} />
       <p aria-live="polite" className="sr-only">
@@ -32,7 +32,6 @@ export default function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }
         onDraftChange={chat.setDraft}
         onSend={chat.send}
         canSend={state.ready && !state.turnRunning}
-        showExamples={fresh}
       />
     </>
   );

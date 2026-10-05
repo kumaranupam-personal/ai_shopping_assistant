@@ -1,9 +1,10 @@
 import clsx from "clsx";
 import { ArrowDown, LayoutGrid, Plus, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { ResultSet } from "../api";
 import type { Message } from "../useChat";
+import { AssistantAvatar } from "./ChatWelcome";
 
 const NEAR_BOTTOM_PX = 48;
 const isAtBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
@@ -17,33 +18,38 @@ type Props = {
   onSelectResultSet: (index: number) => void;
   onRetry: (text: string) => void;
   onNewChat: () => void;
+  welcome?: ReactNode; // shown above the messages, inside the scroll area
+  typing: boolean; // a turn is waiting for its first reply
 };
 
-export default function MessageList({ messages, resultSets, selectedResultSet, onSelectResultSet, onRetry, onNewChat }: Props) {
+export default function MessageList({ messages, resultSets, selectedResultSet, onSelectResultSet, onRetry, onNewChat, welcome, typing }: Props) {
   const list = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
 
   // Follow new messages unless the user has scrolled up to read; then offer "Jump to latest".
   useEffect(() => {
     const el = list.current!;
-    if (atBottom) el.scrollTo({ top: el.scrollHeight });
+    if (messages.length === 0) el.scrollTo({ top: 0 }); // the welcome reads from its top
+    else if (atBottom) el.scrollTo({ top: el.scrollHeight });
     else setAtBottom(isAtBottom(el)); // the list can shrink without a scroll event, as after New chat
-  }, [messages, atBottom]);
+  }, [messages, typing, atBottom]); // the typing indicator counts as new content too
 
   const onScroll = () => setAtBottom(isAtBottom(list.current!));
 
   return (
     <div className="relative min-h-0 flex-1">
       <div ref={list} onScroll={onScroll} className="h-full overflow-y-auto px-4 py-4">
-        <ol className="flex flex-col gap-3">
+        {welcome}
+        <ol aria-label="Conversation" className="flex flex-col gap-3">
           {messages.map((message, i) => (
             <li key={i} className="flex min-w-0 animate-enter flex-col">
               <MessageRow message={message} resultSets={resultSets} selected={selectedResultSet} onSelect={onSelectResultSet} onRetry={onRetry} onNewChat={onNewChat} />
             </li>
           ))}
         </ol>
+        {typing && <TypingIndicator />}
       </div>
-      {!atBottom && (
+      {!atBottom && messages.length > 0 && (
         <button
           type="button"
           onClick={() => list.current?.scrollTo({ top: list.current.scrollHeight, behavior: reducedMotion() ? "auto" : "smooth" })}
@@ -112,4 +118,21 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry, onNewCha
       );
     }
   }
+}
+
+const TYPING_DOT_DELAYS_MS = [0, 150, 300];
+
+/** Three dots that rise in turn while the assistant works (docs/06-frontend.md, Motion). Hidden from screen readers,
+ * which hear the status line instead. */
+function TypingIndicator() {
+  return (
+    <div aria-hidden className="mt-3 flex animate-enter items-center gap-3">
+      <AssistantAvatar />
+      <span className="flex gap-1.5 rounded-2xl rounded-bl-md bg-surface-muted px-3.5 py-3">
+        {TYPING_DOT_DELAYS_MS.map((delay) => (
+          <span key={delay} className="size-1.5 animate-typing rounded-full bg-fg-muted" style={{ animationDelay: `${delay}ms` }} />
+        ))}
+      </span>
+    </div>
+  );
 }

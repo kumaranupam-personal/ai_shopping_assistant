@@ -2,12 +2,6 @@ import clsx from "clsx";
 import { ArrowUp } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 
-const EXAMPLES = [
-  "Warm jacket for a Ladakh trek under ₹8,000",
-  "Gaming laptop with 16 GB RAM",
-  "Waterproof trekking shoes in UK 9",
-  "Shaadi ke liye silk kurta, 5k tak",
-];
 const MAX_HEIGHT_PX = 6 * 24 + 16; // 6 lines of 24 px plus the textarea's 8 px top and bottom padding
 
 type Props = {
@@ -15,10 +9,9 @@ type Props = {
   onDraftChange: (draft: string) => void;
   onSend: (text: string) => void;
   canSend: boolean; // false while a turn runs or before a session exists; typing still works
-  showExamples: boolean;
 };
 
-export default function Composer({ draft, onDraftChange, onSend, canSend, showExamples }: Props) {
+export default function Composer({ draft, onDraftChange, onSend, canSend }: Props) {
   const input = useRef<HTMLTextAreaElement>(null);
   const text = draft.trim();
 
@@ -29,7 +22,7 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT_PX)}px`;
   }, [draft]);
 
-  // Only the composer's own text is cleared on send; chips and Retry leave a half-typed draft alone.
+  // Only the composer's own text is cleared on send; chips, prompt cards and Retry leave a half-typed draft alone.
   const sendDraft = () => {
     if (!canSend || !text) return;
     onSend(text);
@@ -38,27 +31,12 @@ export default function Composer({ draft, onDraftChange, onSend, canSend, showEx
 
   return (
     <div className="border-t border-line px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      {showExamples && (
-        <div className="mb-2 flex flex-wrap gap-2">
-          {EXAMPLES.map((example) => (
-            <button
-              key={example}
-              type="button"
-              disabled={!canSend}
-              onClick={() => onSend(example)}
-              className="rounded-full border border-line px-3 py-1 text-sm text-fg-muted transition-colors duration-150 ease-out hover:border-line-strong hover:text-fg"
-            >
-              {example}
-            </button>
-          ))}
-        </div>
-      )}
       <form
         onSubmit={(event) => {
           event.preventDefault();
           sendDraft();
         }}
-        className="flex items-end gap-2 rounded-xl border border-line bg-surface p-1 pl-3 focus-within:border-accent"
+        className="flex items-end gap-2 rounded-xl border border-line bg-surface p-1 pl-3 transition-shadow duration-150 ease-out focus-within:border-accent focus-within:ring-4 focus-within:ring-accent-soft"
       >
         <textarea
           ref={input}

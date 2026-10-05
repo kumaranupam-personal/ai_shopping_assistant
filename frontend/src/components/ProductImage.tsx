@@ -15,6 +15,10 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   kitchen_appliances: CookingPot,
 };
 const PALE_COLORS = new Set(["white", "beige", "silver", "gold", "yellow"]); // they get a hairline so the tile stays visible
+const NEUTRAL_COLORS = new Set(["black", "white", "grey", "silver", "beige"]);
+
+// The tile shows the first color that isn't neutral, so most tiles get a lively wash (docs/06-frontend.md, Product tiles).
+export const tileColor = (colors: string[]) => colors.find((c) => !NEUTRAL_COLORS.has(c)) ?? colors[0] ?? "grey";
 
 type Props = { card: Card; compact?: boolean; className?: string };
 
@@ -49,7 +53,7 @@ export default function ProductImage({ card, compact, className }: Props) {
 }
 
 function ProductTile({ card, compact }: { card: Card; compact?: boolean }) {
-  const [color = "grey"] = card.colors;
+  const color = tileColor(card.colors);
   const Icon = CATEGORY_ICONS[card.category] ?? Package;
   const label = color[0].toUpperCase() + color.slice(1) + (card.colors.length > 1 ? ` · ${card.colors.length} colours` : "");
   return (

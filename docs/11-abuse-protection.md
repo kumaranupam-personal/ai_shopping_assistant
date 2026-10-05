@@ -27,7 +27,7 @@ Each endpoint runs its checks in the order listed, after the request body passes
 2. **Daily budget:** with `DAILY_BUDGET_USD` set, once the day's spend (see Daily budget) has reached it: `chat_unavailable`.
 3. **Message rate:** at most `RATE_LIMIT_CHAT_PER_MINUTE` requests per client IP in any rolling minute and `RATE_LIMIT_CHAT_PER_DAY` in any rolling 24 hours. Over either: `rate_limited`.
 4. The session checks from `04-agent.md`, Session rules (`session_not_found`, `turn_in_progress`, `session_full`).
-5. **Concurrent turns:** at most `MAX_CONCURRENT_TURNS` turns running at once across all sessions. Over it: `server_busy`. A turn counts as running while its session is busy (see `04-agent.md`, Conversation state). If the cap fills between this check and the start of the turn, the stream instead ends with an `error` event carrying `server_busy`.
+5. **Concurrent turns:** at most `MAX_CONCURRENT_TURNS` turns running at once across all sessions. Over it: `server_busy`. A turn counts as running while its session is busy (see `04-agent.md`, Conversation state). How a turn that loses the race for the last place ends is in `05-api.md`.
 
 ## Rate windows
 
@@ -40,7 +40,7 @@ Each endpoint runs its checks in the order listed, after the request body passes
 - The day runs from 00:00 to 24:00 UTC.
 - Every model call in an API turn adds its cost to the day's spend as soon as it returns, using `provider.prices` (see `09-llm-providers.md`, Prices). Calls in failed and cancelled turns count too, and a call that fails adds nothing.
 - The budget is checked when a message arrives, not during a turn, so turns already running finish and the spend can end slightly above the budget.
-- When set, `DAILY_BUDGET_USD` must be greater than 0. If it's set and the configured model has no prices, startup fails with `LLMConfigError`, because the spend couldn't be measured.
+- If `DAILY_BUDGET_USD` is set and the configured model has no prices, startup fails with `LLMConfigError`, because the spend couldn't be measured.
 
 ## State and logging
 

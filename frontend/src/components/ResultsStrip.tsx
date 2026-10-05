@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { formatRupees } from "../format";
 import Modal, { CloseButton } from "./Modal";
 import { cardLabel } from "./ProductCard";
+import { entrance } from "./ProductGrid";
 import ProductImage from "./ProductImage";
 import ResultsPanel, { type ResultsProps } from "./ResultsPanel";
 
@@ -13,27 +14,31 @@ export const STRIP_CARD = "flex w-56 shrink-0 items-center gap-3 rounded-xl bord
 
 /** Narrow layout: a swipeable row of compact cards, with "View all" opening the full-screen results sheet. */
 export default function ResultsStrip(props: ResultsProps) {
-  const { resultSet, onOpenProduct } = props;
+  const { resultSet, onOpenProduct, animate } = props;
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeSheet = useCallback(() => setSheetOpen(false), []); // stable, so the sheet opens once
   return (
     <>
       <div className={clsx(STRIP, "snap-x snap-mandatory overflow-x-auto")}>
-        {resultSet.products.map((card) => (
-          <button
-            key={card.id}
-            type="button"
-            onClick={() => onOpenProduct(card.id)}
-            aria-label={cardLabel(card)}
-            className={clsx(STRIP_CARD, "snap-start text-left")}
-          >
-            <ProductImage card={card} compact className="size-16 shrink-0 rounded-lg" />
-            <span className="flex min-w-0 flex-col gap-1">
-              <span className="truncate text-sm font-medium">{card.title}</span>
-              <span className="text-sm font-semibold tabular-nums">{formatRupees(card.price)}</span>
-            </span>
-          </button>
-        ))}
+        {resultSet.products.map((card, i) => {
+          const enter = entrance(animate, i);
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => onOpenProduct(card.id)}
+              aria-label={cardLabel(card)}
+              style={enter.style}
+              className={clsx(STRIP_CARD, "snap-start text-left", enter.className)}
+            >
+              <ProductImage card={card} compact className="size-16 shrink-0 rounded-lg" />
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className="truncate text-sm font-medium">{card.title}</span>
+                <span className="text-sm font-semibold tabular-nums">{formatRupees(card.price)}</span>
+              </span>
+            </button>
+          );
+        })}
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
@@ -47,7 +52,7 @@ export default function ResultsStrip(props: ResultsProps) {
   );
 }
 
-/** The full-screen results sheet. A history entry lets the browser back gesture close it. */
+/** The full-screen results sheet. A history entry lets the browser back gesture close it. It opens on demand, so its cards never play the entrance. */
 function ResultsSheet({ onClose, onSuggestion, ...props }: ResultsProps & { onClose: () => void }) {
   useEffect(() => {
     if (!history.state?.resultsSheet) history.pushState({ resultsSheet: true }, ""); // once, even if effects re-run
@@ -71,7 +76,7 @@ function ResultsSheet({ onClose, onSuggestion, ...props }: ResultsProps & { onCl
           <CloseButton onClick={close} />
         </div>
         <div className="min-h-0 flex-1">
-          <ResultsPanel {...props} onSuggestion={pick} />
+          <ResultsPanel {...props} onSuggestion={pick} animate={false} />
         </div>
       </div>
     </Modal>

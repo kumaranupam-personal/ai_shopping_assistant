@@ -1,7 +1,7 @@
 // The automatable quality bar from docs/06-frontend.md: widths and themes, drag-resize, layout shift, console errors.
 import { expect, test, type Page } from "@playwright/test";
 
-import { LADAKH_TURN, WATERPROOF_TURN, chatRows, message, mockApi, send } from "./mock-api";
+import { LADAKH_TURN, WATERPROOF_TURN, chatRows, message, mockApi, send, sessionReady } from "./mock-api";
 
 const WIDTHS = [320, 375, 768, 1024, 1280, 1440, 1920, 2560];
 
@@ -10,6 +10,16 @@ async function startConversation(page: Page) {
   await page.goto("/");
   await send(page, "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.", LADAKH_TURN);
 }
+
+/** First load: the welcome in the chat, and the hero and featured products in the results. */
+async function openWelcome(page: Page) {
+  await mockApi(page, [LADAKH_TURN]);
+  await page.goto("/");
+  await sessionReady(page);
+  await expect(page.getByRole("list", { name: "Example requests" }).getByRole("button")).toHaveCount(4);
+}
+
+const STATES = { welcome: openWelcome, "after a turn": startConversation };
 
 /** Checks the layout rules at the current size; returns a description of anything wrong. */
 function layoutProblems(page: Page) {
@@ -33,34 +43,57 @@ function layoutProblems(page: Page) {
     } else if (results.bottom > chat.top + 0.5) {
       problems.push("narrow layout: results strip is not above the chat");
     }
+    // Prompt cards and price rows wrap instead of overflowing (docs/06-frontend.md, Resize rules).
+    for (const card of document.querySelectorAll<HTMLElement>("[aria-label='Example requests'] button")) {
+      const rect = card.getBoundingClientRect();
+      if (rect.left < chat.left - 0.5 || rect.right > chat.right + 0.5) problems.push("a prompt card sticks out of the chat");
+      if (card.scrollWidth > card.clientWidth + 1) problems.push("a prompt card's text overflows");
+    }
+    for (const row of document.querySelectorAll<HTMLElement>("[aria-label=Results] .tabular-nums")) {
+      if (row.offsetParent && row.scrollWidth > row.clientWidth + 1) problems.push("a price row overflows its card");
+    }
     const shell = document.querySelector("header")!.parentElement!.getBoundingClientRect();
     if (width > 1680 && Math.abs(shell.width - 1680) > 1) problems.push("shell is not capped at 1680px");
     return problems;
   });
 }
 
-for (const colorScheme of ["light", "dark"] as const) {
-  test(`layout holds at every listed width (${colorScheme})`, async ({ page }) => {
-    await page.emulateMedia({ colorScheme });
-    await startConversation(page);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
-    for (const width of WIDTHS) {
-      await page.setViewportSize({ width, height: 900 });
-      expect(await layoutProblems(page), `at ${width}px`).toEqual([]);
-    }
-  });
+for (const [state, open] of Object.entries(STATES)) {
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`layout holds at every listed width, ${state} (${colorScheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await open(page);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
+      for (const width of WIDTHS) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await layoutProblems(page), `at ${width}px`).toEqual([]);
+      }
+    });
+  }
 }
+
+const SWEEP = [...Array.from({ length: 41 }, (_, i) => 320 + i * 40), ...Array.from({ length: 41 }, (_, i) => 1920 - i * 40)];
 
 test("drag-resizing from 320 to 1920 px and back keeps the layout and the state", async ({ page }) => {
   await startConversation(page);
   const messages = await chatRows(page).count();
-  const sweep = [...Array.from({ length: 41 }, (_, i) => 320 + i * 40), ...Array.from({ length: 41 }, (_, i) => 1920 - i * 40)];
-  for (const width of sweep) {
+  for (const width of SWEEP) {
     await page.setViewportSize({ width, height: 800 });
     expect(await layoutProblems(page), `at ${width}px`).toEqual([]);
   }
   await expect(chatRows(page)).toHaveCount(messages);
   await expect(page.getByRole("button", { name: `Showed 8 products: ${LADAKH_TURN.headline}` })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("drag-resizing with the welcome showing keeps the layout and the draft", async ({ page }) => {
+  await openWelcome(page);
+  await page.getByLabel("Message").fill("half-typed");
+  for (const width of SWEEP) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await layoutProblems(page), `at ${width}px`).toEqual([]);
+  }
+  await expect(page.getByRole("list", { name: "Example requests" }).getByRole("button")).toHaveCount(4);
+  await expect(page.getByLabel("Message")).toHaveValue("half-typed");
 });
 
 test("cumulative layout shift stays below 0.1 during a full turn", async ({ page }) => {

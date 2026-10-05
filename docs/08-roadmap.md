@@ -89,9 +89,15 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 2: Turnstile on the backend and the frontend, and the frontend's handling of the new error codes from `06-frontend.md`.
 - Done when the tests in `07-evaluation.md` pass, a local run with no limits configured behaves exactly as before, and a local run with Cloudflare's test keys and small limits shows each rejection in the browser.
 
+## Phase 13: Visual polish
+
+- Part 1: the welcome (greeting and example prompt cards), the hero heading, the accent uses, the "Top rated" tag, the tile color and wash, and the card price row from `06-frontend.md`, with their browser tests from `07-evaluation.md`.
+- Part 2: the hero's glow, the typing indicator and the card entrance from `06-frontend.md`, with their browser tests from `07-evaluation.md`.
+- Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
+
 ## Stretch goals
 
-These come after Phase 12 and are each specified in a new doc before being built.
+These come after Phase 13 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

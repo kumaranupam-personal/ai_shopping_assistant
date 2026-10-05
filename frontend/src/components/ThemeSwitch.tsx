@@ -23,7 +23,7 @@ export default function ThemeSwitch() {
           onClick={() => setTheme(value)}
           className={clsx(
             "grid size-7 place-items-center rounded-full transition-colors duration-150 ease-out",
-            theme === value ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg",
+            theme === value ? "bg-accent-soft text-accent" : "text-fg-muted hover:text-fg",
           )}
         >
           <Icon aria-hidden className="size-4" />
