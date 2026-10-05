@@ -31,7 +31,7 @@ export default function ProductDrawer({ productId, onClose }: { productId: strin
           <CloseButton onClick={onClose} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
-          {load.status === "loading" && <div aria-label="Loading" className="aspect-square animate-pulse rounded-xl bg-line" />}
+          {load.status === "loading" && <div aria-label="Loading" className="aspect-square animate-pulse rounded-xl bg-tile" />}
           {load.status === "failed" && <p className="py-8 text-center text-fg-muted">{load.message}</p>}
           {load.status === "loaded" && <Details product={load.product} />}
         </div>
@@ -45,9 +45,9 @@ function Details({ product }: { product: Product }) {
   return (
     <div className="flex flex-col gap-4">
       <ProductImage card={card} className="rounded-xl" />
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <span className="text-sm text-fg-muted">{product.brand}</span>
-        <h2 className="text-lg font-semibold">{product.title}</h2>
+        <h2 className="font-serif text-2xl leading-8">{product.title}</h2>
         <Price card={card} large />
         <Rating card={card} />
         {!card.in_stock && <OutOfStock className="self-start" />}

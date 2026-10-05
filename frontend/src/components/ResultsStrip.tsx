@@ -9,7 +9,7 @@ import ProductImage from "./ProductImage";
 import ResultsPanel, { type ResultsProps } from "./ResultsPanel";
 
 // Shared with the compact skeleton, so placeholders match the real strip exactly.
-export const STRIP = "flex gap-3 border-b border-line px-4 py-3";
+export const STRIP = "flex gap-3 px-4 py-3";
 export const STRIP_CARD = "flex w-56 shrink-0 items-center gap-3 rounded-xl border border-line bg-surface p-2";
 
 /** Narrow layout: a swipeable row of compact cards, with "View all" opening the full-screen results sheet. */

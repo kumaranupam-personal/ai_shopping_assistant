@@ -92,7 +92,7 @@ The gains came from prompt and tool-description changes only, one change per com
 - **LLM SDKs:** Anthropic, OpenAI (Responses API) and Google GenAI, each used only inside its adapter.
 - **Observability:** OpenTelemetry SDK with the OTLP HTTP exporter, sending to Langfuse Cloud.
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, `lucide-react`.
-- **Testing:** pytest (333 tests, no LLM calls), Playwright (layout at 8 widths in both themes on the welcome and after a turn, drag-resize, layout shift, session restore), Lighthouse.
+- **Testing:** pytest (333 tests, no LLM calls), Playwright (layout at 8 widths in both themes on the landing and after a turn, drag-resize, layout shift, session restore), Lighthouse.
 
 ## Quick start
 

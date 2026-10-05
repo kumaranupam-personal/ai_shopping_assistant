@@ -54,7 +54,7 @@ Value rules:
 - Text attributes take one of the listed lowercase values. Boolean attributes take JSON `true` or `false`. Integer attributes take whole numbers. Decimal attributes take numbers with at most one decimal place.
 - An attribute name ending in a unit suffix carries that unit: `_g` (g), `_kg` (kg), `_gb` (GB), `_mah` (mAh), `_in` (inches), `_mp` (MP), `_m` (m), `_w` (W), `_l` (L) and `_years` (years).
 
-Display rules, used wherever an attribute is shown to the user:
+Display rules, which format every attribute label and value the API returns. Product cards shorten the result further, as `06-frontend.md` describes:
 
 - The label is the attribute name without its unit suffix, with underscores replaced by spaces. For example, `water_resistance_m` becomes "water resistance".
 - Text values have underscores replaced by spaces, so `air_fryer` becomes "air fryer". Booleans become "yes" or "no". Numbers are followed by a space and the unit, as in "8 GB", "5000 mAh" and "2 years".

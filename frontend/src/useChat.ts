@@ -28,7 +28,7 @@ type ChatState = {
 };
 
 type Action =
-  | { type: "reset"; notice?: string; draft?: string; ready?: boolean }
+  | { type: "reset"; notice?: string; draft?: string; ready?: boolean; keepDraft?: boolean } // keepDraft: text typed while a first session was being created stays
   | { type: "restored"; entries: Entry[]; draft: string }
   | { type: "send"; text: string; addUserMessage: boolean }
   | { type: "event"; event: StreamEvent }
@@ -76,7 +76,13 @@ function addResultSet(state: ChatState, resultSet: ResultSet): ChatState {
 function reducer(state: ChatState, action: Action): ChatState {
   switch (action.type) {
     case "reset":
-      return { ...initialState, started: true, ready: action.ready ?? true, notice: action.notice ?? null, draft: action.draft ?? "" };
+      return {
+        ...initialState,
+        started: true,
+        ready: action.ready ?? true,
+        notice: action.notice ?? null,
+        draft: action.draft || (action.keepDraft ? state.draft : ""),
+      };
     case "restored":
       return action.entries.reduce<ChatState>(
         (s, entry) =>
@@ -121,6 +127,9 @@ function reducer(state: ChatState, action: Action): ChatState {
 }
 
 // sessionStorage keeps the chat per tab and across reloads; access can throw when storage is blocked.
+/** Whether this tab has a session to restore; without one, the landing shows while the first session is created. */
+export const hasStoredSession = () => storage.get("sessionId") !== null;
+
 const storage = {
   get: (key: string) => {
     try {
@@ -147,12 +156,12 @@ export function useChat() {
   const sessionId = useRef<string | null>(null);
   const turn = useRef<AbortController | null>(null);
 
-  const startNewSession = useCallback(async (notice?: string, draft?: string) => {
+  const startNewSession = useCallback(async (notice?: string, draft?: string, keepDraft?: boolean) => {
     const id = await createSession(await turnstileToken()); // if this fails, the current chat and its turn carry on
     turn.current?.abort(); // the server cancels and rolls back an abandoned turn
     sessionId.current = id;
     storage.set("sessionId", sessionId.current);
-    dispatch({ type: "reset", notice, draft });
+    dispatch({ type: "reset", notice, draft, keepDraft });
   }, []);
 
   // Page load: restore the stored session, or start one. The ref guards against React's dev-mode double effect.
@@ -175,8 +184,8 @@ export function useChat() {
           return startNewSession(EXPIRED_NOTICE, pending);
         }
       }
-      await startNewSession(undefined, pending);
-    })().catch((error) => dispatch({ type: "reset", ready: false, notice: failureNotice(error, LOAD_FAILED_NOTICE) }));
+      await startNewSession(undefined, pending, true);
+    })().catch((error) => dispatch({ type: "reset", ready: false, keepDraft: true, notice: failureNotice(error, LOAD_FAILED_NOTICE) }));
   }, [startNewSession]);
 
   const runTurn = useCallback(

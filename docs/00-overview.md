@@ -55,7 +55,7 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `03-search.md`: search inputs, filter semantics, result shape, ranking pipeline, index loading, performance target.
 - `04-agent.md`: turn loop, agent behaviors, tool definitions, conversation state, session rules, error handling.
 - `05-api.md`: endpoints, stream events, product card shape, status text, error codes.
-- `06-frontend.md`: stack, layout and resizing, visual design, UI states, components, accessibility, client state, session lifecycle, stream handling, quality bar.
+- `06-frontend.md`: stack, brand, layout and resizing, visual design, UI states, components, accessibility, client state, session lifecycle, stream handling, quality bar.
 - `07-evaluation.md`: automated tests, eval cases, grounding check, metrics and targets.
 - `08-roadmap.md`: build order, done criteria, stretch goals.
 - `09-llm-providers.md`: provider interface, boundary rules, registry, per-provider adapter details.

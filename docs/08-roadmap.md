@@ -95,9 +95,16 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 2: the hero's glow, the typing indicator and the card entrance from `06-frontend.md`, with their browser tests from `07-evaluation.md`.
 - Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
 
+## Phase 14: Brand and landing
+
+- Part 1: the brand, the fonts, the color tokens, the accent uses, the header, the chat panel's colors, messages with the assistant avatar and the result marker, and the product tiles from `06-frontend.md`, with their browser tests from `07-evaluation.md`.
+- Part 2: the landing, the composer's two styles, the results panel before the first result set, and the card's discount badge, price row, highlight pills and hover from `06-frontend.md`, with their browser tests from `07-evaluation.md`.
+- This phase replaces these pieces of Phases 10 and 13, which `06-frontend.md` no longer describes: each tile's own color and wash, the greeting, the hero heading and its glow, and the "Top rated" tag.
+- Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
+
 ## Stretch goals
 
-These come after Phase 13 and are each specified in a new doc before being built.
+These come after Phase 14 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - A cart with an add-to-cart tool that requires the user to confirm in the UI.

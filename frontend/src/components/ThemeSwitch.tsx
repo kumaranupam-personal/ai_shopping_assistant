@@ -12,7 +12,7 @@ const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
 export default function ThemeSwitch() {
   const [theme, setTheme] = useTheme();
   return (
-    <div role="group" aria-label="Theme" className="flex rounded-full border border-line bg-surface-muted p-1">
+    <div role="group" aria-label="Theme" className="flex rounded-full border border-line bg-surface p-1">
       {OPTIONS.map(({ value, label, Icon }) => (
         <button
           key={value}
@@ -23,7 +23,7 @@ export default function ThemeSwitch() {
           onClick={() => setTheme(value)}
           className={clsx(
             "grid size-7 place-items-center rounded-full transition-colors duration-150 ease-out",
-            theme === value ? "bg-accent-soft text-accent" : "text-fg-muted hover:text-fg",
+            theme === value ? "bg-accent-soft text-accent-soft-fg" : "text-fg-muted hover:text-fg",
           )}
         >
           <Icon aria-hidden className="size-4" />
