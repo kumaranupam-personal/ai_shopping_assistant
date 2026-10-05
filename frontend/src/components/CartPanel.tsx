@@ -83,7 +83,7 @@ export default function CartPanel({ onClose, onOpenItem, fallbackFocus }: Props)
   return (
     <Drawer label="Cart" onClose={onClose} fallbackFocus={fallbackFocus}>
       <div className="flex items-center justify-between gap-3 py-2 pr-2 pl-5">
-        <h2 ref={title} tabIndex={-1} className="font-serif text-2xl leading-8 outline-none">
+        <h2 ref={title} tabIndex={-1} className="font-serif font-medium text-2xl leading-8 outline-none">
           Your cart
         </h2>
         <CloseButton onClick={onClose} />

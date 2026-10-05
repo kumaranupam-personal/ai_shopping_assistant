@@ -1,5 +1,5 @@
-import "@fontsource-variable/manrope";
-import "@fontsource/instrument-serif/400.css";
+import "@fontsource-variable/figtree";
+import "@fontsource-variable/fraunces/opsz.css"; // with the optical-size axis, so large headings get the display cut
 import "./index.css";
 
 import { StrictMode } from "react";

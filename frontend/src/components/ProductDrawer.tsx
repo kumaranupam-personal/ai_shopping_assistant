@@ -70,7 +70,7 @@ function Details({ product, size, color, onSize, onColor }: DetailsProps) {
       <ProductImage card={card} className="rounded-xl" />
       <div className="flex flex-col gap-1.5">
         <span className="text-sm text-fg-muted">{product.brand}</span>
-        <h2 className="font-serif text-2xl leading-8">{product.title}</h2>
+        <h2 className="font-serif font-medium text-2xl leading-8">{product.title}</h2>
         <Price card={card} large />
         <Rating card={card} />
         {!card.in_stock && <OutOfStock className="self-start" />}

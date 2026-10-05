@@ -11,7 +11,7 @@ export default function Header({ onNewChat, onOpenCart, cartButton }: Props) {
   const count = useCart().length;
   return (
     <header className="flex min-w-0 items-center justify-between gap-3 border-b border-line bg-surface-muted px-4">
-      <span className="truncate font-serif text-2xl leading-none text-fg">Saathi</span>
+      <span className="truncate font-serif font-medium text-2xl leading-none text-fg">Saathi</span>
       <div className="flex shrink-0 items-center gap-2">
         <ThemeSwitch />
         <button

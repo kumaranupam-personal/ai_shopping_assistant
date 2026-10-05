@@ -40,7 +40,7 @@ export default function Landing({ draft, onDraftChange, onSend, canSend, feature
     <div className="h-full overflow-y-auto bg-surface-muted">
       <div className="mx-auto flex max-w-[720px] flex-col gap-6 px-4 pt-8 pb-6 sm:px-6 sm:pt-16">
         <div className="text-center">
-          <h1 className="font-serif text-[36px] leading-[1.1] tracking-[-0.01em] text-balance sm:text-5xl sm:leading-[1.05]">What are you shopping for?</h1>
+          <h1 className="font-serif text-[36px] leading-[1.1] font-medium tracking-[-0.02em] text-balance sm:text-5xl sm:leading-[1.05]">What are you shopping for?</h1>
           <p className="mt-2 text-base text-balance text-fg-muted">Tell Saathi what you need and your budget, in English or Hinglish.</p>
         </div>
         <Composer variant="landing" draft={draft} onDraftChange={onDraftChange} onSend={(text) => onSend(text, true)} canSend={canSend} />

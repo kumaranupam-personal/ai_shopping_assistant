@@ -66,8 +66,8 @@
 }
 
 @theme inline {
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
   --shadow-card: 0 10px 24px -14px var(--shadow-color);
   --shadow-composer: 0 6px 20px -10px var(--shadow-color);
   --shadow-float: 0 4px 12px -4px var(--shadow-color);

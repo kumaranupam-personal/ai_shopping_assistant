@@ -62,7 +62,7 @@ export default function MessageList({ messages, resultSets, selectedResultSet, o
 /** The assistant's avatar: the letter "S" in a 28 px circle, beside assistant text and the typing indicator. */
 function AssistantAvatar() {
   return (
-    <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-panel-raised font-serif text-[18px] leading-none text-panel-fg">
+    <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full bg-panel-raised font-serif font-medium text-[18px] leading-none text-panel-fg">
       S
     </span>
   );

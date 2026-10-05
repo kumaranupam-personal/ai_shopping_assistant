@@ -27,7 +27,7 @@ export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, t
 
 /** A result set's headline in the serif at 24 px, wrapping onto a second line when there isn't room. */
 export function ResultsHeadline({ children }: { children: string }) {
-  return <h2 className="font-serif text-2xl leading-8 [overflow-wrap:anywhere]">{children}</h2>;
+  return <h2 className="font-serif font-medium text-2xl leading-8 [overflow-wrap:anywhere]">{children}</h2>;
 }
 
 /** The wide panel before the first result set when the featured products failed to load. */

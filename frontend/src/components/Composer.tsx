@@ -73,7 +73,11 @@ export default function Composer({ variant, draft, onDraftChange, onSend, canSen
         }}
         placeholder="Describe what you're looking for"
         aria-label="Message"
-        className={clsx("min-w-0 flex-1 resize-none bg-transparent py-2 leading-6 outline-none focus-visible:outline-none", style.input)}
+        // The placeholder stays on one line, cut with an ellipsis, so a narrow box never shows a clipped second line.
+        className={clsx(
+          "min-w-0 flex-1 resize-none bg-transparent py-2 leading-6 outline-none placeholder:overflow-hidden placeholder:text-ellipsis placeholder:whitespace-nowrap focus-visible:outline-none",
+          style.input,
+        )}
       />
       <button
         type="submit"
