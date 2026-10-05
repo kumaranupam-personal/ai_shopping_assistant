@@ -17,7 +17,7 @@ A web app where a user describes what they want to buy in natural language, conv
 
 ## Non-goals
 
-- Real payments, checkout, cart, user accounts or authentication.
+- Real payments, checkout, user accounts or authentication. The cart is only a list kept in the browser, which the agent never sees.
 - Live product-feed integration, real-world brands or real product imagery.
 - Horizontal scaling or persistent sessions across server restarts. The app runs as one process.
 - Personalization from user history.
@@ -55,7 +55,7 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `03-search.md`: search inputs, filter semantics, result shape, ranking pipeline, index loading, performance target.
 - `04-agent.md`: turn loop, agent behaviors, tool definitions, conversation state, session rules, error handling.
 - `05-api.md`: endpoints, stream events, product card shape, status text, error codes.
-- `06-frontend.md`: stack, brand, layout and resizing, visual design, UI states, components, accessibility, client state, session lifecycle, stream handling, quality bar.
+- `06-frontend.md`: stack, brand, layout and resizing, visual design, UI states, cart, components, accessibility, client state, session lifecycle, stream handling, quality bar.
 - `07-evaluation.md`: automated tests, eval cases, grounding check, metrics and targets.
 - `08-roadmap.md`: build order, done criteria, stretch goals.
 - `09-llm-providers.md`: provider interface, boundary rules, registry, per-provider adapter details.

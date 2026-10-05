@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { Card } from "../api";
+import { useCart } from "../cart";
 import ProductCard from "./ProductCard";
 
 /** Columns follow the panel's own width (container query), not the viewport: 1 to 5 cards of at least 208 px. */
@@ -27,10 +28,11 @@ export function CardGrid({ children }: { children: ReactNode }) {
 type Props = { cards: Card[]; onOpen: (id: string) => void; animate?: boolean };
 
 export default function ProductGrid({ cards, onOpen, animate }: Props) {
+  const inCart = new Set(useCart().map((item) => item.id)); // grid cards only: strip cards show no mark
   return (
     <CardGrid>
       {cards.map((card, i) => (
-        <ProductCard key={card.id} card={card} onOpen={onOpen} {...entrance(animate, i)} />
+        <ProductCard key={card.id} card={card} inCart={inCart.has(card.id)} onOpen={onOpen} {...entrance(animate, i)} />
       ))}
     </CardGrid>
   );
