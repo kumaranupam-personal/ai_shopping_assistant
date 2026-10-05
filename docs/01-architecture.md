@@ -46,10 +46,13 @@ The tree shows the source folders and main files. The root README, lockfiles and
 ai_shopping_assistant/
   .gitignore                 ignores .env, generated files and build output
   .github/workflows/ci.yml   runs the backend and frontend tests on every push and pull request
+  docker-compose.yml         runs the backend and frontend containers in production (13-deployment.md)
+  .env.example               the production settings and secrets template for docker-compose.yml
   docs/                      this specification
   backend/
     pyproject.toml
     .env.example
+    Dockerfile               the API image, with the demo catalog built in
     app/
       __main__.py            starts uvicorn using PORT
       config.py              reads configuration variables
@@ -92,6 +95,8 @@ ai_shopping_assistant/
         prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
+    Dockerfile               the frontend image: the build served by nginx
+    nginx.conf               that nginx's site config
     index.html               the chat's entry
     about/index.html         the about page's entry
     public/                  favicon

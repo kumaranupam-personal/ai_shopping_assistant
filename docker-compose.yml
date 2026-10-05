@@ -1,0 +1,29 @@
+# The production stack (docs/13-deployment.md): the API and the frontend, each built from its own Dockerfile.
+# Secrets and settings come from .env next to this file (copied from .env.example). Both containers listen on
+# 127.0.0.1 only, so the server's nginx, which proxies / to the frontend and /api/ to the API, is the way in.
+name: saathi
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 10m, max-file: "3" }
+
+services:
+  backend:
+    build: ./backend
+    image: saathi-backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    logging: *logging
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+    image: saathi-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    logging: *logging

@@ -62,3 +62,4 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `10-observability.md`: turn tracing scope, trace shape and span attributes, message text, cost in traces, export to Langfuse.
 - `11-abuse-protection.md`: client IP, rate limits, session and turn caps, daily budget, kill switch, Turnstile, proxy requirements, suggested production values.
 - `12-about-page.md`: the static page that explains the project: serving and isolation, content file, structure, replay, diagram.
+- `13-deployment.md`: the Docker deployment on EC2: the two images, the compose file and its `.env`, the server's nginx, first setup, releases, adding Cloudflare.
