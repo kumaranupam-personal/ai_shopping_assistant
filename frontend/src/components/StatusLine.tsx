@@ -4,7 +4,7 @@ import { LoaderCircle } from "lucide-react";
 export default function StatusLine({ running, status }: { running: boolean; status: string }) {
   if (!running) return null;
   return (
-    <div className="flex items-center gap-2 px-4 pb-2 text-sm text-fg-muted">
+    <div className="flex items-center gap-2 px-4 pb-2 text-sm text-panel-muted">
       <LoaderCircle aria-hidden className="size-4 shrink-0 animate-spin" />
       <span className="truncate">{status || "Thinking"}</span>
     </div>

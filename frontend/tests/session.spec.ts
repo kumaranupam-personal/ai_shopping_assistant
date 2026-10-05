@@ -9,7 +9,7 @@ test("reloading restores messages, result markers and the latest result set", as
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await page.reload();
   await expect(message(page, "warm jacket under 8k")).toBeVisible();
-  await expect(page.getByRole("button", { name: `Showed 8 products: ${LADAKH_TURN.headline}` })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: `Show 8 products: ${LADAKH_TURN.headline}` })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("heading", { name: LADAKH_TURN.headline })).toBeVisible();
   await expect(message(page, LADAKH_TURN.reply)).toBeVisible();
 });

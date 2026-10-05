@@ -91,6 +91,7 @@ ai_shopping_assistant/
         prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
+    public/                  favicon
     src/
     tests/                   Playwright browser tests
     scripts/                 Lighthouse check

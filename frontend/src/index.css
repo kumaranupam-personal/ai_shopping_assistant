@@ -3,61 +3,83 @@
 /* `dark:` utilities follow the resolved theme on <html data-theme>, not just the system setting. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Design tokens (docs/06-frontend.md, Visual design): zinc neutrals, one indigo accent, semantic colors. */
+/* Design tokens (docs/06-frontend.md, Visual design > Theme): a deep green chat panel and accent on warm neutrals. */
 :root {
-  --page: var(--color-zinc-100);
-  --surface: var(--color-white);
-  --surface-muted: var(--color-zinc-50);
-  --line: var(--color-zinc-200);
-  --line-strong: var(--color-zinc-300);
-  --fg: var(--color-zinc-900);
-  --fg-muted: var(--color-zinc-500);
-  --accent: var(--color-indigo-600);
-  --accent-fg: var(--color-white);
-  --accent-soft: var(--color-indigo-50);
-  --accent-soft-fg: var(--color-indigo-900);
-  --success: var(--color-green-700);
-  --success-soft: var(--color-green-50);
-  --danger: var(--color-red-600);
-  --danger-soft: var(--color-red-50);
-  --star: var(--color-amber-500);
-  --tile-wash: 26%;
-  --hero-glow: 25%;
+  --page: #efeae0;
+  --surface-muted: #faf8f3;
+  --surface: #ffffff;
+  --tile: #efebe1;
+  --line: #e4dfd3;
+  --line-strong: #cfc8b8;
+  --fg: #14261f;
+  --fg-muted: #58675f;
+  --accent: #163a2f;
+  --accent-fg: #f3ead3;
+  --accent-soft: #e3ece6;
+  --accent-soft-fg: #163a2f;
+  --panel: #163a2f;
+  --panel-raised: #1f4a3c;
+  --panel-line: #6a917f;
+  --panel-fg: #eaf1ec;
+  --panel-muted: #a9c2b6;
+  --panel-accent: #f3ead3;
+  --panel-accent-fg: #163a2f;
+  --success: #17692f;
+  --success-fg: #ffffff;
+  --success-soft: #e4f1e6;
+  --danger: #b3261e;
+  --danger-soft: #fbeae8;
+  --star: #b7791f;
+  /* The three shadows docs/06 allows (Surfaces), tinted with the text color so they sit softly on the warm neutrals. */
+  --shadow-color: rgb(20 38 31 / 0.14);
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --page: var(--color-zinc-950);
-  --surface: var(--color-zinc-900);
-  --surface-muted: var(--color-zinc-800);
-  --line: var(--color-zinc-800);
-  --line-strong: var(--color-zinc-700);
-  --fg: var(--color-zinc-100);
-  --fg-muted: var(--color-zinc-400);
-  --accent: var(--color-indigo-400);
-  --accent-fg: var(--color-zinc-950);
-  --accent-soft: color-mix(in oklab, var(--color-indigo-400) 18%, transparent);
-  --accent-soft-fg: var(--color-indigo-100);
-  --success: var(--color-green-400);
-  --success-soft: color-mix(in oklab, var(--color-green-400) 16%, transparent);
-  --danger: var(--color-red-400);
-  --danger-soft: color-mix(in oklab, var(--color-red-400) 15%, transparent);
-  --star: var(--color-amber-400);
-  --tile-wash: 34%;
-  --hero-glow: 40%;
+  --page: #0a100d;
+  --surface-muted: #111815;
+  --surface: #18211d;
+  --tile: #212c27;
+  --line: #26322c;
+  --line-strong: #3a4a42;
+  --fg: #ecf1ec;
+  --fg-muted: #9db0a6;
+  --accent: #e6d9b8;
+  --accent-fg: #14261f;
+  --accent-soft: #24332c;
+  --accent-soft-fg: #e6d9b8;
+  --panel: #1b2b24;
+  --panel-raised: #23362e;
+  --panel-line: #6c8579;
+  --panel-fg: #ecf1ec;
+  --panel-muted: #9db0a6;
+  --panel-accent: #e6d9b8;
+  --panel-accent-fg: #14261f;
+  --success: #7fd69a;
+  --success-fg: #0e1e14;
+  --success-soft: #1e3527;
+  --danger: #f2a099;
+  --danger-soft: #3a1f1d;
+  --star: #e5b454;
+  --shadow-color: rgb(0 0 0 / 0.45);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
+  --shadow-card: 0 10px 24px -14px var(--shadow-color);
+  --shadow-composer: 0 6px 20px -10px var(--shadow-color);
+  --shadow-float: 0 4px 12px -4px var(--shadow-color);
   --animate-enter: enter 180ms ease-out;
-  --animate-rise: rise 420ms ease-out both; /* "both" keeps a card hidden until its stagger delay ends */
+  --animate-rise: rise 420ms ease-out backwards; /* "backwards" keeps a card hidden until its stagger delay ends */
   --animate-typing: typing 1.2s ease-in-out infinite;
   --animate-drawer-up: drawer-up 200ms ease-out;
   --animate-drawer-left: drawer-left 200ms ease-out;
   --color-page: var(--page);
-  --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface: var(--surface);
+  --color-tile: var(--tile);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-fg: var(--fg);
@@ -66,24 +88,19 @@
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
   --color-accent-soft-fg: var(--accent-soft-fg);
+  --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-panel-line: var(--panel-line);
+  --color-panel-fg: var(--panel-fg);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-accent: var(--panel-accent);
+  --color-panel-accent-fg: var(--panel-accent-fg);
   --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-star: var(--star);
-}
-
-/* Product tiles: a wash of the tile color over the surface (26% light, 34% dark), and its icon in a shade mixed halfway
-   toward the text color, so each of the catalog's colors adapts to both themes. --swatch is a CSS color name per tile. */
-.product-tile {
-  background: color-mix(in oklab, var(--swatch) var(--tile-wash), var(--surface));
-  color: color-mix(in oklab, var(--swatch) 50%, var(--fg));
-}
-
-/* The hero's glow (docs/06-frontend.md, Surfaces): an accent wash from the top centre that fades out inside the hero,
-   so it scrolls away with it and never meets the sticky headline bar. */
-.hero-glow {
-  background: radial-gradient(ellipse 70% 100% at 50% 0%, color-mix(in oklab, var(--accent) var(--hero-glow), transparent), transparent);
 }
 
 @keyframes rise {
@@ -138,6 +155,11 @@
 
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-accent;
+  }
+
+  /* Inside the chat panel the accent is panel-accent (docs/06-frontend.md, Accent). */
+  .chat-panel :focus-visible {
+    @apply outline-panel-accent;
   }
 }
 

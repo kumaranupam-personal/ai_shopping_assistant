@@ -1,6 +1,7 @@
 // A stand-in for the backend API (docs/05-api.md) with recorded product data, so browser tests need no server or key.
 import { expect, type Page } from "@playwright/test";
 
+import type { Card } from "../src/api";
 import products from "./fixtures/products.json" with { type: "json" };
 
 export const API = "http://localhost:8000/api";
@@ -9,6 +10,7 @@ export type ScriptedTurn = {
   headline: string;
   suggestions: string[];
   ids: (keyof typeof products)[];
+  cards?: Card[]; // extra cards after the recorded ones, for card rules the fixture doesn't cover
   reply: string;
   hang?: boolean; // never answer, like a slow model; used to reload mid-turn
 };
@@ -74,7 +76,7 @@ export async function mockApi(page: Page, turns: ScriptedTurn[]) {
       if (!entries) return notFound();
       const turn = turns[turnCount++ % turns.length];
       if (turn.hang) return; // left pending; a reload abandons it
-      const resultSet = { headline: turn.headline, suggestions: turn.suggestions, products: turn.ids.map((i) => products[i].card) };
+      const resultSet = { headline: turn.headline, suggestions: turn.suggestions, products: [...turn.ids.map((i) => products[i].card), ...(turn.cards ?? [])] };
       entries.push({ type: "user", text: message }, { type: "products", ...resultSet }, { type: "assistant", text: turn.reply });
       const body =
         frame("status", { text: "Searching jackets under ₹8,000 in size L" }) +
@@ -90,7 +92,7 @@ export async function mockApi(page: Page, turns: ScriptedTurn[]) {
 /** Every row in the chat list: messages, result markers and error rows. */
 export const chatRows = (page: Page) => page.getByRole("region", { name: "Chat" }).getByRole("list", { name: "Conversation" }).getByRole("listitem");
 
-/** A message in the chat list (the live region repeats assistant text, so page-wide text matches twice). */
+/** A message in the chat list (the live region repeats assistant text, so page-wide text matches twice; the landing's prompts never match). */
 export const message = (page: Page, text: string) => page.getByRole("region", { name: "Chat" }).getByRole("list", { name: "Conversation" }).getByText(text);
 
 /** Resolves once the app has a session, so tests don't race its creation. */

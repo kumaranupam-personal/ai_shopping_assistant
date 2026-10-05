@@ -1,6 +1,3 @@
-import { Flame } from "lucide-react";
-import type { ReactNode } from "react";
-
 import type { ResultSet } from "../api";
 import ProductGrid from "./ProductGrid";
 import SuggestionChips from "./SuggestionChips";
@@ -10,27 +7,15 @@ export type ResultsProps = {
   onOpenProduct: (id: string) => void;
   onSuggestion: (text: string) => void;
   turnRunning: boolean;
-  featured?: boolean; // the featured list, whose headline carries a "Top rated" tag
   animate?: boolean; // the set just appeared, so its cards play the entrance (docs/06-frontend.md, Motion)
 };
 
-/**
- * Headline and chips stay pinned while the grid scrolls. Used in the wide layout and inside the results sheet.
- * `intro` scrolls away above the headline, so the panel never needs a second scroll area.
- */
-export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, turnRunning, featured, animate, intro }: ResultsProps & { intro?: ReactNode }) {
+/** Headline and chips stay pinned while the grid scrolls. Used in the wide layout and inside the results sheet. */
+export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, turnRunning, animate }: ResultsProps) {
   return (
     <div className="h-full overflow-y-auto">
-      {intro}
       <div className="sticky top-0 z-10 flex flex-col gap-2 border-b border-line bg-surface-muted px-4 py-3">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h2 className="text-lg font-semibold">{resultSet.headline}</h2>
-          {featured && (
-            <span className="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-soft-fg">
-              <Flame aria-hidden className="size-3.5" /> Top rated
-            </span>
-          )}
-        </div>
+        <ResultsHeadline>{resultSet.headline}</ResultsHeadline>
         <SuggestionChips suggestions={resultSet.suggestions} onPick={onSuggestion} disabled={turnRunning} />
       </div>
       <div className="p-4">
@@ -38,4 +23,14 @@ export default function ResultsPanel({ resultSet, onOpenProduct, onSuggestion, t
       </div>
     </div>
   );
+}
+
+/** A result set's headline in the serif at 24 px, wrapping onto a second line when there isn't room. */
+export function ResultsHeadline({ children }: { children: string }) {
+  return <h2 className="font-serif font-medium text-2xl leading-8 [overflow-wrap:anywhere]">{children}</h2>;
+}
+
+/** The wide panel before the first result set when the featured products failed to load. */
+export function ResultsPlaceholder() {
+  return <p className="grid h-full place-items-center p-6 text-center text-fg-muted">Products Saathi finds will show here.</p>;
 }
