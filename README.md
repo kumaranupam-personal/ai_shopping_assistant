@@ -134,3 +134,9 @@ The app serves any catalog that follows the product schema and taxonomy in [`doc
 ## Documentation
 
 The full specification lives in [`docs/`](docs/00-overview.md): architecture, catalog, search, agent, API, frontend, evaluation, roadmap, LLM providers, observability and abuse protection. Each fact lives in exactly one document.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+Two product icons are copied from other projects under their own licences, each credited in its file: the jacket from Lucide Lab (ISC) and the kurta from Hugeicons (MIT). The fonts, Fraunces and Figtree, are under the SIL Open Font License.
