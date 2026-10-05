@@ -1,6 +1,7 @@
 // The automatable quality bar from docs/06-frontend.md: widths and themes, drag-resize, layout shift, console errors.
 import { expect, test, type Page } from "@playwright/test";
 
+import { about } from "../src/about/content.ts";
 import { LADAKH_TURN, WATERPROOF_TURN, chatRows, message, mockApi, send, sessionReady } from "./mock-api";
 
 const WIDTHS = [320, 375, 768, 1024, 1280, 1440, 1920, 2560];
@@ -69,8 +70,8 @@ function layoutProblems(page: Page) {
     };
     const [header, main, chat, results] = ["header", "main", "[aria-label=Chat]", "[aria-label=Results]"].map(box);
     Object.entries({ header, main, chat, results }).forEach(([name, rect]) => inView(name, rect));
-    // The header's controls (theme switch, cart button, New chat) fit beside the wordmark down to 320 px.
-    for (const el of document.querySelectorAll("header button")) inView(`header control ${el.getAttribute("aria-label") ?? el.textContent}`, el.getBoundingClientRect());
+    // The header's controls (about link, theme switch, cart button, New chat) fit beside the wordmark down to 320 px.
+    for (const el of document.querySelectorAll("header button, header a")) inView(`header control ${el.getAttribute("aria-label") ?? el.textContent}`, el.getBoundingClientRect());
     // Scroll areas other than the swipeable strips never scroll sideways.
     for (const el of document.querySelectorAll<HTMLElement>("main .overflow-y-auto")) {
       if (el.scrollWidth > el.clientWidth + 1) problems.push("a scroll area scrolls sideways");
@@ -193,3 +194,58 @@ test("the example conversation logs no console errors or warnings", async ({ pag
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(logged).toEqual([]);
 });
+
+/** The about page's layout rules at the current size (docs/12-about-page.md, Quality bar). */
+function aboutLayoutProblems(page: Page) {
+  return page.evaluate(() => {
+    const problems: string[] = [];
+    const width = innerWidth;
+    const root = document.querySelector<HTMLElement>("#root > div")!;
+    if (document.documentElement.scrollWidth > width || root.scrollWidth > root.clientWidth) problems.push("horizontal page scroll");
+    const scroller = document.querySelector<HTMLElement>("[data-diagram-scroller]")!;
+    const name = (el: Element) => `${el.tagName.toLowerCase()} "${el.textContent?.trim().slice(0, 30)}"`;
+    // Nothing sticks out of the viewport, apart from the diagram's own content inside its scrolling box.
+    for (const el of document.querySelectorAll("header *, main *, footer *")) {
+      if (scroller.contains(el) && el !== scroller) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width && (rect.left < -0.5 || rect.right > width + 0.5)) problems.push(`outside the viewport: ${name(el)}`);
+    }
+    for (const el of document.querySelectorAll<HTMLElement>("h1, h2, h3, p, a, button, dt, dd")) {
+      if (el.offsetParent && el.scrollWidth > el.clientWidth + 1) problems.push(`overflowing text: ${name(el)}`);
+    }
+    // Neighbours in a row or grid never overlap.
+    for (const row of document.querySelectorAll("header nav, [role=tablist], main ul, main dl, [role=tabpanel] > div:last-child")) {
+      const boxes = [...row.children].map((el) => el.getBoundingClientRect()).filter((rect) => rect.width);
+      boxes.forEach((a, i) =>
+        boxes.slice(i + 1).forEach((b) => {
+          if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) problems.push(`overlap in ${name(row)}`);
+        }),
+      );
+    }
+    // The diagram keeps 680 px and scrolls below 768 px, and fits its box from 768 px.
+    const svg = scroller.querySelector("svg")!.getBoundingClientRect();
+    if (width < 768 && Math.abs(svg.width - 680) > 1) problems.push(`diagram is ${svg.width}px wide below 768px`);
+    if (width >= 768 && scroller.scrollWidth > scroller.clientWidth + 1) problems.push("diagram scrolls from 768px");
+    return problems;
+  });
+}
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`about page layout holds at every listed width, on the first and last step of each turn (${colorScheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" }); // no autoplay, so the steps stay put
+    await page.goto("/about/");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
+    const replay = page.getByRole("region", { name: about.replay.heading });
+    for (const turn of about.turns) {
+      await replay.getByRole("tab", { name: turn.tab }).click();
+      for (const [label, steps] of [["first", 0], ["last", turn.steps.length - 1]] as const) {
+        for (let i = 0; i < steps; i++) await replay.getByRole("button", { name: "Next step" }).click();
+        await expect(replay.getByText(`Step ${steps + 1} of ${turn.steps.length}`)).toBeVisible();
+        for (const width of WIDTHS) {
+          await page.setViewportSize({ width, height: 900 });
+          expect(await aboutLayoutProblems(page), `${turn.tab}, ${label} step, at ${width}px`).toEqual([]);
+        }
+      }
+    }
+  });
+}

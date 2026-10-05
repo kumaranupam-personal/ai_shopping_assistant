@@ -3,6 +3,7 @@
 ## Components
 
 - **Frontend**: a single-page React app with a chat panel and a results panel. See `06-frontend.md`.
+- **About page**: a static page in the frontend build that explains the project and calls no API. See `12-about-page.md`.
 - **API server**: FastAPI. It exposes the endpoints in `05-api.md` and streams agent output as server-sent events.
 - **Agent**: a tool-use loop that interprets each user turn and calls tools. See `04-agent.md`.
 - **LLM layer**: a provider-independent interface with one adapter per provider, chosen by configuration. See `09-llm-providers.md`.
@@ -91,6 +92,8 @@ ai_shopping_assistant/
         prompts/             one snapshot of the system prompt and tools per prompt version
   frontend/
     package.json
+    index.html               the chat's entry
+    about/index.html         the about page's entry
     public/                  favicon
     src/
     tests/                   Playwright browser tests

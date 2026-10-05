@@ -1,6 +1,7 @@
-// `npm run lighthouse`: builds the app, serves the production build and checks Lighthouse desktop scores against the
-// quality bar in docs/06-frontend.md. A minimal stand-in API answers the first page load (a session and the featured
-// products), so no backend is needed.
+// `npm run lighthouse`: builds the app, serves the production build and checks Lighthouse desktop scores for the chat
+// at / and the about page at /about/ against the quality bars in docs/06-frontend.md and docs/12-about-page.md. A
+// minimal stand-in API answers the chat's first page load (a session and the featured products), so no backend is
+// needed; the about page makes no API calls.
 import { createServer } from "node:http";
 
 import { chromium } from "@playwright/test";
@@ -12,6 +13,7 @@ import { build, preview } from "vite";
 import { FEATURED } from "../tests/mock-api.ts";
 
 const MINIMUM = { performance: 90, accessibility: 95, "best-practices": 95 };
+const PAGES = ["/", "/about/"];
 
 const api = createServer((request, response) => {
   response.setHeader("Access-Control-Allow-Origin", "*");
@@ -32,11 +34,13 @@ const chrome = await launch({ chromePath: chromium.executablePath(), chromeFlags
 
 let failed = false;
 try {
-  const result = await lighthouse("http://localhost:4173", { port: chrome.port, logLevel: "error" }, desktopConfig);
-  for (const [category, minimum] of Object.entries(MINIMUM)) {
-    const score = Math.round((result!.lhr.categories[category].score ?? 0) * 100);
-    console.log(`${category}: ${score} (minimum ${minimum})`);
-    failed ||= score < minimum;
+  for (const path of PAGES) {
+    const result = await lighthouse(`http://localhost:4173${path}`, { port: chrome.port, logLevel: "error" }, desktopConfig);
+    for (const [category, minimum] of Object.entries(MINIMUM)) {
+      const score = Math.round((result!.lhr.categories[category].score ?? 0) * 100);
+      console.log(`${path} ${category}: ${score} (minimum ${minimum})`);
+      failed ||= score < minimum;
+    }
   }
 } finally {
   chrome.kill();

@@ -4,6 +4,8 @@
 
 React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries. Small helper libraries only: `lucide-react` for icons, `@fontsource-variable/figtree` and `@fontsource-variable/fraunces` for the self-hosted fonts, and `clsx`. No component library. Playwright runs the browser tests in `07-evaluation.md`.
 
+This doc covers the chat, served at `/`. The build has a second page, specified in `12-about-page.md`, which shares the tokens, the fonts and the theme described here.
+
 ## Brand
 
 - The app's name in the UI is "Saathi". The repository and project keep the name "AI Shopping Assistant".
@@ -18,7 +20,8 @@ React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries
 - The shell has three rows: the header (56 px), a banner row for the offline banner, the human check and notices, which takes no space when empty, and the main area, which takes the remaining height. The document body never scrolls.
 - The main area shows the landing until the conversation has a message, and the wide or narrow layout from then on.
 - Every flex and grid child that contains a scroll area has `min-height: 0` and `min-width: 0`, so content can never push a panel past the viewport.
-- The header, on `surface-muted` with a 1 px `line` border below it, holds the wordmark "Saathi" in `fg` on the left, and on the right a theme switch (system, light, dark), the cart button and a "New chat" button. Below 480 px, the button shows only its icon, with an accessible label.
+- The header, on `surface-muted` with a 1 px `line` border below it, holds the wordmark "Saathi" in `fg` on the left, and on the right the about link, a theme switch (system, light, dark), the cart button and a "New chat" button. Below 480 px, the "New chat" button shows only its icon, with an accessible label.
+- The about link reads "How Saathi works" and opens the about page from `12-about-page.md` in a new tab, with `rel="noopener"`, so a conversation in progress stays open. From 640 px it is muted 14 px text in weight 500 followed by the `ArrowUpRight` icon, in `fg` when hovered. Below 640 px it is a 32 px square button like the cart button, holding the `Info` icon, with the same accessible name. Below 360 px it is hidden, because the header has no room for it.
 
 ### Landing
 
