@@ -31,6 +31,27 @@ test("the heading, composer, 4 prompt cards and 8 category chips show at wide an
   }
 });
 
+test("the header's about link opens the about page in a new tab, as text, an icon button or not at all by width", async ({ page }) => {
+  await openLanding(page);
+  const link = page.getByRole("banner").getByRole("link", { name: "How Saathi works" });
+  await expect(link).toHaveAttribute("href", "/about/");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", /noopener/);
+  const wordmarkFits = () => page.getByRole("banner").getByText("Saathi", { exact: true }).evaluate((el) => el.scrollWidth <= el.clientWidth);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(link.getByText("How Saathi works")).toBeInViewport(); // text from 640 px
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(link).toBeVisible();
+  expect(await link.evaluate((el) => [(el as HTMLElement).offsetWidth, (el as HTMLElement).offsetHeight])).toEqual([32, 32]); // an icon button below that
+  expect(await wordmarkFits()).toBe(true);
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect(link).toBeVisible();
+  expect(await wordmarkFits()).toBe(true);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await expect(link).toBeHidden(); // no room below 360 px
+  expect(await wordmarkFits()).toBe(true);
+});
+
 test("sending from the composer replaces the landing and focuses the chat's composer", async ({ page }) => {
   await openLanding(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");

@@ -103,9 +103,16 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - This phase replaces these pieces of Phases 10 and 13, which `06-frontend.md` no longer describes: each tile's own color and wash, the greeting, the hero heading and its glow, and the "Top rated" tag.
 - Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
 
+## Phase 15: About page
+
+- Part 1: the second build entry, the content file and the static sections from `12-about-page.md` (header, hero, features, evidence, closing band, footer).
+- Part 2: the diagram and the replay from `12-about-page.md`, with the browser tests from `07-evaluation.md`.
+- Part 3: the recorded conversation: its three turns are run once against the real agent with message text in the traces (see `10-observability.md`), the replay's steps are copied from those traces, and each trace is made public and linked from its turn.
+- Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `12-about-page.md` holds.
+
 ## Stretch goals
 
-These come after Phase 14 and are each specified in a new doc before being built.
+These come after Phase 15 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.

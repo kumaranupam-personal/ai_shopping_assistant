@@ -1,0 +1,6 @@
+/* About page only (docs/12-about-page.md, Diagram): an active edge's dashes move along its direction. */
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -14;
+  }
+}

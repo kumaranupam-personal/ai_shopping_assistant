@@ -61,3 +61,4 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `09-llm-providers.md`: provider interface, boundary rules, registry, per-provider adapter details.
 - `10-observability.md`: turn tracing scope, trace shape and span attributes, message text, cost in traces, export to Langfuse.
 - `11-abuse-protection.md`: client IP, rate limits, session and turn caps, daily budget, kill switch, Turnstile, proxy requirements, suggested production values.
+- `12-about-page.md`: the static page that explains the project: serving and isolation, content file, structure, replay, diagram.

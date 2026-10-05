@@ -1,4 +1,4 @@
-import { Plus, ShoppingBag } from "lucide-react";
+import { ArrowUpRight, Info, Plus, ShoppingBag } from "lucide-react";
 import type { RefObject } from "react";
 
 import { useCart } from "../cart";
@@ -6,13 +6,24 @@ import ThemeSwitch from "./ThemeSwitch";
 
 type Props = { onNewChat: () => void; onOpenCart: () => void; cartButton: RefObject<HTMLButtonElement | null> };
 
-/** The wordmark, theme switch, cart button and "New chat" (docs/06-frontend.md, App shell and Cart). */
+/** The wordmark, about link, theme switch, cart button and "New chat" (docs/06-frontend.md, App shell and Cart). */
 export default function Header({ onNewChat, onOpenCart, cartButton }: Props) {
   const count = useCart().length;
   return (
     <header className="flex min-w-0 items-center justify-between gap-3 border-b border-line bg-surface-muted px-4">
       <span className="truncate font-serif font-medium text-2xl leading-none text-fg">Saathi</span>
       <div className="flex shrink-0 items-center gap-2">
+        {/* A text link from 640 px, an icon button below that, and nothing below 360 px, where the header has no room. */}
+        <a
+          href="/about/"
+          target="_blank"
+          rel="noopener"
+          className="grid size-8 place-items-center rounded-lg border border-line bg-surface transition-colors duration-150 ease-out hover:border-line-strong max-[359px]:hidden sm:mr-2 sm:flex sm:size-auto sm:gap-1 sm:border-0 sm:bg-transparent sm:text-sm sm:font-medium sm:text-fg-muted sm:hover:text-fg"
+        >
+          <Info aria-hidden className="size-4 sm:hidden" />
+          <span className="max-sm:sr-only">How Saathi works</span>
+          <ArrowUpRight aria-hidden className="size-4 max-sm:hidden" />
+        </a>
         <ThemeSwitch />
         <button
           ref={cartButton}
