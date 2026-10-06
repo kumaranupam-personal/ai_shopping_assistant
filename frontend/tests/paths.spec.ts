@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 // Old or bare address -> [status, location], with the query kept.
 const REDIRECTS: [string, number, string][] = [
-  ["/", 302, "/saathi/"],
+  ["/", 302, "/saathi/about/"],
   ["/saathi", 301, "/saathi/"],
   ["/about", 301, "/saathi/about/"],
   ["/about/", 301, "/saathi/about/"],

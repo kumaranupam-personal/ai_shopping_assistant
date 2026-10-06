@@ -25,7 +25,7 @@ const BASE = "/saathi/";
 
 // Path -> [status, location]. The domain root redirects only for now (302), since another page may take it later.
 const REDIRECTS: Record<string, [number, string]> = {
-  "/": [302, BASE],
+  "/": [302, `${BASE}about/`],
   "/saathi": [301, BASE],
   "/about": [301, `${BASE}about/`],
   "/about/": [301, `${BASE}about/`],
