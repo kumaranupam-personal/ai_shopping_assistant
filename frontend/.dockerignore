@@ -1,0 +1,6 @@
+# Keeps the frontend image's build context to the sources (frontend/Dockerfile).
+.env*
+node_modules
+dist
+test-results
+playwright-report

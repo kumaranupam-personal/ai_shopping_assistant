@@ -1,6 +1,6 @@
 # Observability
 
-Every agent turn is traced with OpenTelemetry and exported to Langfuse Cloud. The code uses only the OpenTelemetry SDK, its OTLP HTTP exporter and span attributes, and never imports a Langfuse SDK.
+Every agent turn is traced with OpenTelemetry and, when an endpoint is configured (see Export), exported to Langfuse Cloud. The code uses only the OpenTelemetry SDK, its OTLP HTTP exporter and span attributes, and never imports a Langfuse SDK.
 
 ## Scope
 

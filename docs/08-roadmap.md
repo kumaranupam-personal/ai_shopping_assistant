@@ -116,9 +116,14 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 2: the drawer banner and the drawer's color choices in their swatches.
 - Done when the tests in `07-evaluation.md` pass and every item in the quality bar of `06-frontend.md` holds.
 
+## Phase 17: Deployment
+
+- Part 1: the two Dockerfiles, the compose file, the production `.env.example` and the server setup from `13-deployment.md`.
+- Done when the tests in `07-evaluation.md` pass, the stack runs on EC2 behind the server's nginx over HTTPS, and the checks under "Verifying HTTPS and the headers" in `13-deployment.md` pass.
+
 ## Stretch goals
 
-These come after Phase 16 and are each specified in a new doc before being built.
+These come after Phase 17 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.

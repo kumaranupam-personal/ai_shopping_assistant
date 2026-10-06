@@ -1,0 +1,9 @@
+# Keeps the API image's build context to what backend/Dockerfile copies.
+.env
+.venv
+**/__pycache__
+.pytest_cache
+data
+demo/products.jsonl
+evals
+tests
