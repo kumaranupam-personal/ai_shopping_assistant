@@ -4,7 +4,7 @@ A page that explains the project to engineers and recruiters: what it does, how 
 
 ## Serving and isolation
 
-- The page is a second entry in the frontend build: `frontend/about/index.html` loads `frontend/src/about/main.tsx`, and the build writes it to `dist/about/index.html`. It's served at `/about/`, and in development at `http://localhost:5173/about/`. The chat stays at `/`.
+- The page is a second entry in the frontend build: `frontend/about/index.html` loads `frontend/src/about/main.tsx`, and the build writes it to `dist/about/index.html`. It's served at `/about/`, and in development at `http://localhost:5173/about/`. `/about` redirects there with a relative `Location`, from the frontend container's nginx in production and from a Vite plugin in development and preview. The chat stays at `/`.
 - The page is static. Loading it, and using everything on it, sends no request other than for its own files from the same origin: nothing to the API, to Cloudflare Turnstile or to Langfuse. It creates no session.
 - Its code imports none of the chat's modules for the API client, the chat state, Turnstile or the cart. It shares only the design tokens, the fonts, the theme and `ThemeSwitch` from `06-frontend.md`.
 - It uses the favicon from `06-frontend.md`. Its document title and meta description come from the content file.

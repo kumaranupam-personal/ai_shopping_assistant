@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Plugin, type PreviewServer, type ViteDevServer } from "vite";
 
 import { about } from "./src/about/content.ts";
 
@@ -20,9 +20,22 @@ function aboutMeta(): Plugin {
   };
 }
 
+/** Redirects /about to /about/ in dev and preview, which would otherwise serve the chat, as nginx does in production. */
+function aboutSlash(): Plugin {
+  const redirect = (server: ViteDevServer | PreviewServer) => {
+    server.middlewares.use((req, res, next) => {
+      const [path, query] = (req.url ?? "").split(/\?(.*)/s);
+      if (path !== "/about") return next();
+      res.writeHead(301, { Location: query ? `/about/?${query}` : "/about/" });
+      res.end();
+    });
+  };
+  return { name: "about-slash", configureServer: redirect, configurePreviewServer: redirect };
+}
+
 // Two pages: the chat at / and the about page at /about/ (docs/12-about-page.md), in dev, the build and preview.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), aboutMeta()],
+  plugins: [react(), tailwindcss(), aboutMeta(), aboutSlash()],
   server: { port: 5173, strictPort: true },
   build: {
     rollupOptions: {
