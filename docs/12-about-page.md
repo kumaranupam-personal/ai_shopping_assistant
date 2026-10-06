@@ -15,26 +15,26 @@ A page that explains the project to engineers and recruiters: what it does, how 
 - `frontend/src/about/content.ts` holds every word, number and link on the page: the document title and description, the header's links, the hero, each section's heading and line, the diagram's labels, the turns and their steps, the feature cards, the evidence figures and note, the closing call to action and the footer. The components hold no wording of their own, so editing this one file changes any text on the page.
 - This doc fixes the page's structure and behavior, and repeats none of the file's wording.
 - The evidence figures are copied from the Evaluation section of `README.md`, and change with it.
-- The file also holds the repository's URL and each turn's trace URL.
+- The file also holds the repository's URL, the LinkedIn profile's URL and each turn's trace URL.
 
 ## Structure
 
 The page is one column on `surface-muted` that scrolls as a whole. Because the shared base styles stop the document body from scrolling, the page scrolls inside its own root, which fills the viewport. Sections are centered, at most 1040 px wide, with 24 px at their sides (16 px below 640 px) and 64 px between them (40 px below 640 px). From top to bottom:
 
-1. **Header:** 56 px tall, as in the chat, with the wordmark on the left. On the right: a link that scrolls to the replay, a link to the repository, the theme switch and the call to action as a 32 px tall button. Below 640 px the two links are hidden.
+1. **Header:** 56 px tall, as in the chat, with the wordmark on the left. On the right: a link that scrolls to the replay, a link to the repository, a link to the author's LinkedIn profile, the theme switch and the call to action as a 32 px tall button. Below 640 px the three links are hidden.
 2. **Hero:** centered. The heading is the page's `h1`, in Fraunces at 48 px (36 px below 640 px). Under it, a muted line at most 560 px wide, then the call to action, 44 px tall, beside a secondary button on `surface` with a `line-strong` border, which scrolls to the replay.
 3. **Replay:** the section described under Replay and Diagram.
 4. **Features:** a heading and a grid of cards, 3 columns from 900 px, 2 from 600 px and 1 below that, with a 16 px gap. Each card, on `surface` with a `line` border and 12 px corners, shows a `lucide-react` icon in `accent-soft-fg` on a 36 px `accent-soft` tile, a title at 16 px in weight 600 and a muted line at 14 px. The content file names each card's icon.
 5. **Evidence:** a heading, then a grid of figure tiles, 4 columns from 768 px and 2 below that. Each tile, on `tile` with 8 px corners, shows a muted 12 px label above a figure at 24 px in weight 600 with tabular numbers. Under the grid, one note card in the feature cards' style holds a title in weight 600, a muted text and a link.
 6. **Closing band:** full width on `panel`, centered: a Fraunces heading at 30 px in `panel-accent`, a line in `panel-muted`, and the call to action, 44 px tall, as `panel-accent-fg` on `panel-accent`.
-7. **Footer:** one muted, centered 12 px line and the repository link.
+7. **Footer:** one muted, centered 12 px line, the repository link and the LinkedIn link.
 
 Section headings other than the hero's and the closing band's are Fraunces at 30 px (24 px below 640 px), each with an optional muted line under it.
 
 ## Links
 
 - **Call to action:** in the header, the hero and the closing band. Each opens `/saathi/`, the chat, in a new tab.
-- **Repository and trace links:** open in a new tab.
+- **Repository, LinkedIn and trace links:** open in a new tab.
 - Every link that opens a new tab has `rel="noopener"` and shows the `ArrowUpRight` icon after its text.
 - **In-page links:** scroll the replay section to the top of the view, smoothly, or at once under `prefers-reduced-motion`.
 
@@ -104,6 +104,7 @@ An inline SVG drawn in a 680 by 330 coordinate space and scaled to the section's
 The page is done only when all of these hold:
 
 - At the widths listed in the quality bar of `06-frontend.md`, in both themes, there is no horizontal page scroll and no clipped or overlapping element, on every step of every turn.
+- Resizing from 320 to 1024 px, including across 640 px where the header's links appear, never causes horizontal page scroll or a clipped or overlapping element.
 - Lighthouse scores for `/saathi/about/` in a desktop production build meet the minimums in `06-frontend.md`.
 - No console errors or warnings while loading the page and stepping through every turn.
 - Loading the page, stepping through every turn and switching the theme send no request outside the page's own origin.

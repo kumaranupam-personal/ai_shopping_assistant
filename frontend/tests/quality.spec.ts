@@ -215,7 +215,7 @@ function aboutLayoutProblems(page: Page) {
       if (el.offsetParent && el.scrollWidth > el.clientWidth + 1) problems.push(`overflowing text: ${name(el)}`);
     }
     // Neighbours in a row or grid never overlap.
-    for (const row of document.querySelectorAll("header nav, [role=tablist], main ul, main dl, [role=tabpanel] > div:last-child")) {
+    for (const row of document.querySelectorAll("header nav, footer, [role=tablist], main ul, main dl, [role=tabpanel] > div:last-child")) {
       const boxes = [...row.children].map((el) => el.getBoundingClientRect()).filter((rect) => rect.width);
       boxes.forEach((a, i) =>
         boxes.slice(i + 1).forEach((b) => {
@@ -230,6 +230,17 @@ function aboutLayoutProblems(page: Page) {
     return problems;
   });
 }
+
+test("about page layout holds while resizing from 320 to 1024 px, including where the header links appear", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./about/");
+  for (let width = 320; width <= 1024; width += 8) {
+    for (const w of width === 640 ? [639, 640] : [width]) {
+      await page.setViewportSize({ width: w, height: 900 });
+      expect(await aboutLayoutProblems(page), `at ${w}px`).toEqual([]);
+    }
+  }
+});
 
 for (const colorScheme of ["light", "dark"] as const) {
   test(`about page layout holds at every listed width, on the first and last step of each turn (${colorScheme})`, async ({ page }) => {

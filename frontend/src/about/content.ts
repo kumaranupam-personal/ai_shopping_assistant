@@ -56,14 +56,16 @@ export type Step = {
 export type Turn = { tab: string; message: string; summary: string; traceUrl: string | null; steps: Step[] };
 
 const REPOSITORY = "https://github.com/kumaranupam-personal/ai_shopping_assistant";
+const LINKEDIN = "https://www.linkedin.com/in/anupam-kumar-50609b18a";
 
 export const about = {
   title: "How Saathi works",
   description: "How an AI agent turns a shopping request into a catalog search, step by step.",
   repositoryUrl: REPOSITORY,
+  linkedinUrl: LINKEDIN,
   chatUrl: "/saathi/",
 
-  header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", cta: "Try Saathi" },
+  header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", linkedin: "LinkedIn", cta: "Try Saathi" },
 
   hero: {
     heading: "Describe it. Saathi finds it.",
@@ -272,5 +274,5 @@ export const about = {
 
   closing: { heading: "Now try it yourself", line: "Ask for anything in the catalog and see how it answers.", cta: "Talk to Saathi" },
 
-  footer: { text: "A demo project. The catalog is synthetic.", github: "GitHub" },
+  footer: { text: "A demo project. The catalog is synthetic.", github: "GitHub", linkedin: "LinkedIn" },
 };

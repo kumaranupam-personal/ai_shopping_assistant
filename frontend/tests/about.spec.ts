@@ -62,6 +62,8 @@ test("each call to action opens the chat in a new tab, and every new-tab link is
   }
   await expect(page.getByRole("link", { name: about.header.github })).toHaveCount(2); // header and footer
   for (const link of await page.getByRole("link", { name: about.header.github }).all()) await expect(link).toHaveAttribute("href", about.repositoryUrl);
+  await expect(page.getByRole("link", { name: about.header.linkedin })).toHaveCount(2); // header and footer
+  for (const link of await page.getByRole("link", { name: about.header.linkedin }).all()) await expect(link).toHaveAttribute("href", about.linkedinUrl);
 
   // The chat opens in a new tab; its API calls are stubbed so it stays quiet.
   await context.route("http://localhost:8000/**", (route) => route.fulfill({ status: 503, headers: { "Access-Control-Allow-Origin": "*" } }));
@@ -228,6 +230,8 @@ test("below 768 px the diagram scrolls inside its box, following the step, and t
   // Below 640 px the header keeps only the wordmark, the theme switch and the call to action.
   await expect(page.getByRole("banner").getByRole("link", { name: about.header.howItWorks })).toBeHidden();
   await expect(page.getByRole("banner").getByRole("link", { name: about.header.github })).toBeHidden();
+  await expect(page.getByRole("banner").getByRole("link", { name: about.header.linkedin })).toBeHidden();
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: about.footer.linkedin })).toBeVisible(); // the footer keeps both
   await expect(page.getByRole("banner").getByText(about.header.wordmark, { exact: true })).toHaveJSProperty("scrollWidth", await page.getByRole("banner").getByText(about.header.wordmark, { exact: true }).evaluate((el) => el.clientWidth));
   const scroller = page.locator("[data-diagram-scroller]");
   const sizes = await scroller.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
