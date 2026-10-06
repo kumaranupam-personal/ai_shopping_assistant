@@ -18,6 +18,7 @@ from tests.conftest import CATALOG, jacket
 from tests.test_embed import FakeModel
 from tests.test_ingest import write_lines
 from tests.test_loop import OPTIONS, SEARCH, SHOW, ScriptedProvider, reply
+from tests.test_session import Clock
 
 MAX_TURNS = 2
 HAPPY_TURN = (reply("Let me look.", stop="tool_use", calls=[SEARCH]), reply(stop="tool_use", calls=[SHOW]))
@@ -130,7 +131,7 @@ def test_session_errors_are_rejected_before_streaming(make_client):
 @pytest.mark.parametrize(
     "body",
     [{"session_id": "s", "message": ""}, {"session_id": "s", "message": "   "}, {"session_id": "s", "message": "x" * 1001},
-     {"message": "hi"}, "not json"],
+     {"message": "hi"}, {"session_id": "s" * 65, "message": "hi"}, "not json"],
 )
 def test_invalid_chat_requests_get_invalid_request(make_client, body):
     client = make_client()
@@ -252,11 +253,25 @@ def test_a_spent_budget_pauses_chat_before_the_rate_and_session_checks(make_clie
 
 
 def test_model_calls_in_failed_turns_count_toward_the_budget(make_client):
-    client = make_client(provider=priced(reply(stop="tool_use", calls=[SEARCH]), LLMUpstreamError("down")), daily_budget_usd=0.2)
+    responses = (reply(stop="tool_use", calls=[SEARCH]), reply("Partial", stop="max_tokens"), LLMUpstreamError("down"))
+    client = make_client(provider=priced(*responses), daily_budget_usd=0.5)
+    _, events = chat(client, new_session(client))
+    assert events[-1][1]["code"] == "turn_limit"
     _, events = chat(client, new_session(client))
     assert events[-1][1]["code"] == "upstream_error"
-    assert client.app.state.budget.spent == pytest.approx(0.2)
+    assert client.app.state.budget.spent == pytest.approx(0.4)  # both calls of the failed turn; the failed call adds nothing
+    client.app.state.budget.add(0.1)
     assert rejection(chat(client, new_session(client))[0]) == (503, "chat_unavailable")
+
+
+def test_a_budget_spent_during_a_turn_ends_it_with_chat_unavailable_and_rolls_it_back(make_client, caplog):
+    client = make_client(provider=priced(reply(stop="tool_use", calls=[SEARCH]), reply("never sent")), daily_budget_usd=0.2)
+    session_id = new_session(client)
+    _, events = chat(client, session_id)
+    assert [e for e, _ in events] == ["status", "error"] and events[-1][1]["code"] == "chat_unavailable"
+    s = session(client, session_id)
+    assert (s.history, s.transcript, s.turn_count, s.busy) == ([], [], 0, False)
+    assert "Rejected chat_unavailable for testclient" in caplog.text
 
 
 def test_a_budget_without_prices_stops_startup(index):
@@ -313,6 +328,25 @@ def test_per_ip_limits_key_on_the_configured_header_or_the_peer(make_client):
     assert client.post("/api/sessions").status_code == 201  # without the header: the TCP peer
 
 
+def test_the_per_client_session_cap_rejects_without_retry_after_and_keys_ipv6_by_64(make_client, caplog):
+    client = make_client(max_sessions_per_ip=2, client_ip_header="X-Real-IP")
+    for ip in ("2001:db8::1", "2001:db8::2"):  # one /64
+        assert client.post("/api/sessions", headers={"X-Real-IP": ip}).status_code == 201
+    response = client.post("/api/sessions", headers={"X-Real-IP": "2001:db8::3"})
+    assert rejection(response) == (429, "rate_limited") and "retry-after" not in response.headers
+    assert "Rejected rate_limited for 2001:db8::3" in caplog.text  # the log line keeps the full address
+    assert client.post("/api/sessions", headers={"X-Real-IP": "2001:db8:0:1::1"}).status_code == 201  # another /64
+
+
+def test_an_expired_session_frees_a_place_under_the_per_client_cap(make_client):
+    client = make_client(max_sessions_per_ip=1)
+    client.app.state.store.clock = clock = Clock()
+    new_session(client)
+    assert rejection(client.post("/api/sessions")) == (429, "rate_limited")
+    clock.now = 61 * 60
+    new_session(client)
+
+
 def stub_cloudflare(client, answer):
     """Routes the Turnstile check to `answer(request)` instead of Cloudflare, recording each request's form."""
     calls = []
@@ -365,6 +399,16 @@ def test_a_token_cloudflare_does_not_accept_gets_verification_failed(make_client
     assert client.app.state.store.sessions == {}
 
 
+def test_the_per_client_cap_runs_after_the_session_rate_and_before_the_human_check(make_client):
+    client = make_client(turnstile_secret="secret", rate_limit_sessions_per_hour=2, max_sessions_per_ip=1)
+    calls = stub_cloudflare(client, accept)
+    assert client.post("/api/sessions", json={"turnstile_token": "good"}).status_code == 201
+    assert rejection(client.post("/api/sessions", json={"turnstile_token": "good"})) == (429, "rate_limited")
+    response = client.post("/api/sessions", json={"turnstile_token": "good"})
+    assert rejection(response) == (429, "rate_limited") and response.headers["retry-after"] == "3600"  # the session rate
+    assert len(calls) == 1  # the cap stopped the second before Cloudflare was asked
+
+
 def test_the_human_check_runs_after_the_session_rate_and_before_the_live_session_cap(make_client):
     client = make_client(turnstile_secret="secret", rate_limit_sessions_per_hour=2, max_sessions=1)
     calls = stub_cloudflare(client, lambda request: httpx.Response(200, json={"success": b"good" in request.content}))
@@ -376,3 +420,19 @@ def test_the_human_check_runs_after_the_session_rate_and_before_the_live_session
 
 def test_a_malformed_session_body_gets_invalid_request(make_client):
     assert rejection(make_client().post("/api/sessions", json={"turnstile_token": 5})) == (422, "invalid_request")
+
+
+def test_behind_a_proxy_startup_warns_about_each_control_that_is_off(make_client, caplog):
+    make_client(client_ip_header="X-Real-IP", max_sessions=1000, turnstile_secret="secret")
+    warned = {r.getMessage() for r in caplog.records if r.levelname == "WARNING"}
+    assert warned == {
+        f"{name} is off" for name in (
+            "DAILY_BUDGET_USD", "RATE_LIMIT_SESSIONS_PER_HOUR", "RATE_LIMIT_CHAT_PER_MINUTE", "RATE_LIMIT_CHAT_PER_DAY",
+            "MAX_SESSIONS_PER_IP", "MAX_CONCURRENT_TURNS",
+        )
+    }
+
+
+def test_without_a_proxy_startup_does_not_warn(make_client, caplog):
+    make_client()
+    assert not [r for r in caplog.records if r.levelname == "WARNING"]

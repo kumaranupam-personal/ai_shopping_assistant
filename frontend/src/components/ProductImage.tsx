@@ -36,9 +36,13 @@ export function ColorDot({ color, className }: { color: string; className: strin
  * The product's image, loaded lazily behind a skeleton, or its tile when it has none or it fails. This is the one place
  * that decides; a tile carries `data-tile`, which is how the card and the drawer hide their brand line beside it.
  */
+/** The image URL to load: only an http or https one counts (docs/06-frontend.md, Images). */
+const imageSource = (url: unknown) => (typeof url === "string" && /^https?:\/\//i.test(url) ? url : null);
+
 export default function ProductImage({ card, variant = "card", className }: Props) {
-  const [state, setState] = useState<"loading" | "loaded" | "failed">(card.image_url ? "loading" : "failed");
-  const tile = state === "failed" || !card.image_url;
+  const src = imageSource(card.image_url);
+  const [state, setState] = useState<"loading" | "loaded" | "failed">(src ? "loading" : "failed");
+  const tile = state === "failed" || !src;
   return (
     <div className={clsx("relative overflow-hidden bg-tile", tile && variant === "banner" ? "aspect-[2/1]" : "aspect-square", className)}>
       {tile ? (
@@ -47,7 +51,7 @@ export default function ProductImage({ card, variant = "card", className }: Prop
         <>
           {state === "loading" && <div aria-hidden className="absolute inset-0 animate-pulse bg-tile" />}
           <img
-            src={card.image_url!}
+            src={src!}
             alt=""
             loading="lazy"
             decoding="async"
@@ -75,13 +79,14 @@ const ICON: Record<ImageVariant, [className: string, strokeWidth: number]> = {
 function ProductTile({ card, variant }: { card: Card; variant: ImageVariant }) {
   const Icon = CATEGORY_ICONS[card.category] ?? Package;
   const [iconClass, strokeWidth] = ICON[variant];
+  const colors = card.colors ?? [];
   return (
-    <div data-tile className="tile-tint absolute inset-0 grid place-items-center text-fg-muted" style={{ "--swatch": swatch(card.colors[0] ?? "") } as CSSProperties}>
+    <div data-tile className="tile-tint absolute inset-0 grid place-items-center text-fg-muted" style={{ "--swatch": swatch(colors[0] ?? "") } as CSSProperties}>
       <Icon aria-hidden strokeWidth={strokeWidth} className={iconClass} />
       {variant !== "small" && (
         <>
           <span aria-hidden className="absolute top-2.5 right-2.5 flex gap-1">
-            {card.colors.map((c) => (
+            {colors.map((c) => (
               <ColorDot key={c} color={c} className="size-2.5" />
             ))}
           </span>

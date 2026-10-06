@@ -15,7 +15,7 @@ Loop rules:
 - Ending right after `show_products` saves a model call: the reply arrives in the call's `reply` parameter, and the tool's result holds nothing the model still needs. If no cards were shown, the model gets the result and can recover. The next turn's user message then directly follows the tool-results message in the history, which every adapter accepts (see `09-llm-providers.md`).
 - A turn may make at most 8 model calls. If it hits that limit, the turn fails with the error `turn_limit` from `05-api.md`.
 - A `max_tokens` stop reason also fails the turn with `turn_limit`. The response may hold unanswered tool calls, and rolling the turn back keeps the history valid for the next turn.
-- A `refusal` stop reason ends the turn with `done`. A fixed polite message is sent as a `text` event and added as an `assistant` entry.
+- A `refusal` stop reason ends the turn with `done`. A fixed polite message is sent as a `text` event and added as an `assistant` entry. The turn's messages are then removed from the history, as when a turn rolls back, while its transcript entries are committed and `turn_count` goes up. The refused response may have empty content or tool calls that never get results, which providers reject when it's sent again, and dropping it also keeps the refused request out of later turns.
 - The system prompt is static. Nothing that changes per request, such as dates or IDs, goes into it, so providers can cache it.
 - The loop returns a turn record with the latency and the `usage` of every model call. The eval runner reads it, and the API ignores it.
 - The loop traces the turn as described in `10-observability.md`.
@@ -61,7 +61,7 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 ### show_products
 
 - Parameters: `product_ids` (a list of 1 to 8 strings), `headline` (one line, at most 80 characters), `suggestions` (a list of 0 to 4 short refinement phrases, each at most 30 characters), and `reply` (the message to the user, following rules 10 and 13).
-- Drops IDs that aren't in the catalog and duplicate IDs, and keeps the given order. The server enforces the parameter limits by cutting off extra IDs, headline characters and suggestions.
+- Drops IDs that aren't in the catalog and duplicate IDs, and keeps the given order. The server enforces the parameter limits by cutting off extra IDs, headline characters and suggestions. Arguments of the wrong type, such as a `reply` that isn't a string or `product_ids` that isn't a list of strings, raise an error, so the model gets an error result it can correct and nothing is sent or recorded.
 - Side effect: sends a `products` event with the cards for the remaining IDs (see `05-api.md`) and then a `text` event with `reply`, records the IDs as the session's shown list, and adds a `products` entry and then an `assistant` entry to the transcript. If no IDs remain, nothing is sent or recorded.
 - Returns `{"shown": [{"position": 1, "id": "...", "title": "..."}], "not_found": [...]}`. The numbered list in the history is what makes ordinal references resolvable.
 
@@ -76,6 +76,7 @@ The functions live in `app/agent/tools.py`, each paired with a ToolSpec whose sc
 - `turn_count`: the number of user messages so far.
 - `busy`: true while a turn is running.
 - `last_active`: a timestamp.
+- `client`: the key the rate limits use for the visitor who created it (see `11-abuse-protection.md`, Client IP), for the per-client session cap.
 
 Session rules:
 

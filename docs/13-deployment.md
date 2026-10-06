@@ -12,8 +12,8 @@ The backend runs as exactly one container with one uvicorn process. Sessions, ra
 ## Files
 
 - `backend/Dockerfile`: Python 3.12 slim with the locked dependencies (`uv sync --frozen --no-dev`), the code, and the demo catalog with its embedding model, generated, ingested and embedded at build time (`02-catalog.md`), so the container starts without downloading anything. The catalog stage copies only the code it runs, so it is rebuilt when the catalog code or the generator changes, not on every API change. It runs as a non-root user, has a health check on `GET /api/health`, and starts `uvicorn app.main:app` on port 8000 without auto-reload. `backend/.dockerignore` leaves out `.env`, the virtual environment, the built catalog, the tests and the evals.
-- `frontend/Dockerfile`: builds the frontend with Node 24, calling the API on its own origin (an empty `VITE_API_BASE_URL`) and taking the Turnstile site key as the `VITE_TURNSTILE_SITE_KEY` build argument, then serves the build with nginx as a non-root user on port 8080. `frontend/nginx.conf` caches the hashed files under `/assets/` for a year, makes everything else revalidate, compresses text, and sends `nosniff` and a referrer policy. `frontend/.dockerignore` leaves out `node_modules`, build output and test results.
-- `docker-compose.yml`: the two services. `backend` reads `.env`; `frontend` gets `VITE_TURNSTILE_SITE_KEY` from `.env` at build time. They publish 127.0.0.1:8000 and 127.0.0.1:8080, restart unless stopped, and rotate their logs (3 files of 10 MB).
+- `frontend/Dockerfile`: builds the frontend with Node 24, calling the API on its own origin (an empty `VITE_API_BASE_URL`) and taking the Turnstile site key as the `VITE_TURNSTILE_SITE_KEY` build argument, then serves the build with nginx as a non-root user on port 8080. `frontend/nginx.conf` caches the hashed files under `/assets/` for a year, makes everything else revalidate, compresses text, and sends `nosniff`, a referrer policy and `X-Frame-Options: DENY`. The last is a floor for when the container is reached without the server's nginx, which hides that copy and sets its own. `frontend/.dockerignore` leaves out `node_modules`, build output and test results.
+- `docker-compose.yml`: the two services. `backend` reads `.env`; `frontend` gets `VITE_TURNSTILE_SITE_KEY` from `.env` at build time. They publish 127.0.0.1:8000 and 127.0.0.1:8080, restart unless stopped, rotate their logs (3 files of 10 MB), drop every Linux capability and forbid privilege gain (`cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]`), and are capped in memory and processes (`mem_limit` and `memswap_limit` 1200m with `pids_limit` 256 for the backend, 128m and 64 for the frontend), so a leak or a burst stays inside the container instead of starving the server's nginx and sshd.
 - `.env.example`: the settings production sets, with the production values from `11-abuse-protection.md`, `LLM_PROVIDER=gemini` and empty keys. `DATA_DIR`, `CORS_ORIGINS` and `PORT` keep their defaults from `01-architecture.md`, so it leaves them out. `.env` itself is git-ignored.
 
 ## First deployment
@@ -76,10 +76,20 @@ sudo rm /etc/nginx/sites-enabled/default
 # Hide the nginx version in headers and error pages.
 server_tokens off;
 
-# Per client IP: API requests (10 a second, bursts of 20) and open connections. Chat streams hold a connection
+# The limit key: the whole address for IPv4, and the /64 for IPv6, since one visitor usually holds a whole /64
+# (11-abuse-protection.md, Client IP). nginx writes IPv6 in compressed form, so the key is the first four
+# hextets, or everything up to a "::" that comes before the fourth. A prefix whose own zero groups are compressed
+# can land in a neighbouring key; the backend's limits are exact.
+map $remote_addr $saathi_client {
+    default                                           $remote_addr;
+    "~^(?<net>([0-9a-f]{1,4}:){3}[0-9a-f]{1,4}):"     $net;
+    "~^(?<net>([0-9a-f]{1,4}:){0,2}[0-9a-f]{0,4}::)"  $net;
+}
+
+# Per client: API requests (10 a second, bursts of 20) and open connections. Chat streams hold a connection
 # for a whole turn, so the connection limit also caps simultaneous streams. Over a limit: 429, as the app answers.
-limit_req_zone $binary_remote_addr zone=saathi_api:10m rate=10r/s;
-limit_conn_zone $binary_remote_addr zone=saathi_conn:10m;
+limit_req_zone $saathi_client zone=saathi_api:10m rate=10r/s;
+limit_conn_zone $saathi_client zone=saathi_conn:10m;
 limit_req_status 429;
 limit_conn_status 429;
 
@@ -176,9 +186,10 @@ server {
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()" always;
     add_header Cross-Origin-Opener-Policy "same-origin" always;
     add_header Cross-Origin-Resource-Policy "same-origin" always;
-    # The frontend container sends two of these itself; drop its copies so each header appears once.
+    # The frontend container sends three of these itself; drop its copies so each header appears once.
     proxy_hide_header X-Content-Type-Options;
     proxy_hide_header Referrer-Policy;
+    proxy_hide_header X-Frame-Options;
 
     # Small bodies (a chat message is at most 1,000 characters) and no slow clients holding connections open.
     client_max_body_size 16k;
@@ -187,7 +198,7 @@ server {
     keepalive_timeout 30s;
 
     # The API: only the endpoints and methods the frontend calls.
-    location ~ ^/api/(sessions|chat|featured|products/) {
+    location ~ ^/api/(sessions(/|$)|chat$|featured$|products/) {
         limit_except GET POST {
             deny all;
         }
@@ -203,6 +214,11 @@ server {
         # The backend's per-IP limits read this (CLIENT_IP_HEADER=X-Real-IP). Setting it here replaces any value
         # a visitor sent, so it can't be forged.
         proxy_set_header X-Real-IP $remote_addr;
+        # The other forwarding headers are set here too, so a visitor's own values never reach the backend.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header Forwarded "";
         # Chat replies are a server-sent event stream: pass each event on at once, and allow long turns.
         proxy_buffering off;
         proxy_cache off;
@@ -225,6 +241,10 @@ server {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header Forwarded "";
     }
 }
 ```
@@ -252,6 +272,7 @@ Three settings in the HTTPS site follow from the app and need care when it chang
 curl -sI http://example.com/ | head -3                      # 301 to https://example.com/
 curl -sI https://example.com/ | grep -iE 'strict-transport|content-security|x-frame|server'
 curl -s -o /dev/null -w '%{http_code}\n' https://example.com/api/health                 # 404: internal
+curl -s -o /dev/null -w '%{http_code}\n' https://example.com/api/chatter                # 404: not an endpoint
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE https://example.com/api/featured    # 403: method not allowed
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Origin: https://evil.example' -X POST https://example.com/api/sessions   # 403
 curl -sk -o /dev/null -w '%{http_code}\n' https://<elastic-ip>/                         # fails: handshake refused
@@ -264,7 +285,7 @@ https://www.ssllabs.com/ssltest/ rates the TLS setup (expect A+ with HSTS), and 
 
 All commands run in the repository's folder on the server.
 
-- **Release:** `git pull`, then `sudo docker compose up -d --build`. Compose recreates only the containers whose image or settings changed, then `sudo docker image prune -f` removes the old images.
+- **Release:** `git pull`, then `sudo docker compose build --pull` and `sudo docker compose up -d`. `--pull` fetches the base images' latest patch releases, so a release also picks up their security fixes; without it the cached base layers are reused for as long as the tags are unchanged. Compose recreates only the containers whose image or settings changed, then `sudo docker image prune -f` removes the old images.
 - **Change a secret or setting:** edit `.env`, then `sudo docker compose up -d`, which recreates the backend with the new values. A changed `VITE_TURNSTILE_SITE_KEY` needs `sudo docker compose up -d --build frontend`, since it is built into the frontend.
 - **Pause chat:** `CHAT_ENABLED=false` in `.env`, then `sudo docker compose up -d`.
 - **Memory:** recreating the backend container resets everything it holds in memory (`11-abuse-protection.md`, State and logging). Visitors with an open chat see the expired-chat notice, and since the day's spend starts again from 0, more than one restart in a UTC day can let spending exceed `DAILY_BUDGET_USD`. A frontend-only release leaves the backend running.
@@ -280,13 +301,22 @@ Cloudflare's proxy is optional and can come any time after the domain works over
 3. Add the WAF custom rule from `11-abuse-protection.md` (Proxy requirements): URI path starts with `/api/`, action Skip, skipping every challenge feature.
 4. Check that responses come through Cloudflare: `curl -sI https://<domain>/` shows `server: cloudflare` and a `cf-ray` header.
 5. Limit inbound 80 and 443 in the security group to Cloudflare's ranges (https://www.cloudflare.com/ips/), so the instance can't be reached around the proxy.
-6. Have nginx take the visitor's address from Cloudflare, trusting the header only from Cloudflare's ranges. Rerun this when Cloudflare updates its list:
+6. Have nginx take the visitor's address from Cloudflare, trusting the header only from Cloudflare's ranges. Save this as `/usr/local/sbin/cloudflare-realip`, run it once, and have cron run it weekly (`sudo crontab -e`: `0 4 * * 1 /usr/local/sbin/cloudflare-realip`), so the list keeps up with Cloudflare's. With a stale list, connections from a new Cloudflare address keep that address as the visitor's, and every visitor behind it then shares one set of limits:
 
    ```bash
+   #!/bin/bash
+   # Writes nginx's Cloudflare real-IP settings from Cloudflare's published ranges, installing them only when
+   # both lists came through whole: a partial list is worse than the current one.
+   set -euo pipefail
+   tmp=$(mktemp)
+   v4=$(curl -fsS --max-time 10 https://www.cloudflare.com/ips-v4)
+   v6=$(curl -fsS --max-time 10 https://www.cloudflare.com/ips-v6)
    { echo "real_ip_header CF-Connecting-IP;"
-     for ip in $(curl -fsS https://www.cloudflare.com/ips-v4) $(curl -fsS https://www.cloudflare.com/ips-v6); do echo "set_real_ip_from $ip;"; done
-   } | sudo tee /etc/nginx/conf.d/cloudflare-realip.conf
-   sudo nginx -t && sudo systemctl reload nginx
+     for ip in $v4 $v6; do echo "set_real_ip_from $ip;"; done
+   } > "$tmp"
+   test "$(grep -c '^set_real_ip_from' "$tmp")" -ge 20   # Cloudflare publishes about 15 IPv4 and 7 IPv6 ranges
+   install -m 644 "$tmp" /etc/nginx/conf.d/cloudflare-realip.conf
+   nginx -t && systemctl reload nginx
    ```
 
    A rejection's log line in the backend should then show the visitor's own IP, not a Cloudflare address.

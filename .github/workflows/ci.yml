@@ -2,6 +2,9 @@
 # are needed; the paid eval suite stays a manual command (docs/07-evaluation.md).
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:

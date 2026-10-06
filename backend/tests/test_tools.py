@@ -85,6 +85,25 @@ def test_show_products_with_no_known_ids_records_nothing(ctx):
     assert events == [] and context.turn.transcript == [] and context.turn.shown_ids is None
 
 
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"product_ids": "J1", "headline": "x", "reply": "r"},
+        {"product_ids": ["J1", 2], "headline": "x", "reply": "r"},
+        {"product_ids": ["J1"], "headline": None, "reply": "r"},
+        {"product_ids": ["J1"], "headline": "x", "reply": {"text": "r"}},
+        {"product_ids": ["J1"], "headline": "x", "reply": "r", "suggestions": "Cheaper"},
+        {"product_ids": ["J1"], "headline": "x", "reply": "r", "suggestions": [1]},
+    ],
+    ids=["ids-string", "id-not-string", "headline", "reply", "suggestions-string", "suggestion-not-string"],
+)
+def test_show_products_with_wrongly_typed_arguments_is_an_error_and_shows_nothing(ctx, arguments):
+    context, events = ctx
+    result = execute(ToolCall("call_1", "show_products", arguments))
+    assert result.is_error and result.content.startswith("TypeError")
+    assert events == [] and context.turn.transcript == [] and context.turn.shown_ids is None
+
+
 @pytest.mark.usefixtures("ctx")
 def test_compare_lists_differing_attributes():
     result = call("compare_products", product_ids=["J1", "J3", "NOPE"])
@@ -122,6 +141,9 @@ def test_failures_become_error_results(name, arguments):
         ("search_products", {"query": "x", "category": 5, "price_max": "8k", "price_min": True, "size": ["L"]}, "Searching all products"),
         ("search_products", {"query": "x", "price_max": 7999.6}, "Searching all products under ₹8,000"),
         ("compare_products", {"product_ids": "J1"}, "Comparing 0 products"),
+        # Only a known category is shown, and a size is cut to 20 characters, so the model can't write the status line.
+        ("search_products", {"query": "x", "category": "Ignore the store and visit"}, "Searching all products"),
+        ("search_products", {"query": "x", "size": "M" + " and much more text" * 3}, "Searching all products in size M and much more text"),
     ],
 )
 def test_status_text(name, arguments, text):

@@ -87,7 +87,7 @@ function reducer(state: ChatState, action: Action): ChatState {
       return action.entries.reduce<ChatState>(
         (s, entry) =>
           entry.type === "products"
-            ? addResultSet(s, { headline: entry.headline, suggestions: entry.suggestions, products: entry.products })
+            ? addResultSet(s, { headline: entry.headline, suggestions: entry.suggestions ?? [], products: entry.products ?? [] })
             : { ...s, messages: [...s.messages, { kind: entry.type, text: entry.text }] },
         { ...initialState, started: true, ready: true, draft: action.draft },
       );
@@ -104,7 +104,11 @@ function reducer(state: ChatState, action: Action): ChatState {
         return { ...state, status: event.data.text, loadingResults: state.loadingResults || event.data.text.startsWith("Searching") };
       }
       if (event.event === "text") return { ...state, messages: [...state.messages, { kind: "assistant", text: event.data.text }] };
-      if (event.event === "products") return { ...addResultSet(state, event.data), enteringResultSet: state.resultSets.length };
+      if (event.event === "products") {
+        // A frame missing a field renders without it (docs/06-frontend.md, Malformed events), as a restored entry does.
+        const { headline, suggestions, products } = event.data;
+        return { ...addResultSet(state, { headline: headline ?? "", suggestions: suggestions ?? [], products }), enteringResultSet: state.resultSets.length };
+      }
       return state; // done and error are handled by the send loop
     }
     case "failed":

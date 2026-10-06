@@ -86,15 +86,30 @@ export function getProduct(productId: string) {
   return request<Product>(`/api/products/${encodeURIComponent(productId)}`);
 }
 
+/** Whether an event carries the fields docs/05-api.md gives it; a malformed one is skipped (docs/06-frontend.md, Malformed events). */
+function isWellFormed(event: string, data: unknown): boolean {
+  const fields = (data ?? {}) as Record<string, unknown>;
+  if (event === "status" || event === "text") return typeof fields.text === "string";
+  if (event === "products") return Array.isArray(fields.products);
+  return typeof data === "object" && data !== null;
+}
+
 /** Splits complete `event:`/`data:` frames off the buffer; the incomplete tail is returned as `rest`. */
-function parseEvents(buffer: string): { events: StreamEvent[]; rest: string } {
+export function parseEvents(buffer: string): { events: StreamEvent[]; rest: string } {
   const frames = buffer.split("\n\n");
   const rest = frames.pop() ?? "";
   const events = frames.flatMap((frame) => {
     const fields = Object.fromEntries(
       frame.split("\n").map((line) => [line.slice(0, line.indexOf(":")), line.slice(line.indexOf(":") + 1).trim()]),
     );
-    return fields.event && fields.data ? [{ event: fields.event, data: JSON.parse(fields.data) } as StreamEvent] : [];
+    if (!fields.event || !fields.data) return [];
+    let data: unknown;
+    try {
+      data = JSON.parse(fields.data);
+    } catch {
+      return []; // a frame whose data isn't JSON is dropped
+    }
+    return isWellFormed(fields.event, data) ? [{ event: fields.event, data } as StreamEvent] : [];
   });
   return { events, rest };
 }

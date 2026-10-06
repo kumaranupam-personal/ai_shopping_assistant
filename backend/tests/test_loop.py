@@ -8,6 +8,7 @@ from app.agent.prompt import SYSTEM_PROMPT
 from app.agent.session import SessionStore
 from app.agent.tools import TOOL_SPECS
 from app.catalog.taxonomy import CATEGORIES
+from app.limits import DailyBudget, Rejected
 from app.llm.base import LLMResponse, LLMUpstreamError, ToolCall, Usage
 from app.tracing import TraceOptions
 
@@ -51,10 +52,10 @@ def store():
     return SessionStore(ttl_minutes=60, max_turns=30)
 
 
-def run(provider, index, store, session, text="warm jacket under 3k"):
+def run(provider, index, store, session, text="warm jacket under 3k", budget=None):
     events = []
     turn = store.begin_turn(session.id)
-    record = asyncio.run(run_turn(provider, index, turn, text, lambda *e: events.append(e), OPTIONS))
+    record = asyncio.run(run_turn(provider, index, turn, text, lambda *e: events.append(e), OPTIONS, budget))
     return record, events
 
 
@@ -105,6 +106,38 @@ def test_refusal_ends_the_turn_with_a_polite_message(index, store):
     _, events = run(ScriptedProvider(reply(stop="refusal")), index, store, session)
     assert events == [("text", {"text": REFUSAL_MESSAGE})]
     assert session.transcript[-1] == {"type": "assistant", "text": REFUSAL_MESSAGE} and session.turn_count == 1
+
+
+def test_a_refused_turn_leaves_the_history_but_keeps_its_transcript(index, store):
+    session = store.create("scripted")
+    run(ScriptedProvider(reply("Hi there.")), index, store, session, text="hi")
+    before = list(session.history)
+    run(ScriptedProvider(reply(stop="tool_use", calls=[SEARCH]), reply(stop="refusal", calls=[SEARCH])), index, store, session)
+    assert session.history == before  # the refused response, with its unanswered call, is never sent again
+    assert session.transcript[-1] == {"type": "assistant", "text": REFUSAL_MESSAGE}
+    assert (session.turn_count, session.busy) == (2, False)
+
+
+class SpendingProvider(ScriptedProvider):
+    """Spends the whole budget on its first call."""
+
+    def __init__(self, budget, *responses):
+        super().__init__(*responses)
+        self.budget = budget
+
+    async def complete(self, system, history, tools):
+        self.budget.add(1)
+        return await super().complete(system, history, tools)
+
+
+def test_a_budget_spent_during_the_turn_stops_it_before_the_next_model_call(index, store):
+    session = store.create("scripted")
+    budget = DailyBudget(1)
+    provider = SpendingProvider(budget, reply(stop="tool_use", calls=[SEARCH]), reply("never sent"))
+    with pytest.raises(Rejected) as rejected:
+        run(provider, index, store, session, budget=budget)
+    assert rejected.value.code == "chat_unavailable" and len(provider.calls) == 1
+    assert (session.history, session.transcript, session.turn_count, session.busy) == ([], [], 0, False)
 
 
 @pytest.mark.parametrize(

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.limits import DailyBudget, MeteredProvider, RateLimit, Rejected
+from app.limits import DailyBudget, MeteredProvider, RateLimit, Rejected, rate_key
 from app.llm.base import Prices
 from tests.test_loop import ScriptedProvider, reply
 from tests.test_session import Clock
@@ -56,6 +56,43 @@ def test_clients_idle_past_every_window_are_forgotten():
     clock.now = 61
     limit.hit("5.6.7.8")
     assert list(limit.hits) == ["5.6.7.8"]
+
+
+def test_idle_clients_are_swept_at_most_once_a_minute():
+    clock = Clock()
+    limit = RateLimit([(5, 60)], clock)
+    limit.hit("1.2.3.4")  # at 0
+    clock.now = 10
+    limit.hit("5.6.7.8")
+    clock.now = 60
+    limit.hit("9.9.9.9")  # sweeps; 5.6.7.8 is still inside its window
+    clock.now = 100
+    limit.hit("9.9.9.9")
+    assert "5.6.7.8" in limit.hits  # idle past the window, but the last sweep was under a minute ago
+    clock.now = 120
+    limit.hit("9.9.9.9")
+    assert list(limit.hits) == ["9.9.9.9"]
+
+
+def test_ipv6_addresses_in_one_64_share_a_window():
+    limit = RateLimit([(1, 60)], Clock())
+    limit.hit(rate_key("2001:db8:1:2::1"))
+    assert retry_after(limit, rate_key("2001:db8:1:2:ffff:ffff:ffff:ffff")) == 60
+    limit.hit(rate_key("2001:db8:1:3::1"))  # another /64 has its own window
+
+
+@pytest.mark.parametrize(
+    ("ip", "key"),
+    [
+        ("2001:db8:1:2:3:4:5:6", "2001:db8:1:2::/64"),
+        ("::ffff:1.2.3.4", "1.2.3.4"),  # an IPv4 address mapped into IPv6 counts as the IPv4 address
+        ("1.2.3.4", "1.2.3.4"),
+        ("unknown", "unknown"),  # a header value that isn't an address counts as it is
+    ],
+    ids=["ipv6", "mapped-ipv4", "ipv4", "not-an-address"],
+)
+def test_rate_key(ip, key):
+    assert rate_key(ip) == key
 
 
 def test_the_budget_runs_out_at_its_limit_and_resets_at_utc_midnight():

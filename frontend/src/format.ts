@@ -16,5 +16,5 @@ export function highlightPill({ label, value }: { label: string; value: string }
   const text = (value === "yes" ? label : LABEL_AFTER_VALUE.has(label) ? `${value} ${label}` : value)
     .replace(/\b1024 GB\b/, "1 TB")
     .replace(/\b(ram|pu|eva)\b/gi, (word) => word.toUpperCase());
-  return text[0].toUpperCase() + text.slice(1);
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
 }

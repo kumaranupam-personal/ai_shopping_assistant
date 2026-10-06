@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     rate_limit_chat_per_minute: NonNegativeInt = 0
     rate_limit_chat_per_day: NonNegativeInt = 0
     max_sessions: NonNegativeInt = 0
+    max_sessions_per_ip: NonNegativeInt = 0
     max_concurrent_turns: NonNegativeInt = 0
     daily_budget_usd: PositiveFloat | None = None  # unset means no budget
     chat_enabled: bool = True
