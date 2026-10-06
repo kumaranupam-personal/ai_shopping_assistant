@@ -10,7 +10,7 @@
 - **Search service**: an in-process Python module that combines SQL filters, keyword search and vector search. See `03-search.md`.
 - **Catalog store**: a SQLite database plus a vector file, both built offline by ingesting a product file. See `02-catalog.md`.
 - **Demo data generator**: a separate folder outside the runtime app that produces the demo product file. See `02-catalog.md`.
-- **Tracing**: every agent turn is exported as an OpenTelemetry trace to Langfuse Cloud. See `10-observability.md`.
+- **Tracing**: every agent turn is an OpenTelemetry trace, exported to Langfuse Cloud when configured. See `10-observability.md`.
 - **Abuse protection**: rate limits, caps, a daily budget and a human check in the API server, for running as a public demo. See `11-abuse-protection.md`.
 
 ## Request flow
@@ -125,7 +125,7 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 
 Their values for Langfuse, and what message text covers, are in `10-observability.md`.
 
-- `CLIENT_IP_HEADER`: request header that carries the client IP, such as `CF-Connecting-IP`. Default: unset, which uses the TCP peer address.
+- `CLIENT_IP_HEADER`: request header that carries the client IP, such as `X-Real-IP`. Default: unset, which uses the TCP peer address.
 - `RATE_LIMIT_SESSIONS_PER_HOUR`: new sessions per client IP per rolling hour. Default `0` (off).
 - `RATE_LIMIT_CHAT_PER_MINUTE`: messages per client IP per rolling minute. Default `0` (off).
 - `RATE_LIMIT_CHAT_PER_DAY`: messages per client IP per rolling 24 hours. Default `0` (off).

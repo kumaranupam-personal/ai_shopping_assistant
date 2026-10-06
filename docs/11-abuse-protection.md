@@ -9,7 +9,7 @@ Every limit is a configuration variable from `01-architecture.md`. A count limit
 Per-IP limits key on the client IP address.
 
 - With `CLIENT_IP_HEADER` unset, the client IP is the address of the TCP peer.
-- With it set, such as to `CF-Connecting-IP`, the client IP is that header's value, falling back to the TCP peer when the header is missing. This is safe only when the origin accepts traffic from the proxy alone, because otherwise anyone can send the header.
+- With it set, such as to `X-Real-IP`, the client IP is that header's value, falling back to the TCP peer when the header is missing. This is safe only when the origin accepts traffic from the proxy alone, because otherwise anyone can send the header.
 
 ## Checks
 
@@ -66,7 +66,7 @@ The proxy in front of the app must never answer a request under `/api/` with a c
 
 Suggested settings for the public demo, set in its `.env`:
 
-- `CLIENT_IP_HEADER=CF-Connecting-IP`
+- `CLIENT_IP_HEADER=X-Real-IP`, which the server's nginx sets to the visitor's address, with or without Cloudflare in front (see `13-deployment.md`).
 - `RATE_LIMIT_SESSIONS_PER_HOUR=10`, `RATE_LIMIT_CHAT_PER_MINUTE=10`, `RATE_LIMIT_CHAT_PER_DAY=100`
 - `MAX_SESSIONS=1000`, `MAX_CONCURRENT_TURNS=10`
 - `DAILY_BUDGET_USD=2`

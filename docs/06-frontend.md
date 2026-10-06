@@ -212,7 +212,7 @@ The cart is a list of products the user has picked, kept only in the browser. Th
 ## Components
 
 - `App`: owns the client state and lays out the shell.
-- `Header`: the wordmark, `ThemeSwitch`, the cart button and the "New chat" button.
+- `Header`: the wordmark, the about link, `ThemeSwitch`, the cart button and the "New chat" button.
 - `Landing`: the landing described under Layout and "Loading, empty and error states". It holds the heading, `Composer`, the prompt cards, the category chips and the featured products.
 - `ChatPanel`: holds `MessageList`, `StatusLine` and `Composer`.
 - `MessageList`: user and assistant messages, plus a result marker for each `products` event. It ends with the typing indicator while a turn waits for its first reply. A marker shows its result set's headline on one line, cut with an ellipsis, above "{n} products" ("1 product" for one). Its accessible name is "Show {n} products: {headline}", and clicking it restores that result set. The list auto-scrolls to new messages unless the user has scrolled up, in which case a "Jump to latest" button appears.
