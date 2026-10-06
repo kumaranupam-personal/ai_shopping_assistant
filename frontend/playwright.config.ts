@@ -5,10 +5,11 @@ export default defineConfig({
   testDir: "tests",
   fullyParallel: true,
   reporter: "list",
-  use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173" },
+  // The app lives under /saathi/, so tests open "./" for the chat and "./about/" for the about page.
+  use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:4173/saathi/" },
   webServer: {
     command: "npm run build && npm run preview -- --port 4173 --strictPort",
-    url: "http://localhost:4173",
+    url: "http://localhost:4173/saathi/",
     reuseExistingServer: false,
   },
 });

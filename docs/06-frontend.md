@@ -4,7 +4,7 @@
 
 React 19, TypeScript, Vite and Tailwind CSS v4, which includes container queries. Small helper libraries only: `lucide-react` for icons, `@fontsource-variable/figtree` and `@fontsource-variable/fraunces` for the self-hosted fonts, and `clsx`. No component library. Playwright runs the browser tests in `07-evaluation.md`.
 
-This doc covers the chat, served at `/`. The build has a second page, specified in `12-about-page.md`, which shares the tokens, the fonts and the theme described here.
+This doc covers the chat, served at `/saathi/` (see `13-deployment.md`, Paths). The build has a second page, specified in `12-about-page.md`, which shares the tokens, the fonts and the theme described here.
 
 ## Brand
 
@@ -175,7 +175,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
 - **Unavailable product:** if the drawer's fetch returns `product_not_found`, the drawer shows "This product is no longer available." Any other failure shows "Couldn't load this product. Try again."
 - **Images:** a product with an `image_url` loads it lazily, showing a skeleton block while loading. While the product drawer loads its product, it shows a skeleton block in the banner's shape. A product without one, or whose image fails to load, shows its product tile. An `image_url` that doesn't start with `http://` or `https://` counts as none.
 - **Errors:** apart from the cases handled in "Session lifecycle", an `error` event or a non-200 response shows an inline error row in the chat with a "Retry" button. Retry removes the error row and resends the same text without adding a second user message. A stream that ends before `done` or `error` shows "The connection closed before the reply finished." A lost network connection shows a non-blocking banner under the header until the browser reports it's back online.
-- **Render failure:** an error boundary around the chat catches any error while rendering, so the page is never left blank. It shows "Something went wrong showing this chat." with a "Start a new chat" button, which removes `sessionId` and `pendingMessage` from `sessionStorage` and reloads the page. Reloading alone would restore the same transcript and fail again. The cart stays.
+- **Render failure:** an error boundary around the chat catches any error while rendering, so the page is never left blank. It shows "Something went wrong showing this chat." with a "Start a new chat" button, which removes `saathi.sessionId` and `saathi.pendingMessage` from `sessionStorage` and reloads the page. Reloading alone would restore the same transcript and fail again. The cart stays.
 - **Malformed events:** a stream frame whose `data` isn't valid JSON, or an event without the fields `05-api.md` gives it (`text` on `status` and `text` events, a `products` list on `products` events), is skipped rather than shown or thrown, so one bad frame can't end the chat or blank the page. A product card or restored entry missing a field renders without it.
 
 ## Cart
@@ -183,7 +183,7 @@ This doc covers the chat, served at `/`. The build has a second page, specified 
 The cart is a list of products the user has picked, kept only in the browser. The server and the agent never see it, and it has no checkout.
 
 - **Items:** an item is a product ID, a size and a color. The size is null for a product without sizes. Two items are the same only when all three match, so one product can be in the cart in several sizes or colors. There are no quantities.
-- **Storage:** the items are saved in `localStorage` under `cart` as a JSON array of `{"id", "size", "color"}`, in the order they were added. A value that can't be read counts as an empty cart, and when storage is blocked the cart lasts for the page only. A change made in one tab shows in the other open tabs. A new chat, an expired session and a reload all leave the cart as it is.
+- **Storage:** the items are saved in `localStorage` under `saathi.cart` as a JSON array of `{"id", "size", "color"}`, in the order they were added. A value that can't be read counts as an empty cart, and when storage is blocked the cart lasts for the page only. A change made in one tab shows in the other open tabs. A new chat, an expired session and a reload all leave the cart as it is.
 - **Cart button:** in the header, a 32 px square button with 8 px corners on `surface` with a `line` border, holding the `ShoppingBag` icon. When the cart has items, a fully rounded badge on its top-right corner shows their number at 12 px in weight 600, `accent-fg` on `accent`. Its accessible name is "Cart" when empty, and otherwise "Cart, {n} items" ("Cart, 1 item" for one). Clicking it opens the cart panel.
 - **Choosing in the product drawer:** once the product has loaded, the drawer shows:
   - For a product with sizes, a radio group labelled "Size": one chip per size at 14 px, on `surface` with a `line-strong` border and 8 px corners, or `accent-fg` on `accent` when selected. No size is selected at first.
@@ -238,6 +238,8 @@ The cart is a list of products the user has picked, kept only in the browser. Th
 - Text and controls meet WCAG AA contrast in both themes. The token values under Theme are chosen so that every pairing this doc names does.
 
 ## Client state
+
+The values kept in browser storage are saved under their name with the prefix `saathi.`, such as `saathi.sessionId`, because storage belongs to the whole domain and other projects may share it (`13-deployment.md`, Paths).
 
 - `sessionId`: kept in `sessionStorage`, so it survives a reload and the browser's "reopen closed tab" but isn't shared with other tabs. A new tab starts a new conversation.
 - `pendingMessage`: the text of the message being sent, kept in `sessionStorage` from send until `done` or `error`.

@@ -23,14 +23,14 @@ const undoRow = (page: Page) => cartPanel(page).getByRole("status");
 const undoText = (page: Page) => cartPanel(page).getByText(/^Removed /);
 const card = (page: Page, title: string) => page.getByRole("button", { name: new RegExp(`^${title}, ₹`) }).filter({ visible: true });
 const names = (page: Page) => rows(page).getByRole("button").evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
-const storedCart = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("cart") ?? "null"));
+const storedCart = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("saathi.cart") ?? "null"));
 
 /** Puts items in the cart before the app first loads in this tab (not again on reload). */
 async function seedCart(page: Page, items: CartItem[] | string) {
   await page.addInitScript((value) => {
     if (sessionStorage.getItem("cart-seeded")) return;
     sessionStorage.setItem("cart-seeded", "1");
-    localStorage.setItem("cart", typeof value === "string" ? value : JSON.stringify(value));
+    localStorage.setItem("saathi.cart", typeof value === "string" ? value : JSON.stringify(value));
   }, items);
 }
 
@@ -46,7 +46,7 @@ async function openCart(page: Page) {
 
 test("the action bar shows each state, a size must be chosen, and a second size adds a second item", async ({ page }) => {
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
   await expect(cartButton(page)).toHaveAccessibleName("Cart");
 
@@ -92,7 +92,7 @@ test("the action bar shows each state, a size must be chosen, and a second size 
 
 test("a product without sizes can be added at once", async ({ page }) => {
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
   await openDrawer(page, WATCH.title);
   await expect(drawer(page).getByRole("radiogroup", { name: "Size" })).toHaveCount(0);
@@ -117,7 +117,7 @@ test("the panel lists items with size, color and current price, and the subtotal
       body: JSON.stringify({ ...FLEECE, card: { ...FLEECE.card, price: 3999 } }),
     }),
   );
-  await page.goto("/");
+  await page.goto("./");
   await expect(cartButton(page)).toHaveAccessibleName("Cart, 3 items");
   await openCart(page);
   await expect.poll(() => names(page)).toEqual([
@@ -141,7 +141,7 @@ test("a row opens its product with that size and color selected", async ({ page 
     { id: WATCH.id, size: null, color: "black" },
   ]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await openCart(page);
   await rows(page).getByRole("button", { name: new RegExp(`^${FLEECE.title}`) }).click();
   await expect(cartPanel(page)).toHaveCount(0); // one panel at a time
@@ -162,7 +162,7 @@ test("removing updates the count and subtotal, Undo puts the item back in place,
     { id: WATCH.id, size: null, color: "silver" },
   ]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await openCart(page);
   await expect(subtotal(page)).toHaveText("₹22,647"); // 4,089 + 1,589 + 16,969
 
@@ -195,7 +195,7 @@ test("removing updates the count and subtotal, Undo puts the item back in place,
 test("the undo row goes after 5 seconds", async ({ page }) => {
   await seedCart(page, [{ id: DENIM.id, size: "S", color: "grey" }]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await openCart(page);
   await cartPanel(page).getByRole("button", { name: `Remove ${DENIM.title}` }).click();
   await expect(undoRow(page)).toHaveText(`Removed ${DENIM.title}.Undo`);
@@ -214,7 +214,7 @@ test("a removed catalog product is dropped, and a failed fetch shows its row mes
   ]);
   await mockApi(page, []);
   await page.route(`${API}/products/JKT-00003`, (route) => route.fulfill({ status: 500, headers: { "Access-Control-Allow-Origin": "*" } }));
-  await page.goto("/");
+  await page.goto("./");
   await openCart(page);
   await expect(rows(page)).toHaveCount(2);
   await expect(cartButton(page)).toHaveAccessibleName("Cart, 2 items");
@@ -231,7 +231,7 @@ test("a removed catalog product is dropped, and a failed fetch shows its row mes
 
 test("the cart survives a reload and a new chat", async ({ page }) => {
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await openDrawer(page, FLEECE.title);
   await drawer(page).getByRole("radio", { name: "XL", exact: true }).check();
@@ -254,7 +254,7 @@ test("a grid card in the cart shows the mark, and a strip card doesn't", async (
     { id: DOWN.id, size: "M", color: "blue" },
   ]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   const inCart = page.getByRole("button", { name: `${FLEECE.title}, ₹4,089, in cart` });
   await expect(inCart).toBeVisible();
   await expect(inCart.locator("[data-in-cart] svg.lucide-check")).toBeVisible();
@@ -277,7 +277,7 @@ test("a grid card in the cart shows the mark, and a strip card doesn't", async (
 test("Checkout does nothing and explains why", async ({ page }) => {
   await seedCart(page, [{ id: DENIM.id, size: "S", color: "grey" }]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await openCart(page);
   const checkout = cartPanel(page).getByRole("button", { name: "Checkout" });
   await expect(checkout).toHaveAttribute("aria-disabled", "true");
@@ -291,7 +291,7 @@ test("Checkout does nothing and explains why", async ({ page }) => {
 test("focus returns to the opener, or to the cart button when the opener is gone", async ({ page }) => {
   await seedCart(page, [{ id: DENIM.id, size: "S", color: "grey" }]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
 
   await openDrawer(page, FLEECE.title); // a card opens the drawer
   await page.keyboard.press("Escape");
@@ -320,7 +320,7 @@ test("focus returns to the opener, or to the cart button when the opener is gone
 test("the cart sends no request other than GET /api/products/{id}", async ({ page }) => {
   await seedCart(page, [{ id: DENIM.id, size: "S", color: "grey" }]);
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await expect(page.getByRole("heading", { name: "Popular picks" })).toBeVisible();
   const requests: string[] = [];
@@ -347,7 +347,7 @@ test("the cart sends no request other than GET /api/products/{id}", async ({ pag
 test("an unreadable saved cart counts as empty, and blocked storage keeps the cart for the page", async ({ page }) => {
   await seedCart(page, '{"not": "a cart"}');
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   await expect(cartButton(page)).toHaveAccessibleName("Cart");
 
   await page.addInitScript(() => {
@@ -366,10 +366,10 @@ test("an unreadable saved cart counts as empty, and blocked storage keeps the ca
 
 test("a change in one tab shows in another open tab", async ({ page, context }) => {
   await mockApi(page, []);
-  await page.goto("/");
+  await page.goto("./");
   const other = await context.newPage();
   await mockApi(other, []);
-  await other.goto("/");
+  await other.goto("./");
   await expect(cartButton(other)).toHaveAccessibleName("Cart");
 
   await openDrawer(page, FLEECE.title);

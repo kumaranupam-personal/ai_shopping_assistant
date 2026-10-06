@@ -20,22 +20,37 @@ function aboutMeta(): Plugin {
   };
 }
 
-/** Redirects /about to /about/ in dev and preview, which would otherwise serve the chat, as nginx does in production. */
-function aboutSlash(): Plugin {
+/** Where the app lives on its domain (docs/13-deployment.md, Paths). */
+const BASE = "/saathi/";
+
+// Path -> [status, location]. The domain root redirects only for now (302), since another page may take it later.
+const REDIRECTS: Record<string, [number, string]> = {
+  "/": [302, BASE],
+  "/saathi": [301, BASE],
+  "/about": [301, `${BASE}about/`],
+  "/about/": [301, `${BASE}about/`],
+  "/saathi/about": [301, `${BASE}about/`],
+};
+
+/** The redirects the frontend container's nginx makes in production, in dev and preview too. */
+function redirects(): Plugin {
   const redirect = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use((req, res, next) => {
       const [path, query] = (req.url ?? "").split(/\?(.*)/s);
-      if (path !== "/about") return next();
-      res.writeHead(301, { Location: query ? `/about/?${query}` : "/about/" });
+      const target = REDIRECTS[path];
+      if (!target) return next();
+      res.writeHead(target[0], { Location: query ? `${target[1]}?${query}` : target[1] });
       res.end();
     });
   };
-  return { name: "about-slash", configureServer: redirect, configurePreviewServer: redirect };
+  return { name: "redirects", configureServer: redirect, configurePreviewServer: redirect };
 }
 
-// Two pages: the chat at / and the about page at /about/ (docs/12-about-page.md), in dev, the build and preview.
+// Two pages under BASE: the chat at /saathi/ and the about page at /saathi/about/ (docs/12-about-page.md), in dev, the
+// build and preview.
 export default defineConfig({
-  plugins: [react(), tailwindcss(), aboutMeta(), aboutSlash()],
+  base: BASE,
+  plugins: [react(), tailwindcss(), aboutMeta(), redirects()],
   server: { port: 5173, strictPort: true },
   build: {
     rollupOptions: {

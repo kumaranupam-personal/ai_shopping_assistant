@@ -140,7 +140,7 @@ How these settings apply, and suggested production values, are in `11-abuse-prot
 
 The frontend reads these variables:
 
-- `VITE_API_BASE_URL`: API server base URL. Default `http://localhost:8000`.
+- `VITE_API_BASE_URL`: API server base URL; the frontend calls `<base>/api/...`. Default `http://localhost:8000`. The production build sets `/saathi` (`13-deployment.md`, Paths).
 - `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key. Default: unset, which loads no widget.
 
 ## Local development
@@ -155,4 +155,4 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
 8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. Case IDs as arguments run only those cases, and `--cases <path>` reads another case file.
-9. `npm install && npm run dev` serves the UI on port 5173. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.
+9. `npm install && npm run dev` serves the UI at `http://localhost:5173/saathi/`. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.

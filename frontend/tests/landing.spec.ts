@@ -11,7 +11,7 @@ const CATEGORY_NAMES = ["Jackets", "Shoes", "Phones", "Laptops", "Backpacks", "W
 
 async function openLanding(page: Page) {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await expect(heading(page)).toBeVisible();
 }
@@ -34,7 +34,7 @@ test("the heading, composer, 4 prompt cards and 8 category chips show at wide an
 test("the header's about link opens the about page in a new tab, as text, an icon button or not at all by width", async ({ page }) => {
   await openLanding(page);
   const link = page.getByRole("banner").getByRole("link", { name: "How Saathi works" });
-  await expect(link).toHaveAttribute("href", "/about/");
+  await expect(link).toHaveAttribute("href", "/saathi/about/");
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", /noopener/);
   const wordmarkFits = () => page.getByRole("banner").getByText("Saathi", { exact: true }).evaluate((el) => el.scrollWidth <= el.clientWidth);
@@ -88,7 +88,7 @@ test("the kurta prompt card and a category chip send their documented messages",
 
 test("a new chat brings the landing back", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await expect(heading(page)).toHaveCount(0);
   await page.getByRole("banner").getByRole("button", { name: "New chat" }).click();
@@ -99,7 +99,7 @@ test("a new chat brings the landing back", async ({ page }) => {
 
 test("the main area stays empty while a restore loads", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await page.route(`${API}/sessions/*`, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -154,9 +154,9 @@ test("a first visit shows the landing while its session is created, and keeps wh
     if (route.request().method() === "POST") await new Promise((resolve) => setTimeout(resolve, 600));
     await route.fallback();
   });
-  await page.goto("/");
+  await page.goto("./");
   await expect(heading(page)).toBeVisible();
-  expect(await page.evaluate(() => sessionStorage.getItem("sessionId"))).toBeNull(); // shown before the session exists
+  expect(await page.evaluate(() => sessionStorage.getItem("saathi.sessionId"))).toBeNull(); // shown before the session exists
   await expect(prompts(page).first()).toBeDisabled();
   await page.getByLabel("Message").fill("half-typed");
   await sessionReady(page);
@@ -169,7 +169,7 @@ test("without a session, the send button, prompt cards and category chips are in
   await page.route(`${API}/sessions`, (route) =>
     route.request().method() === "OPTIONS" ? route.fallback() : route.fulfill({ status: 503, headers: { "Access-Control-Allow-Origin": "*" } }),
   );
-  await page.goto("/");
+  await page.goto("./");
   await expect(heading(page)).toBeVisible();
   await expect(page.getByRole("status").getByText("Can't reach the store right now. Reload the page to try again.")).toBeVisible();
   for (const button of await prompts(page).all()) await expect(button).toBeDisabled();

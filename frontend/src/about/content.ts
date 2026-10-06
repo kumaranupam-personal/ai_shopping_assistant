@@ -61,7 +61,7 @@ export const about = {
   title: "How Saathi works",
   description: "How an AI agent turns a shopping request into a catalog search, step by step.",
   repositoryUrl: REPOSITORY,
-  chatUrl: "/",
+  chatUrl: "/saathi/",
 
   header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", cta: "Try Saathi" },
 

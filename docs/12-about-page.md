@@ -4,7 +4,7 @@ A page that explains the project to engineers and recruiters: what it does, how 
 
 ## Serving and isolation
 
-- The page is a second entry in the frontend build: `frontend/about/index.html` loads `frontend/src/about/main.tsx`, and the build writes it to `dist/about/index.html`. It's served at `/about/`, and in development at `http://localhost:5173/about/`. `/about` redirects there with a relative `Location`, from the frontend container's nginx in production and from a Vite plugin in development and preview. The chat stays at `/`.
+- The page is a second entry in the frontend build: `frontend/about/index.html` loads `frontend/src/about/main.tsx`, and the build writes it to `dist/about/index.html`. It's served at `/saathi/about/`, and in development at `http://localhost:5173/saathi/about/`. Its old addresses `/about` and `/about/`, and `/saathi/about`, redirect there (`13-deployment.md`, Paths). The chat is at `/saathi/`.
 - The page is static. Loading it, and using everything on it, sends no request other than for its own files from the same origin: nothing to the API, to Cloudflare Turnstile or to Langfuse. It creates no session.
 - Its code imports none of the chat's modules for the API client, the chat state, Turnstile or the cart. It shares only the design tokens, the fonts, the theme and `ThemeSwitch` from `06-frontend.md`.
 - It uses the favicon from `06-frontend.md`. Its document title and meta description come from the content file.
@@ -33,7 +33,7 @@ Section headings other than the hero's and the closing band's are Fraunces at 30
 
 ## Links
 
-- **Call to action:** in the header, the hero and the closing band. Each opens `/`, the chat, in a new tab.
+- **Call to action:** in the header, the hero and the closing band. Each opens `/saathi/`, the chat, in a new tab.
 - **Repository and trace links:** open in a new tab.
 - Every link that opens a new tab has `rel="noopener"` and shows the `ArrowUpRight` icon after its text.
 - **In-page links:** scroll the replay section to the top of the view, smoothly, or at once under `prefers-reduced-motion`.
@@ -104,6 +104,6 @@ An inline SVG drawn in a 680 by 330 coordinate space and scaled to the section's
 The page is done only when all of these hold:
 
 - At the widths listed in the quality bar of `06-frontend.md`, in both themes, there is no horizontal page scroll and no clipped or overlapping element, on every step of every turn.
-- Lighthouse scores for `/about/` in a desktop production build meet the minimums in `06-frontend.md`.
+- Lighthouse scores for `/saathi/about/` in a desktop production build meet the minimums in `06-frontend.md`.
 - No console errors or warnings while loading the page and stepping through every turn.
 - Loading the page, stepping through every turn and switching the theme send no request outside the page's own origin.

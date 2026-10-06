@@ -8,7 +8,7 @@ const headline = (page: Page) => page.getByRole("heading", { name: FEATURED.head
 
 test("they show on the landing as the grid at wide widths and the strip at narrow ones, and open the drawer", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByRole("heading", { level: 1, name: "What are you shopping for?" })).toBeVisible();
   await expect(headline(page)).toBeVisible();
   const grid = page.locator("main .\\@container").filter({ visible: true });
@@ -26,7 +26,7 @@ test("they show on the landing as the grid at wide widths and the strip at narro
 
 test("after a first message they stay until the first result set replaces them, and a new chat brings them back", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }, LADAKH_TURN]); // the first turn hangs until New chat drops it
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");
   await page.getByLabel("Message").press("Enter");
@@ -46,7 +46,7 @@ test("after a first message they stay until the first result set replaces them, 
 
 test("a restored session with results never shows them, even while the restore is still loading", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   // Slow the restore so the featured list arrives first, and record whether the featured headline ever appears.
   await page.route(`${API}/sessions/*`, async (route) => {
@@ -66,7 +66,7 @@ test("a restored session with results never shows them, even while the restore i
 test("when the request fails, the landing has no featured section and the wide panel shows its placeholder", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }]);
   await page.route(`${API}/featured`, (route) => route.fulfill({ status: 500, headers: { "Access-Control-Allow-Origin": "*" } }));
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await expect(page.getByRole("list", { name: "Categories" })).toBeVisible();
   await expect(headline(page)).toHaveCount(0);

@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 /** One product in one size (null when it has none) and one color. Equal only when all three match. */
 export type CartItem = { id: string; size: string | null; color: string };
 
-const STORAGE_KEY = "cart";
+const STORAGE_KEY = "saathi.cart";
 
 export const sameItem = (a: CartItem, b: CartItem) => a.id === b.id && a.size === b.size && a.color === b.color;
 

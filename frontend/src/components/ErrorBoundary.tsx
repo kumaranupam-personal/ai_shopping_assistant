@@ -1,10 +1,12 @@
 import { Component, type ReactNode } from "react";
 
+import { PENDING_MESSAGE_KEY, SESSION_ID_KEY } from "../useChat";
+
 /** Removes the stored chat and reloads, so the page starts a new session instead of restoring the one that failed. */
 function startNewChat() {
   try {
-    sessionStorage.removeItem("sessionId");
-    sessionStorage.removeItem("pendingMessage");
+    sessionStorage.removeItem(SESSION_ID_KEY);
+    sessionStorage.removeItem(PENDING_MESSAGE_KEY);
   } catch {
     // blocked storage: nothing was stored, so the reload starts fresh anyway
   }

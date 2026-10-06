@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 export type Theme = "system" | "light" | "dark";
 
-const STORAGE_KEY = "theme"; // also read by the inline script in index.html
+const STORAGE_KEY = "saathi.theme"; // also read by the inline script in index.html and about/index.html
 const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
 
 function savedTheme(): Theme {

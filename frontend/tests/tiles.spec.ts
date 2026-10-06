@@ -87,7 +87,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await mockApi(page, [TURN]);
     await page.route("https://placehold.co/**", (route) => route.fulfill({ status: 404 })); // the one image fails
-    await page.goto("/");
+    await page.goto("./");
     // Jackets and kurtas have icons of their own, unlike each other and every other category's (the chips share them).
     const chipIcons = await page.getByRole("list", { name: "Categories" }).locator("svg").evaluateAll((icons) => icons.map((icon) => icon.getAttribute("class")));
     expect(chipIcons).toHaveLength(8);
@@ -120,7 +120,7 @@ for (const colorScheme of ["light", "dark"] as const) {
   test(`a card with an image shows the brand under it and no label (${colorScheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
     await mockApi(page, [TURN]);
-    await page.goto("/");
+    await page.goto("./");
     await send(page, "warm jacket under 8k", TURN);
     const card = cardButton(results(page), FLEECE.title);
     await expect(card.locator("img")).toHaveJSProperty("complete", true);
@@ -133,11 +133,11 @@ for (const colorScheme of ["light", "dark"] as const) {
   test(`strip tiles and cart rows show the icon on the tint, with no dots or label (${colorScheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme });
     await page.addInitScript(() =>
-      localStorage.setItem("cart", JSON.stringify([{ id: "KRT-00001", size: "M", color: "gold" }, { id: "JKT-00008", size: "L", color: "silver" }])),
+      localStorage.setItem("saathi.cart", JSON.stringify([{ id: "KRT-00001", size: "M", color: "gold" }, { id: "JKT-00008", size: "L", color: "silver" }])),
     );
     await page.setViewportSize({ width: 375, height: 800 });
     await mockApi(page, [TURN]);
-    await page.goto("/");
+    await page.goto("./");
     await send(page, "warm jacket under 8k", TURN);
 
     const check = async (tiles: Locator, ids: Id[]) => {
@@ -164,7 +164,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme });
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockApi(page, [TURN]);
-    await page.goto("/");
+    await page.goto("./");
     await send(page, "warm jacket under 8k", TURN);
 
     await cardButton(results(page), KURTA.title).click();
@@ -218,7 +218,7 @@ test("the drawer's loading skeleton has the banner's shape", async ({ page }) =>
     await held;
     await route.fallback();
   });
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
   await cardButton(results(page), KURTA.title).click();
   const skeleton = drawer(page).getByLabel("Loading");

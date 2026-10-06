@@ -15,7 +15,7 @@ export default function Header({ onNewChat, onOpenCart, cartButton }: Props) {
       <div className="flex shrink-0 items-center gap-2">
         {/* A text link from 640 px, an icon button below that, and nothing below 360 px, where the header has no room. */}
         <a
-          href="/about/"
+          href={`${import.meta.env.BASE_URL}about/`}
           target="_blank"
           rel="noopener"
           className="grid size-8 place-items-center rounded-lg border border-line bg-surface transition-colors duration-150 ease-out hover:border-line-strong max-[359px]:hidden sm:mr-2 sm:flex sm:size-auto sm:gap-1 sm:border-0 sm:bg-transparent sm:text-sm sm:font-medium sm:text-fg-muted sm:hover:text-fg"

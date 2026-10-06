@@ -19,7 +19,7 @@ const timings = (elements: Locator) =>
 
 test("the typing indicator shows while a turn waits for its reply", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");
   await page.getByLabel("Message").press("Enter");
@@ -28,7 +28,7 @@ test("the typing indicator shows while a turn waits for its reply", async ({ pag
 
 test("when the reply arrives the indicator goes, and the new cards enter one after another, the last by 480 ms", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await expect(typingDots(page)).toHaveCount(0);
   expect(await delays(page)).toEqual(["0s", "0.06s", "0.12s", "0.18s", "0.24s", "0.3s", "0.36s", "0.42s"]);
@@ -39,7 +39,7 @@ const enteringCards = (page: Page) => page.locator("main .animate-rise").filter(
 
 test("the featured cards enter on the landing, and leaving the landing doesn't replay it", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }]);
-  await page.goto("/");
+  await page.goto("./");
   await expect(enteringCards(page)).toHaveCount(FEATURED.products.length); // the featured list's first appearance
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");
@@ -50,7 +50,7 @@ test("the featured cards enter on the landing, and leaving the landing doesn't r
 
 test("reselecting an earlier result set, restoring a session or a new chat doesn't replay the entrance", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN, WATERPROOF_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await send(page, "only waterproof", WATERPROOF_TURN);
   await expect(gridCards(page)).toHaveCount(WATERPROOF_TURN.ids.length);
@@ -74,7 +74,7 @@ test("reselecting an earlier result set, restoring a session or a new chat doesn
 test("under reduced motion, cards appear at once, the typing dots stay still and a hovered card doesn't rise", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await mockApi(page, [LADAKH_TURN, { ...WATERPROOF_TURN, hang: true }]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   expect(await timings(gridCards(page))).toEqual(["0s 0s 1"]);
   const card = page.getByRole("region", { name: "Results" }).getByRole("button", { name: /, ₹/ }).filter({ visible: true }).first();

@@ -5,7 +5,7 @@ import { API, LADAKH_TURN, WATERPROOF_TURN, message, mockApi, send, sessionReady
 
 test("a suggestion chip keeps a half-typed draft", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN, WATERPROOF_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await page.getByLabel("Message").fill("half-typed");
   await page.getByRole("button", { name: "Only waterproof" }).click();
@@ -16,7 +16,7 @@ test("a suggestion chip keeps a half-typed draft", async ({ page }) => {
 test("New chat clears \"Jump to latest\" left over from scrolling up", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 500 });
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   for (let i = 0; i < 3; i++) await send(page, "warm jacket ".repeat(40), LADAKH_TURN);
   await page.getByRole("region", { name: "Chat" }).locator(".overflow-y-auto").evaluate((el) => el.scrollTo({ top: 0 }));
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
@@ -27,7 +27,7 @@ test("New chat clears \"Jump to latest\" left over from scrolling up", async ({ 
 test("the results sheet stays usable after widening past the narrow layout", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 800 });
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await page.getByRole("button", { name: /^View all/ }).click();
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -43,7 +43,7 @@ test("Jump to latest jumps without smooth scrolling under reduced motion", async
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 1280, height: 500 });
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   for (let i = 0; i < 3; i++) await send(page, "warm jacket ".repeat(40), LADAKH_TURN);
   const list = page.getByRole("region", { name: "Chat" }).locator(".overflow-y-auto");
   await list.evaluate((el) => el.scrollTo({ top: 0 }));
@@ -54,7 +54,7 @@ test("Jump to latest jumps without smooth scrolling under reduced motion", async
 
 test("a New chat that can't create a session keeps the running turn", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");
   await page.getByLabel("Message").press("Enter");

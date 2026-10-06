@@ -1,5 +1,5 @@
 // `npm run lighthouse`: builds the app, serves the production build and checks Lighthouse desktop scores for the chat
-// at / and the about page at /about/ against the quality bars in docs/06-frontend.md and docs/12-about-page.md. A
+// at /saathi/ and the about page at /saathi/about/ against the quality bars in docs/06-frontend.md and docs/12-about-page.md. A
 // minimal stand-in API answers the chat's first page load (a session and the featured products), so no backend is
 // needed; the about page makes no API calls.
 import { createServer } from "node:http";
@@ -13,7 +13,7 @@ import { build, preview } from "vite";
 import { FEATURED } from "../tests/mock-api.ts";
 
 const MINIMUM = { performance: 90, accessibility: 95, "best-practices": 95 };
-const PAGES = ["/", "/about/"];
+const PAGES = ["/saathi/", "/saathi/about/"];
 
 const api = createServer((request, response) => {
   response.setHeader("Access-Control-Allow-Origin", "*");
