@@ -96,7 +96,8 @@ function MessageRow({ message, resultSets, selected, onSelect, onRetry, onNewCha
       );
     case "marker": {
       const set = resultSets[message.resultSet];
-      const count = `${set.products.length} ${set.products.length === 1 ? "product" : "products"}`;
+      const products = set.products ?? [];
+      const count = `${products.length} ${products.length === 1 ? "product" : "products"}`;
       const isSelected = selected === message.resultSet;
       return (
         <button

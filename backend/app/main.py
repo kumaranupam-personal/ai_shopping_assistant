@@ -14,11 +14,18 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agent.loop import TurnLimitError, run_turn
-from app.agent.session import ServerBusyError, SessionFullError, SessionNotFoundError, SessionStore, TurnInProgressError
+from app.agent.session import (
+    ClientSessionsError,
+    ServerBusyError,
+    SessionFullError,
+    SessionNotFoundError,
+    SessionStore,
+    TurnInProgressError,
+)
 from app.catalog.cards import attribute_details, build_card, featured_cards
 from app.catalog.store import fetch_products
 from app.config import Settings
-from app.limits import DailyBudget, MeteredProvider, RateLimit, Rejected, client_ip, log_rejection, verify_turnstile
+from app.limits import DailyBudget, MeteredProvider, RateLimit, Rejected, client_ip, log_rejection, rate_key, verify_turnstile
 from app.llm.base import LLMConfigError, LLMProvider, LLMUpstreamError
 from app.llm.registry import build_provider
 from app.search.index import SearchIndex, load_index
@@ -57,7 +64,7 @@ class SessionRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    session_id: str
+    session_id: str = Field(max_length=64)
     message: str = Field(max_length=1000, pattern=r"\S")  # at least one non-space character
 
 
@@ -68,6 +75,8 @@ def error_response(status: int, code: str, headers: dict[str, str] | None = None
 def stream_error_code(error: BaseException) -> str:
     if type(error) in HTTP_ERRORS:
         return HTTP_ERRORS[type(error)][1]
+    if isinstance(error, Rejected):  # today's budget ran out during the turn
+        return error.code
     if isinstance(error, TurnLimitError):
         return "turn_limit"
     if isinstance(error, LLMUpstreamError):
@@ -84,6 +93,7 @@ async def stream_turn(
     text: str,
     options: TraceOptions,
     client: str | None = None,
+    budget: DailyBudget | None = None,
 ) -> AsyncIterator[str]:
     """Streams one turn's events, ending with `done` or `error`. Closing the stream cancels the turn.
 
@@ -95,7 +105,8 @@ async def stream_turn(
     async def run():
         try:
             turn = store.begin_turn(session_id)
-            return await run_turn(provider, index, turn, text, lambda event, data: queue.put_nowait(format_event(event, data)), options)
+            emit = lambda event, data: queue.put_nowait(format_event(event, data))
+            return await run_turn(provider, index, turn, text, emit, options, budget)
         finally:
             queue.put_nowait(None)  # end of the turn's events
 
@@ -106,7 +117,7 @@ async def stream_turn(
         await asyncio.wait({task})
         if error := task.exception():
             code = stream_error_code(error)
-            if code == "server_busy":  # the running-turn cap filled up after this request was checked
+            if code in ("server_busy", "chat_unavailable"):  # a cap filled or the budget ran out after the checks
                 log_rejection(code, client)
             yield format_event("error", {"code": code, "message": MESSAGES[code]})
         else:
@@ -118,11 +129,33 @@ async def stream_turn(
                 await task
 
 
+# Controls a deployment behind a proxy should have on (docs/11-abuse-protection.md, State and logging).
+PROXY_CONTROLS = (
+    "daily_budget_usd",
+    "rate_limit_sessions_per_hour",
+    "rate_limit_chat_per_minute",
+    "rate_limit_chat_per_day",
+    "max_sessions",
+    "max_sessions_per_ip",
+    "max_concurrent_turns",
+    "turnstile_secret",
+)
+
+
+def warn_controls_off(settings: Settings) -> None:
+    """With CLIENT_IP_HEADER set, the mark of a deployment behind a proxy, logs one warning per control that is off."""
+    if settings.client_ip_header:
+        for name in PROXY_CONTROLS:
+            if not getattr(settings, name):  # unset, or a count limit of 0
+                log.warning("%s is off", name.upper())
+
+
 def create_app(settings: Settings | None = None, provider: LLMProvider | None = None, index: SearchIndex | None = None) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        warn_controls_off(settings)
         app.state.provider = provider or build_provider(settings)
         if settings.daily_budget_usd is not None:
             if app.state.provider.prices is None:
@@ -130,7 +163,11 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
             app.state.provider = MeteredProvider(app.state.provider, app.state.budget)
         app.state.index = index or load_index(settings.data_dir)
         app.state.store = SessionStore(
-            settings.session_ttl_minutes, settings.max_turns_per_session, settings.max_sessions, settings.max_concurrent_turns
+            settings.session_ttl_minutes,
+            settings.max_turns_per_session,
+            settings.max_sessions,
+            settings.max_concurrent_turns,
+            max_per_client=settings.max_sessions_per_ip,
         )
         app.state.featured = {"headline": "Popular picks", "suggestions": [], "products": featured_cards(app.state.index.conn)}
         app.state.http = httpx.AsyncClient()  # for the Turnstile check
@@ -173,11 +210,19 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
 
     @app.post("/api/sessions", status_code=201)
     async def create_session(request: Request, body: SessionRequest | None = None) -> dict:
+        state = request.app.state
         ip = client_ip(request, settings.client_ip_header)
-        request.app.state.session_rate.hit(ip)
-        if settings.turnstile_secret:
-            await verify_turnstile(request.app.state.http, settings.turnstile_secret, body and body.turnstile_token, ip)
-        return {"session_id": request.app.state.store.create(request.app.state.provider.name).id}
+        key = rate_key(ip)
+        # The checks in docs/11-abuse-protection.md, in order; the first that fails rejects the request.
+        state.session_rate.hit(key)
+        try:
+            state.store.check_can_create(key)
+            if settings.turnstile_secret:
+                await verify_turnstile(state.http, settings.turnstile_secret, body and body.turnstile_token, ip)
+            session = state.store.create(state.provider.name, key)  # the live-session cap
+        except ClientSessionsError:  # a place frees only when a session expires, so no Retry-After
+            raise Rejected("rate_limited") from None
+        return {"session_id": session.id}
 
     @app.get("/api/sessions/{session_id}")
     async def restore_session(session_id: str, request: Request) -> dict:
@@ -199,10 +244,10 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         # The checks in docs/11-abuse-protection.md, in order; the first that fails rejects the request.
         if not settings.chat_enabled or state.budget.exhausted():
             raise Rejected("chat_unavailable")
-        state.chat_rate.hit(ip)
+        state.chat_rate.hit(rate_key(ip))
         state.store.check_can_start(body.session_id)  # unknown, busy, full sessions and the running-turn cap
         options = TraceOptions(["api"], settings.trace_message_text)
-        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message, options, ip)
+        stream = stream_turn(state.provider, state.index, state.store, body.session_id, body.message, options, ip, state.budget)
         return StreamingResponse(stream, media_type="text/event-stream")
 
     @app.get("/api/featured")

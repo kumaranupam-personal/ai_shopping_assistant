@@ -32,7 +32,8 @@ export function Rating({ card }: { card: Card }) {
   return (
     <span className="flex items-center gap-1 text-xs text-fg-muted">
       <Star aria-hidden className="size-3.5 fill-current text-star" />
-      <span className="font-semibold text-fg">{card.rating.toFixed(1)}</span> ({formatCount(card.review_count)})
+      {typeof card.rating === "number" && <span className="font-semibold text-fg">{card.rating.toFixed(1)}</span>}
+      {typeof card.review_count === "number" && `(${formatCount(card.review_count)})`}
     </span>
   );
 }
@@ -44,7 +45,7 @@ export function OutOfStock({ className }: { className?: string }) {
 type Props = { card: Card; inCart: boolean; onOpen: (id: string) => void; className?: string; style?: CSSProperties };
 
 export default function ProductCard({ card, inCart, onOpen, className, style }: Props) {
-  const pills = card.highlights.map(highlightPill).filter((pill) => pill !== null);
+  const pills = (card.highlights ?? []).map(highlightPill).filter((pill) => pill !== null);
   return (
     <button
       type="button"

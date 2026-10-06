@@ -1,5 +1,6 @@
 """Rate limits, the daily budget, the Turnstile check and the client IP they key on (docs/11-abuse-protection.md)."""
 
+import ipaddress
 import logging
 import math
 import time
@@ -15,6 +16,7 @@ from app.llm.base import LLMProvider, LLMResponse
 log = logging.getLogger(__name__)
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 TURNSTILE_TIMEOUT_SECONDS = 5
+SWEEP_SECONDS = 60  # how often a limiter forgets idle clients
 
 
 class Rejected(Exception):
@@ -30,6 +32,19 @@ def client_ip(request: Request, header: str | None) -> str:
     return (header and request.headers.get(header)) or (request.client.host if request.client else "unknown")
 
 
+def rate_key(ip: str) -> str:
+    """The key the per-client limits count `ip` under: its /64 network for IPv6, the address itself otherwise."""
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:  # a header value that isn't an address counts as it is
+        return ip
+    if address.version == 4:
+        return ip
+    if address.ipv4_mapped:
+        return str(address.ipv4_mapped)
+    return str(ipaddress.ip_network(f"{ip}/64", strict=False))
+
+
 def log_rejection(code: str, ip: str | None) -> None:
     log.warning("Rejected %s for %s", code, ip or "unknown client")
 
@@ -41,6 +56,7 @@ class RateLimit:
         self.windows = [(limit, seconds) for limit, seconds in windows if limit > 0]  # a limit of 0 is off
         self.clock = clock
         self.hits: dict[str, deque[float]] = {}
+        self.last_sweep = clock()
 
     def hit(self, key: str) -> None:
         """Counts one request for `key`, or raises Rejected("rate_limited") without counting it."""
@@ -48,7 +64,9 @@ class RateLimit:
             return
         now = self.clock()
         oldest = now - max(seconds for _, seconds in self.windows)
-        self.hits = {k: h for k, h in self.hits.items() if h[-1] > oldest}  # forget clients idle past every window
+        if now - self.last_sweep >= SWEEP_SECONDS:  # forget clients idle past every window, at most once a minute
+            self.hits = {k: h for k, h in self.hits.items() if h and h[-1] > oldest}
+            self.last_sweep = now
         times = self.hits.setdefault(key, deque())
         while times and times[0] <= oldest:
             times.popleft()

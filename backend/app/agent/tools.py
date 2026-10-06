@@ -80,7 +80,18 @@ def compare_products(product_ids: list[str]) -> dict:
     }
 
 
+def _is_strings(value) -> bool:
+    return isinstance(value, list) and all(isinstance(v, str) for v in value)
+
+
 def show_products(product_ids: list[str], headline: str, reply: str, suggestions: list[str] | None = None) -> dict:
+    # Wrongly typed arguments become an error result the model can correct, before anything is sent or recorded.
+    if not _is_strings(product_ids):
+        raise TypeError("product_ids must be a list of strings")
+    if not isinstance(headline, str) or not isinstance(reply, str):
+        raise TypeError("headline and reply must be strings")
+    if suggestions is not None and not _is_strings(suggestions):
+        raise TypeError("suggestions must be a list of strings")
     ctx = current.get()
     found = fetch_products(ctx.index.conn, product_ids)
     shown = list(dict.fromkeys(i for i in product_ids if i in found))[:8]
@@ -112,12 +123,12 @@ def status_text(name: str, arguments: dict) -> str | None:
     """
     if name == "search_products":
         category = arguments.get("category")
-        text = f"Searching {category.replace('_', ' ') if isinstance(category, str) and category else 'all products'}"
+        text = f"Searching {category.replace('_', ' ') if isinstance(category, str) and category in CATEGORIES else 'all products'}"
         for key, word in (("price_max", "under"), ("price_min", "over")):
             if _is_amount(arguments.get(key)):
                 text += f" {word} {format_rupees(arguments[key])}"
         if isinstance(arguments.get("size"), str) and arguments["size"]:
-            text += f" in size {arguments['size']}"
+            text += f" in size {arguments['size'][:20]}"
         return text
     if name == "get_product_details":
         return "Looking up product details"

@@ -8,6 +8,7 @@ from app import tracing
 from app.agent.prompt import PROMPT_VERSION, SYSTEM_PROMPT
 from app.agent.session import Turn
 from app.agent.tools import TOOL_SPECS, TurnContext, current, execute, status_text
+from app.limits import DailyBudget, Rejected
 from app.llm.base import LLMProvider, Usage
 from app.search.index import SearchIndex
 
@@ -32,8 +33,11 @@ async def run_turn(
     text: str,
     emit: Callable[[str, dict], None],
     options: tracing.TraceOptions,
+    budget: DailyBudget | None = None,
 ) -> TurnRecord:
     """Runs a started turn (`SessionStore.begin_turn`) and commits it. Any failure or cancellation rolls it back and re-raises.
+
+    With a `budget` (API turns), a spent budget stops the turn before its next model call (docs/11-abuse-protection.md).
 
     The turn is traced as one root span with a span per model call and per tool call (docs/10-observability.md).
     """
@@ -68,6 +72,8 @@ async def run_turn(
             history.append(provider.user_message(text))
             turn.transcript.append({"type": "user", "text": text})
             for _ in range(MAX_MODEL_CALLS):
+                if budget is not None and budget.exhausted():
+                    raise Rejected("chat_unavailable")
                 with tracing.span("model call", {"langfuse.observation.type": "generation", "gen_ai.request.model": provider.model}) as span:
                     started = time.perf_counter()
                     response = await provider.complete(SYSTEM_PROMPT, history, TOOL_SPECS)
@@ -87,6 +93,9 @@ async def run_turn(
                     raise TurnLimitError("a model response hit the output-token limit")
                 if response.stop_reason == "refusal":
                     say(REFUSAL_MESSAGE)
+                    # The refused exchange leaves the history, which providers might reject when it's sent again.
+                    del history[turn.history_length :]
+                    return finish()
                 if response.stop_reason != "tool_use" or not response.tool_calls:
                     return finish()
                 results, shown_before = [], turn.shown_ids

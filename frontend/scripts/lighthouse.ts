@@ -29,7 +29,7 @@ const api = createServer((request, response) => {
 
 await build({ logLevel: "warn" });
 const site = await preview({ preview: { port: 4173, strictPort: true } });
-await new Promise<void>((resolve) => api.listen(8000, resolve));
+await new Promise<void>((resolve) => api.listen(8000, "127.0.0.1", resolve));
 const chrome = await launch({ chromePath: chromium.executablePath(), chromeFlags: ["--headless=new"] });
 
 let failed = false;

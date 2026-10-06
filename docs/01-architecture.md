@@ -130,6 +130,7 @@ Their values for Langfuse, and what message text covers, are in `10-observabilit
 - `RATE_LIMIT_CHAT_PER_MINUTE`: messages per client IP per rolling minute. Default `0` (off).
 - `RATE_LIMIT_CHAT_PER_DAY`: messages per client IP per rolling 24 hours. Default `0` (off).
 - `MAX_SESSIONS`: unexpired sessions allowed in the store. Default `0` (off).
+- `MAX_SESSIONS_PER_IP`: unexpired sessions allowed per client IP. Default `0` (off).
 - `MAX_CONCURRENT_TURNS`: turns allowed to run at once across all sessions. Default `0` (off).
 - `DAILY_BUDGET_USD`: model spend in USD allowed per UTC day before chat pauses, greater than 0 when set. Default: unset, which means no budget.
 - `CHAT_ENABLED`: `true` or `false`, the chat kill switch. Default `true`.

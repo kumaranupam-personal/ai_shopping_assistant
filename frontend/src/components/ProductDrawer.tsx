@@ -43,8 +43,8 @@ export default function ProductDrawer({ productId, initial, onClose, onViewCart,
 
   const product = load.status === "loaded" ? load.product : null;
   // No size is chosen at first and the first color is; a choice the product no longer offers falls back to these.
-  const chosenSize = product && size !== null && product.sizes.includes(size) ? size : null;
-  const chosenColor = product && color !== null && product.colors.includes(color) ? color : (product?.colors[0] ?? "");
+  const chosenSize = product && size !== null && (product.sizes ?? []).includes(size) ? size : null;
+  const chosenColor = product && color !== null && (product.colors ?? []).includes(color) ? color : (product?.colors?.[0] ?? "");
 
   return (
     <Drawer label="Product details" onClose={onClose} fallbackFocus={fallbackFocus}>
@@ -79,7 +79,7 @@ function Details({ product, size, color, onSize, onColor }: DetailsProps) {
         <Rating card={card} />
         {!card.in_stock && <OutOfStock className="self-start" />}
       </div>
-      {product.sizes.length > 0 && (
+      {(product.sizes ?? []).length > 0 && (
         <Choices label="Size" heading="Size" options={product.sizes} value={size} onChange={onSize}>
           {(option) => (
             <span className="grid h-9 min-w-11 place-items-center rounded-lg border border-line-strong bg-surface px-3 text-sm transition-colors duration-150 ease-out group-has-checked:border-accent group-has-checked:bg-accent group-has-checked:text-accent-fg">
@@ -88,13 +88,13 @@ function Details({ product, size, color, onSize, onColor }: DetailsProps) {
           )}
         </Choices>
       )}
-      <Choices label="Color" heading={`Color: ${capitalize(color)}`} options={product.colors} value={color} onChange={onColor} named round>
+      <Choices label="Color" heading={`Color: ${capitalize(color)}`} options={product.colors ?? []} value={color} onChange={onColor} named round>
         {/* The selected dot gets a 2 px accent ring, 2 px away from it. */}
         {(option) => <ColorDot color={option} className="block size-6 ring-offset-2 ring-offset-surface group-has-checked:ring-2 group-has-checked:ring-accent" />}
       </Choices>
       <p className="leading-relaxed">{product.description}</p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-        {product.details.map(({ label, value }) => (
+        {(product.details ?? []).map(({ label, value }) => (
           <div key={label} className="contents">
             <dt className="text-fg-muted capitalize">{label}</dt>
             <dd>{value}</dd>
@@ -157,7 +157,7 @@ function ActionBar({ product, item, onViewCart }: { product: Product; item: { id
   const idle = "bg-tile text-fg-muted";
   const [label, style, onClick]: [string, string, (() => void)?] = !product.card.in_stock
     ? ["Out of stock", idle]
-    : product.sizes.length > 0 && item.size === null
+    : (product.sizes ?? []).length > 0 && item.size === null
       ? ["Select a size", idle]
       : items.some((other) => sameItem(other, item))
         ? ["Added · View cart", "bg-accent-soft text-accent-soft-fg", onViewCart]

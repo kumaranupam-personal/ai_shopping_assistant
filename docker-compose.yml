@@ -1,6 +1,8 @@
 # The production stack (docs/13-deployment.md): the API and the frontend, each built from its own Dockerfile.
 # Secrets and settings come from .env next to this file (copied from .env.example). Both containers listen on
 # 127.0.0.1 only, so the server's nginx, which proxies / to the frontend and /api/ to the API, is the way in.
+# Each drops every Linux capability, can't gain privileges, and is capped in memory and processes, so a leak or a
+# burst stays inside its container instead of starving the server's nginx and sshd.
 name: saathi
 
 x-logging: &logging
@@ -16,6 +18,11 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     logging: *logging
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1200m
+    memswap_limit: 1200m
+    pids_limit: 256
 
   frontend:
     build:
@@ -27,3 +34,8 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     logging: *logging
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    memswap_limit: 128m
+    pids_limit: 64

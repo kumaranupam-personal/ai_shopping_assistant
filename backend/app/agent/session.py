@@ -22,11 +22,19 @@ class ServerBusyError(Exception):
     """The store is at its live-session or running-turn cap (docs/11-abuse-protection.md)."""
 
 
+class ClientSessionsError(Exception):
+    """The client already holds its cap of live sessions (docs/11-abuse-protection.md, Sessions per client)."""
+
+
+EVICT_IDLE_SECONDS = 15 * 60  # an empty session idle this long can make room in a full store
+
+
 @dataclass
 class Session:
     id: str
     provider: str
     last_active: float
+    client: str = ""  # the rate key of the visitor who created it
     history: list = field(default_factory=list)  # provider-native, append-only
     transcript: list[dict] = field(default_factory=list)  # committed display entries
     shown_ids: list[str] = field(default_factory=list)
@@ -58,21 +66,43 @@ class Turn:
 
 class SessionStore:
     def __init__(
-        self, ttl_minutes: int, max_turns: int, max_sessions: int = 0, max_running: int = 0, clock: Callable[[], float] = time.monotonic
+        self,
+        ttl_minutes: int,
+        max_turns: int,
+        max_sessions: int = 0,
+        max_running: int = 0,
+        clock: Callable[[], float] = time.monotonic,
+        max_per_client: int = 0,
     ):
         self.ttl_seconds, self.max_turns, self.clock = ttl_minutes * 60, max_turns, clock
-        self.max_sessions, self.max_running = max_sessions, max_running  # 0 is off
+        self.max_sessions, self.max_running, self.max_per_client = max_sessions, max_running, max_per_client  # 0 is off
         self.sessions: dict[str, Session] = {}
 
     def _purge_expired(self) -> None:
         cutoff = self.clock() - self.ttl_seconds
         self.sessions = {k: s for k, s in self.sessions.items() if s.busy or s.last_active >= cutoff}
 
-    def create(self, provider: str) -> Session:
+    def check_can_create(self, client: str) -> None:
+        """Raises ClientSessionsError when `client` already holds its cap of live sessions."""
         self._purge_expired()
-        if self.max_sessions and len(self.sessions) >= self.max_sessions:
+        if self.max_per_client and sum(s.client == client for s in self.sessions.values()) >= self.max_per_client:
+            raise ClientSessionsError(client)
+
+    def _evict_idle_empty(self) -> bool:
+        """Removes the longest-idle empty session that has been idle long enough, if there is one."""
+        cutoff = self.clock() - EVICT_IDLE_SECONDS
+        empty = [s for s in self.sessions.values() if not s.transcript and not s.busy and s.last_active <= cutoff]
+        if not empty:
+            return False
+        del self.sessions[min(empty, key=lambda s: s.last_active).id]
+        return True
+
+    def create(self, provider: str, client: str = "") -> Session:
+        """Adds a session for `client`, after the per-client cap and the live-session cap (docs/11-abuse-protection.md)."""
+        self.check_can_create(client)
+        if self.max_sessions and len(self.sessions) >= self.max_sessions and not self._evict_idle_empty():
             raise ServerBusyError()
-        session = Session(str(uuid.uuid4()), provider, self.clock())
+        session = Session(str(uuid.uuid4()), provider, self.clock(), client)
         self.sessions[session.id] = session
         return session
 
