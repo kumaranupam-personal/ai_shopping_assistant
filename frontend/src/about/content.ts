@@ -66,7 +66,7 @@ export const about = {
   header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", cta: "Try Saathi" },
 
   hero: {
-    heading: "A shopping assistant that shows its work",
+    heading: "Describe it. Saathi finds it.",
     line: "Say what you need in English or Hinglish. An AI agent understands your intent and turns it into a catalog search. Every product you see comes from the catalog, never from the model's imagination.",
     cta: "Talk to Saathi",
     secondary: "Watch one conversation",
