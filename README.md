@@ -26,7 +26,7 @@ Agent: [lowers the budget below the cheapest shown] → new cards, reply in Hing
 - **Traced end to end.** Every turn is an OpenTelemetry trace in Langfuse: one span per model call (tokens, cache reads and writes, cost) and per tool call, grouped by conversation. The code uses only OpenTelemetry, so any OTLP backend works, and message text stays out of traces unless switched on.
 - **Robust turns.** Each turn commits or rolls back as a unit: a provider failure, the model-call limit or a client disconnect leaves no half-finished exchange in the session.
 - **Hinglish.** Users can write Hindi in Latin script; the agent maps it to catalog terms ("shaadi" → occasion `wedding`, "teen hazaar tak" → `price_max` 3000) and replies in the same language.
-- **See how it works.** A static about page at `/about/` (`http://localhost:5173/about/` in development) replays one recorded three-turn conversation step by step over an architecture diagram, using the turns' real tool calls and results.
+- **See how it works.** A static about page at `/saathi/about/` (`http://localhost:5173/saathi/about/` in development) replays one recorded three-turn conversation step by step over an architecture diagram, using the turns' real tool calls and results.
 - **Polished, responsive UI.** React 19 + Tailwind v4, streaming over server-sent events, 320 px to 4K layouts, light and dark themes, session restore after reload, and Lighthouse-checked accessibility.
 
 ## Architecture
@@ -114,7 +114,7 @@ Tracing is optional: set `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_H
 ```bash
 cd frontend
 npm install
-npm run dev                   # UI on http://localhost:5173
+npm run dev                   # UI on http://localhost:5173/saathi/
 ```
 
 Other commands:

@@ -130,9 +130,13 @@ function reducer(state: ChatState, action: Action): ChatState {
   }
 }
 
-// sessionStorage keeps the chat per tab and across reloads; access can throw when storage is blocked.
+// sessionStorage keeps the chat per tab and across reloads; access can throw when storage is blocked. Keys carry the
+// app's prefix, since storage is shared by every page on the domain (docs/06-frontend.md, Client state).
+export const SESSION_ID_KEY = "saathi.sessionId";
+export const PENDING_MESSAGE_KEY = "saathi.pendingMessage";
+
 /** Whether this tab has a session to restore; without one, the landing shows while the first session is created. */
-export const hasStoredSession = () => storage.get("sessionId") !== null;
+export const hasStoredSession = () => storage.get(SESSION_ID_KEY) !== null;
 
 const storage = {
   get: (key: string) => {
@@ -164,7 +168,7 @@ export function useChat() {
     const id = await createSession(await turnstileToken()); // if this fails, the current chat and its turn carry on
     turn.current?.abort(); // the server cancels and rolls back an abandoned turn
     sessionId.current = id;
-    storage.set("sessionId", sessionId.current);
+    storage.set(SESSION_ID_KEY, sessionId.current);
     dispatch({ type: "reset", notice, draft, keepDraft });
   }, []);
 
@@ -173,9 +177,9 @@ export function useChat() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const pending = storage.get("pendingMessage") ?? "";
-    storage.set("pendingMessage", null);
-    const stored = storage.get("sessionId");
+    const pending = storage.get(PENDING_MESSAGE_KEY) ?? "";
+    storage.set(PENDING_MESSAGE_KEY, null);
+    const stored = storage.get(SESSION_ID_KEY);
     (async () => {
       if (stored) {
         try {
@@ -198,7 +202,7 @@ export function useChat() {
       const controller = new AbortController();
       turn.current = controller;
       dispatch({ type: "send", text, addUserMessage });
-      storage.set("pendingMessage", text);
+      storage.set(PENDING_MESSAGE_KEY, text);
       try {
         for (let attempt = 0; ; attempt++) {
           // Assigned inside the event callback, so TypeScript must not narrow them to their initial values.
@@ -238,7 +242,7 @@ export function useChat() {
       } finally {
         if (turn.current === controller) {
           turn.current = null;
-          storage.set("pendingMessage", null);
+          storage.set(PENDING_MESSAGE_KEY, null);
           dispatch({ type: "turnEnded" });
         }
       }

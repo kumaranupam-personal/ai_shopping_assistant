@@ -8,14 +8,14 @@ const WIDTHS = [320, 375, 768, 1024, 1280, 1440, 1920, 2560];
 
 async function startConversation(page: Page) {
   await mockApi(page, [LADAKH_TURN, WATERPROOF_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.", LADAKH_TURN);
 }
 
 /** First load: the landing, with its prompt cards, category chips and featured products. */
 async function openLanding(page: Page) {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await expect(page.getByRole("list", { name: "Example requests" }).getByRole("button")).toHaveCount(4);
   await expect(page.getByRole("heading", { name: "Popular picks" })).toBeVisible();
@@ -34,7 +34,7 @@ async function openDrawer(page: Page, title: string) {
 
 /** The cart panel over the landing, empty or with items (one out of stock, one without sizes, one that fails). */
 async function openCart(page: Page, items: { id: string; size: string | null; color: string }[]) {
-  await page.addInitScript((value) => localStorage.setItem("cart", JSON.stringify(value)), items);
+  await page.addInitScript((value) => localStorage.setItem("saathi.cart", JSON.stringify(value)), items);
   await openLanding(page);
   await page.getByRole("banner").getByRole("button", { name: /^Cart/ }).click();
   const panel = page.getByRole("dialog", { name: "Cart" });
@@ -234,7 +234,7 @@ function aboutLayoutProblems(page: Page) {
 for (const colorScheme of ["light", "dark"] as const) {
   test(`about page layout holds at every listed width, on the first and last step of each turn (${colorScheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme, reducedMotion: "reduce" }); // no autoplay, so the steps stay put
-    await page.goto("/about/");
+    await page.goto("./about/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
     const replay = page.getByRole("region", { name: about.replay.heading });
     for (const turn of about.turns) {

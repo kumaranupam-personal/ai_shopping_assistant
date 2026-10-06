@@ -5,7 +5,7 @@ import { API, LADAKH_TURN, chatRows, message, mockApi, send, sessionReady } from
 
 test("reloading restores messages, result markers and the latest result set", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   await page.reload();
   await expect(message(page, "warm jacket under 8k")).toBeVisible();
@@ -16,31 +16,31 @@ test("reloading restores messages, result markers and the latest result set", as
 
 test("a new tab starts a new session", async ({ page, context }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", LADAKH_TURN);
   const other = await context.newPage();
   await mockApi(other, [LADAKH_TURN]);
   // Record what the new tab finds in sessionStorage before the app runs.
-  await other.addInitScript(() => ((window as unknown as { inherited: string | null }).inherited = sessionStorage.getItem("sessionId")));
-  await other.goto("/");
+  await other.addInitScript(() => ((window as unknown as { inherited: string | null }).inherited = sessionStorage.getItem("saathi.sessionId")));
+  await other.goto("./");
   await expect(other.getByRole("heading", { name: "What are you shopping for?" }).first()).toBeVisible();
   expect(await other.evaluate(() => (window as unknown as { inherited: string | null }).inherited)).toBeNull();
-  expect(await other.evaluate(() => sessionStorage.getItem("sessionId"))).toBeTruthy(); // its own, newly created
+  expect(await other.evaluate(() => sessionStorage.getItem("saathi.sessionId"))).toBeTruthy(); // its own, newly created
   await expect(chatRows(other)).toHaveCount(0);
 });
 
 test("an expired session shows the notice", async ({ page }) => {
   await mockApi(page, [LADAKH_TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
-  await page.evaluate(() => sessionStorage.setItem("sessionId", "expired-session"));
+  await page.evaluate(() => sessionStorage.setItem("saathi.sessionId", "expired-session"));
   await page.reload();
   await expect(page.getByText("Your previous chat expired. Starting a new one.")).toBeVisible();
 });
 
 test("reloading during a turn puts the interrupted message back in the composer", async ({ page }) => {
   await mockApi(page, [{ ...LADAKH_TURN, hang: true }]);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket under 8k");
   await page.getByLabel("Message").press("Enter");
@@ -54,7 +54,7 @@ test("a chat at its message limit offers New chat instead of Retry", async ({ pa
   await mockApi(page, [LADAKH_TURN]);
   const limit = "This chat has reached its message limit. Start a new chat.";
   await refuse(page, "/chat", 429, "session_full", limit);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("one more jacket");
   await page.getByLabel("Message").press("Enter");
@@ -83,7 +83,7 @@ test("paused chat shows the server's message with no button", async ({ page }) =
   await mockApi(page, [LADAKH_TURN]);
   const paused = "Chat is paused right now. Please come back later.";
   await refuse(page, "/chat", 503, "chat_unavailable", paused);
-  await page.goto("/");
+  await page.goto("./");
   await sessionReady(page);
   await page.getByLabel("Message").fill("warm jacket");
   await page.getByLabel("Message").press("Enter");
@@ -96,6 +96,6 @@ test("a refused session creation shows the server's message as the notice", asyn
   await mockApi(page, [LADAKH_TURN]);
   const limited = "You're sending requests too quickly. Try again in a moment.";
   await refuse(page, "/sessions", 429, "rate_limited", limited);
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByRole("status").getByText(limited)).toBeVisible();
 });

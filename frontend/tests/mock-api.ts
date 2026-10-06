@@ -96,7 +96,7 @@ export const chatRows = (page: Page) => page.getByRole("region", { name: "Chat" 
 export const message = (page: Page, text: string) => page.getByRole("region", { name: "Chat" }).getByRole("list", { name: "Conversation" }).getByText(text);
 
 /** Resolves once the app has a session, so tests don't race its creation. */
-export const sessionReady = (page: Page) => page.waitForFunction(() => sessionStorage.getItem("sessionId"));
+export const sessionReady = (page: Page) => page.waitForFunction(() => sessionStorage.getItem("saathi.sessionId"));
 
 /** Types a message and waits until the turn's reply is shown (one more copy of it, so repeated turns work). */
 export async function send(page: Page, text: string, turn: ScriptedTurn) {

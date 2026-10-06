@@ -1,18 +1,27 @@
 # Deployment
 
-The public demo runs on one EC2 instance as two Docker containers started by `docker-compose.yml`: `backend`, the FastAPI server, and `frontend`, nginx serving the built frontend. Both listen on 127.0.0.1 only. nginx on the server itself terminates HTTPS and proxies `/api/` to the backend and everything else to the frontend. Secrets and settings live in a `.env` file next to `docker-compose.yml`.
+The public demo runs on one EC2 instance as two Docker containers started by `docker-compose.yml`: `backend`, the FastAPI server, and `frontend`, nginx serving the built frontend. Both listen on 127.0.0.1 only. nginx on the server itself terminates HTTPS and proxies `/saathi/api/` to the backend and everything else to the frontend. Secrets and settings live in a `.env` file next to `docker-compose.yml`.
 
 ```
-visitor ──HTTPS──> server nginx :443 ──┬── /api/*  ──> backend  127.0.0.1:8000 (uvicorn)
-                                       └── else    ──> frontend 127.0.0.1:8080 (nginx, static build)
+visitor ──HTTPS──> server nginx :443 ──┬── /saathi/api/*  ──> backend  127.0.0.1:8000 (uvicorn), as /api/*
+                                       └── else           ──> frontend 127.0.0.1:8080 (nginx, static build)
 ```
 
 The backend runs as exactly one container with one uvicorn process. Sessions, rate windows and the day's spend live in its memory (`11-abuse-protection.md`, State and logging), so it must never be scaled to several replicas or workers.
 
+## Paths
+
+The app lives under `/saathi/`, so the domain can hold other projects beside it later.
+
+- `/saathi/` is the chat, `/saathi/about/` the about page (`12-about-page.md`) and `/saathi/api/` the API. The server's nginx forwards `/saathi/api/...` to the backend as `/api/...`, so the backend's own paths in `05-api.md` don't change. In development, Vite serves the same pages at `http://localhost:5173/saathi/` and the API stays at `http://localhost:8000/api/`.
+- `/` redirects to `/saathi/` with a 302, which browsers don't keep, so the root can lead elsewhere later. `/saathi` redirects to `/saathi/`, and the about page's old addresses `/about` and `/about/`, as well as `/saathi/about`, redirect to `/saathi/about/`, all with a 301. Redirects keep the query string and carry only the path in `Location`. The frontend container's nginx makes them, and a Vite plugin makes the same ones in development and preview.
+- Anything else outside `/saathi/` is a 404.
+- Browser storage belongs to the whole domain, not to a path, so every key the frontend saves starts with `saathi.` (`06-frontend.md`, Client state). Another project on the same domain uses its own prefix.
+
 ## Files
 
 - `backend/Dockerfile`: Python 3.12 slim with the locked dependencies (`uv sync --frozen --no-dev`), the code, and the demo catalog with its embedding model, generated, ingested and embedded at build time (`02-catalog.md`), so the container starts without downloading anything. The catalog stage copies only the code it runs, so it is rebuilt when the catalog code or the generator changes, not on every API change. It runs as a non-root user, has a health check on `GET /api/health`, and starts `uvicorn app.main:app` on port 8000 without auto-reload. `backend/.dockerignore` leaves out `.env`, the virtual environment, the built catalog, the tests and the evals.
-- `frontend/Dockerfile`: builds the frontend with Node 24, calling the API on its own origin (an empty `VITE_API_BASE_URL`) and taking the Turnstile site key as the `VITE_TURNSTILE_SITE_KEY` build argument, then serves the build with nginx as a non-root user on port 8080. `frontend/nginx.conf` caches the hashed files under `/assets/` for a year, makes everything else revalidate, compresses text, and sends `nosniff`, a referrer policy and `X-Frame-Options: DENY`. The last is a floor for when the container is reached without the server's nginx, which hides that copy and sets its own. `frontend/.dockerignore` leaves out `node_modules`, build output and test results.
+- `frontend/Dockerfile`: builds the frontend with Node 24 for the path `/saathi/`, calling the API on its own origin under it (`VITE_API_BASE_URL=/saathi`) and taking the Turnstile site key as the `VITE_TURNSTILE_SITE_KEY` build argument, then serves the build under `/saathi/` with nginx as a non-root user on port 8080. `frontend/nginx.conf` makes the redirects in Paths, caches the hashed files under `/saathi/assets/` for a year, makes everything else revalidate, compresses text, and sends `nosniff`, a referrer policy and `X-Frame-Options: DENY`. The last is a floor for when the container is reached without the server's nginx, which hides that copy and sets its own. `frontend/.dockerignore` leaves out `node_modules`, build output and test results.
 - `docker-compose.yml`: the two services. `backend` reads `.env`; `frontend` gets `VITE_TURNSTILE_SITE_KEY` from `.env` at build time. They publish 127.0.0.1:8000 and 127.0.0.1:8080, restart unless stopped, rotate their logs (3 files of 10 MB), drop every Linux capability and forbid privilege gain (`cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]`), and are capped in memory and processes (`mem_limit` and `memswap_limit` 1200m with `pids_limit` 256 for the backend, 128m and 64 for the frontend), so a leak or a burst stays inside the container instead of starving the server's nginx and sshd.
 - `.env.example`: the settings production sets, with the production values from `11-abuse-protection.md`, `LLM_PROVIDER=gemini` and empty keys. `DATA_DIR`, `CORS_ORIGINS` and `PORT` keep their defaults from `01-architecture.md`, so it leaves them out. `.env` itself is git-ignored.
 
@@ -47,7 +56,7 @@ The backend runs as exactly one container with one uvicorn process. Sessions, ra
    ```
 
 5. **Server nginx and HTTPS:** see the next section. It needs a domain whose `A` record points at the Elastic IP.
-6. **Check:** the site shows the landing with the featured products, and a chat message gets a reply that streams in. The checks under "Verifying HTTPS and the headers" pass.
+6. **Check:** the domain leads to `/saathi/`, which shows the landing with the featured products, and a chat message gets a reply that streams in. The checks under "Verifying HTTPS and the headers" pass.
 
 ## Server nginx and HTTPS
 
@@ -57,7 +66,7 @@ The server's nginx is the only thing the internet reaches. It serves the site ov
 - closes connections for any other host name, such as the bare IP, without an answer, so scanners get nothing;
 - uses TLS 1.2 and 1.3 with forward-secret AEAD ciphers only (Mozilla's "intermediate" profile, without the DHE suites, which need extra parameters), and offers post-quantum key exchange to browsers that support it;
 - sends HSTS and a strict set of security headers, including a Content-Security-Policy;
-- forwards only the API endpoints and methods the frontend uses, refuses API requests from other websites, rate-limits per client IP, and keeps `/api/health` and anything else under `/api/` internal;
+- forwards only the API endpoints and methods the frontend uses, refuses API requests from other websites, rate-limits per client IP, and keeps `/saathi/api/health` and anything else under `/saathi/api/` internal;
 - limits body size and slow clients.
 
 Replace `example.com` with your domain everywhere below.
@@ -179,7 +188,7 @@ server {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
     # Scripts: the app's own files, the inline theme script in index.html (by its hash) and Cloudflare Turnstile.
     # No inline styles, plugins or framing; images may come from any HTTPS host, for catalogs with image URLs.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-lCxqePmKpozAj1L4u3a7YHNl4NDPfmu6E9kXWFVlEk8=' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-MSoSThIVAI2PCAayH/q3qLFY0FypnmH4YnQd1wSGDpw=' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -198,7 +207,7 @@ server {
     keepalive_timeout 30s;
 
     # The API: only the endpoints and methods the frontend calls.
-    location ~ ^/api/(sessions(/|$)|chat$|featured$|products/) {
+    location ~ ^/saathi/api/(sessions(/|$)|chat$|featured$|products/) {
         limit_except GET POST {
             deny all;
         }
@@ -208,6 +217,8 @@ server {
         limit_req zone=saathi_api burst=20 nodelay;
         limit_conn saathi_conn 10;
 
+        # The backend's paths start at /api/ (Paths).
+        rewrite ^/saathi(/api/.*)$ $1 break;
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -231,12 +242,12 @@ server {
         root /var/www/certbot;
     }
 
-    # Everything else under /api/, such as /api/health, stays internal.
-    location /api/ {
+    # Everything else under /saathi/api/, such as /saathi/api/health, stays internal.
+    location /saathi/api/ {
         return 404;
     }
 
-    # The frontend container, which sets the caching headers.
+    # The frontend container, which sets the caching headers and makes the redirects in Paths.
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
@@ -264,22 +275,25 @@ Three settings in the HTTPS site follow from the app and need care when it chang
 
   The hash covers the exact text between `<script>` and `</script>`, including the line breaks and indentation, and both pages share it.
 - **HSTS** can't be taken back quickly: browsers remember it for its whole `max-age`. `includeSubDomains` also forces HTTPS on every subdomain of this host. Keep both only while every one of them serves HTTPS. Submitting the domain to the browsers' preload list is a separate, slower-to-undo step this setup doesn't take.
-- **The API allowlist** must grow with the API: a new endpoint the frontend calls gets a 404 from nginx until it is added to the `location ~ ^/api/(...)` pattern.
+- **The API allowlist** must grow with the API: a new endpoint the frontend calls gets a 404 from nginx until it is added to the `location ~ ^/saathi/api/(...)` pattern.
 
 ### Verifying HTTPS and the headers
 
 ```bash
 curl -sI http://example.com/ | head -3                      # 301 to https://example.com/
-curl -sI https://example.com/ | grep -iE 'strict-transport|content-security|x-frame|server'
-curl -s -o /dev/null -w '%{http_code}\n' https://example.com/api/health                 # 404: internal
-curl -s -o /dev/null -w '%{http_code}\n' https://example.com/api/chatter                # 404: not an endpoint
-curl -s -o /dev/null -w '%{http_code}\n' -X DELETE https://example.com/api/featured    # 403: method not allowed
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Origin: https://evil.example' -X POST https://example.com/api/sessions   # 403
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://example.com/        # 302 to https://example.com/saathi/
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://example.com/about   # 301 to https://example.com/saathi/about/
+curl -sI https://example.com/saathi/ | grep -iE 'strict-transport|content-security|x-frame|server'
+curl -s -o /dev/null -w '%{http_code}\n' https://example.com/saathi/api/featured              # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://example.com/saathi/api/health                # 404: internal
+curl -s -o /dev/null -w '%{http_code}\n' https://example.com/saathi/api/chatter               # 404: not an endpoint
+curl -s -o /dev/null -w '%{http_code}\n' -X DELETE https://example.com/saathi/api/featured   # 403: method not allowed
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Origin: https://evil.example' -X POST https://example.com/saathi/api/sessions   # 403
 curl -sk -o /dev/null -w '%{http_code}\n' https://<elastic-ip>/                         # fails: handshake refused
 openssl s_client -connect example.com:443 -tls1_1 -cipher 'DEFAULT:@SECLEVEL=0' </dev/null 2>&1 | grep -E 'alert|Cipher is'   # TLS 1.1 refused
 ```
 
-https://www.ssllabs.com/ssltest/ rates the TLS setup (expect A+ with HSTS), and https://securityheaders.com rates the headers. In the browser, the console shows no Content-Security-Policy errors on `/` and `/about/`, and with Turnstile on, the widget still loads.
+https://www.ssllabs.com/ssltest/ rates the TLS setup (expect A+ with HSTS), and https://securityheaders.com rates the headers. In the browser, the console shows no Content-Security-Policy errors on `/saathi/` and `/saathi/about/`, and with Turnstile on, the widget still loads.
 
 ## Operating
 
@@ -298,7 +312,7 @@ Cloudflare's proxy is optional and can come any time after the domain works over
 
 1. Add the domain to Cloudflare, move its nameservers there, and proxy its `A` record (orange cloud).
 2. Set SSL/TLS to Full (strict). The certbot certificate keeps renewing behind the proxy, since Cloudflare passes Let's Encrypt's HTTP check through, and if "Always Use HTTPS" redirects it, the HTTPS site answers the challenge too.
-3. Add the WAF custom rule from `11-abuse-protection.md` (Proxy requirements): URI path starts with `/api/`, action Skip, skipping every challenge feature.
+3. Add the WAF custom rule from `11-abuse-protection.md` (Proxy requirements): URI path starts with `/saathi/api/`, action Skip, skipping every challenge feature.
 4. Check that responses come through Cloudflare: `curl -sI https://<domain>/` shows `server: cloudflare` and a `cf-ray` header.
 5. Limit inbound 80 and 443 in the security group to Cloudflare's ranges (https://www.cloudflare.com/ips/), so the instance can't be reached around the proxy.
 6. Have nginx take the visitor's address from Cloudflare, trusting the header only from Cloudflare's ranges. Save this as `/usr/local/sbin/cloudflare-realip`, run it once, and have cron run it weekly (`sudo crontab -e`: `0 4 * * 1 /usr/local/sbin/cloudflare-realip`), so the list keeps up with Cloudflare's. With a stale list, connections from a new Cloudflare address keep that address as the visitor's, and every visitor behind it then shares one set of limits:

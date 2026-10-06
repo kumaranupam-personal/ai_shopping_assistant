@@ -65,7 +65,7 @@ Cloudflare Turnstile checks that a browser, not a script, is creating a session.
 
 ## Proxy requirements
 
-The proxy in front of the app must never answer a request under `/api/` with a challenge page, such as Cloudflare's Bot Fight Mode or a WAF rule with a challenge action. The frontend calls the API with `fetch`, which can't solve a challenge, so it would receive an HTML page instead of JSON or a stream and the chat would fail with no visible prompt. On Cloudflare, a WAF custom rule with the action Skip, matching paths that start with `/api/`, skips the challenge features for those requests. Rate-limiting rules that block instead of challenging stay allowed. Challenges may still apply to the page itself, and the app's own checks above protect the API.
+The proxy in front of the app must never answer a request under `/saathi/api/` (the public path of the API, see `13-deployment.md`, Paths) with a challenge page, such as Cloudflare's Bot Fight Mode or a WAF rule with a challenge action. The frontend calls the API with `fetch`, which can't solve a challenge, so it would receive an HTML page instead of JSON or a stream and the chat would fail with no visible prompt. On Cloudflare, a WAF custom rule with the action Skip, matching paths that start with `/saathi/api/`, skips the challenge features for those requests. Rate-limiting rules that block instead of challenging stay allowed. Challenges may still apply to the page itself, and the app's own checks above protect the API.
 
 The proxy's own per-IP limits must key IPv6 addresses by their /64, as the app does (see Client IP). Otherwise a visitor holding a /64 meets only the app's limits. The nginx configuration in `13-deployment.md` does this.
 

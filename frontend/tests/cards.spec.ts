@@ -32,7 +32,7 @@ const card = (page: Page, title: string) =>
 
 test("highlight pills follow the table, and only discounted cards carry a badge", async ({ page }) => {
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
 
   const pills = card(page, TABLE_CARD.title).locator(".bg-tile.rounded-full");
@@ -54,7 +54,7 @@ test("highlight pills follow the table, and only discounted cards carry a badge"
 test("strip cards show neither the badge nor pills", async ({ page }) => {
   await page.setViewportSize({ width: 400, height: 800 });
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
   const strip = card(page, products["JKT-00001"].card.title);
   await expect(strip).toBeVisible();
@@ -64,7 +64,7 @@ test("strip cards show neither the badge nor pills", async ({ page }) => {
 
 test("a hovered card rises 2 px", async ({ page }) => {
   await mockApi(page, [TURN]);
-  await page.goto("/");
+  await page.goto("./");
   await send(page, "warm jacket under 8k", TURN);
   const target = card(page, TABLE_CARD.title);
   await target.hover();

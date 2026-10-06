@@ -18,7 +18,7 @@ const replayTop = (page: Page) => replay(page).evaluate((el) => Math.round(el.ge
 const bringReplayIntoView = (page: Page) => replay(page).evaluate((el) => el.scrollIntoView({ block: "start" }));
 
 test("shows its sections in order with the content file's text", async ({ page }) => {
-  await page.goto("/about/");
+  await page.goto("./about/");
   await expect(page).toHaveTitle(about.title);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", about.description);
   await expect(page.getByRole("banner")).toContainText(about.header.wordmark);
@@ -48,11 +48,11 @@ test("shows its sections in order with the content file's text", async ({ page }
 });
 
 test("each call to action opens the chat in a new tab, and every new-tab link is marked", async ({ page, context }) => {
-  await page.goto("/about/");
+  await page.goto("./about/");
   const ctas = page.getByRole("link", { name: new RegExp(`^(${about.header.cta}|${about.hero.cta}|${about.closing.cta})$`) });
   await expect(ctas).toHaveCount(3);
   for (const cta of await ctas.all()) {
-    await expect(cta).toHaveAttribute("href", "/");
+    await expect(cta).toHaveAttribute("href", "/saathi/");
     await expect(cta).toHaveAttribute("target", "_blank");
     await expect(cta).toHaveAttribute("rel", /noopener/);
   }
@@ -68,13 +68,13 @@ test("each call to action opens the chat in a new tab, and every new-tab link is
   for (const cta of await ctas.all()) {
     const [chat] = await Promise.all([context.waitForEvent("page"), cta.click()]);
     await chat.waitForLoadState("domcontentloaded");
-    expect(new URL(chat.url()).pathname).toBe("/");
+    expect(new URL(chat.url()).pathname).toBe("/saathi/");
     await chat.close();
   }
 });
 
 test("the in-page links scroll the replay to the top of the view, at once under reduced motion", async ({ page }) => {
-  await page.goto("/about/");
+  await page.goto("./about/");
   expect(await replayTop(page)).toBeGreaterThan(200);
   await page.getByRole("link", { name: about.hero.secondary }).click();
   await expect.poll(() => replayTop(page)).toBe(16); // its scroll margin
@@ -87,7 +87,7 @@ test("the in-page links scroll the replay to the top of the view, at once under 
 
 test("the tabs and buttons move through every step, each lighting exactly its nodes and edges", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" }); // no autoplay, so only the clicks move the replay
-  await page.goto("/about/");
+  await page.goto("./about/");
   for (const [t, turn] of turns.entries()) {
     await expect(replay(page).getByRole("tab", { name: turn.tab })).toHaveAttribute("aria-selected", "true");
     await expect(replay(page).getByRole("tabpanel").locator("p").first()).toHaveText(turn.message); // the message bubble
@@ -126,7 +126,7 @@ test("the tabs and buttons move through every step, each lighting exactly its no
 
 test("a \"+\" line in a code block is marked", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/about/");
+  await page.goto("./about/");
   const t = turns.findIndex((turn) => turn.steps.some((step) => step.code.split("\n").some((line) => line.startsWith("+"))));
   const s = turns[t].steps.findIndex((step) => step.code.split("\n").some((line) => line.startsWith("+")));
   await replay(page).getByRole("tab", { name: turns[t].tab }).click();
@@ -155,7 +155,7 @@ test("a turn with a trace URL links to it, and one without shows no link", async
     const body = ["`", '"', "'"].reduce((text, q) => text.split(q + dropped + q).join("null"), await response.text());
     await route.fulfill({ response, body });
   });
-  await page.goto("/about/");
+  await page.goto("./about/");
   const link = replay(page).getByRole("link", { name: about.replay.traceLink });
   for (const [t, turn] of turns.entries()) {
     await replay(page).getByRole("tab", { name: turn.tab }).click();
@@ -172,7 +172,7 @@ test("a turn with a trace URL links to it, and one without shows no link", async
 
 test("as published, each turn links to its trace when it has one", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/about/");
+  await page.goto("./about/");
   for (const turn of turns) {
     await replay(page).getByRole("tab", { name: turn.tab }).click();
     await expect(replay(page).getByRole("link", { name: about.replay.traceLink })).toHaveCount(turn.traceUrl ? 1 : 0);
@@ -186,7 +186,7 @@ test.describe("autoplay", () => {
   });
 
   test("runs once through the first turn when the replay comes into view, then stops on its last step", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("./about/");
     await page.clock.runFor(5000);
     await expect(stepCount(page)).toHaveText(`Step 1 of ${turns[0].steps.length}`); // not in view yet
     await bringReplayIntoView(page);
@@ -204,7 +204,7 @@ test.describe("autoplay", () => {
   });
 
   test("stops for good on a click inside the replay", async ({ page }) => {
-    await page.goto("/about/");
+    await page.goto("./about/");
     await bringReplayIntoView(page);
     await expect.poll(async () => (await page.clock.runFor(500), stepCount(page).textContent())).toBe(`Step 2 of ${turns[0].steps.length}`);
     await replay(page).getByRole("heading", { level: 3 }).click();
@@ -214,7 +214,7 @@ test.describe("autoplay", () => {
 
   test("never runs under reduced motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/about/");
+    await page.goto("./about/");
     await bringReplayIntoView(page);
     await page.clock.runFor(10_000);
     await expect(stepCount(page)).toHaveText(`Step 1 of ${turns[0].steps.length}`);
@@ -224,7 +224,7 @@ test.describe("autoplay", () => {
 test("below 768 px the diagram scrolls inside its box, following the step, and the page doesn't scroll sideways", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/about/");
+  await page.goto("./about/");
   // Below 640 px the header keeps only the wordmark, the theme switch and the call to action.
   await expect(page.getByRole("banner").getByRole("link", { name: about.header.howItWorks })).toBeHidden();
   await expect(page.getByRole("banner").getByRole("link", { name: about.header.github })).toBeHidden();
@@ -261,7 +261,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     page.on("console", (message) => ["error", "warning"].includes(message.type()) && logged.push(message.text()));
     page.on("pageerror", (error) => logged.push(error.message));
     await page.emulateMedia({ colorScheme });
-    await page.goto("/about/");
+    await page.goto("./about/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
     for (const turn of turns) for (let s = 0; s < turn.steps.length; s++) await advance(page).click();
     await expect(stepCount(page)).toHaveText(`Step 1 of ${turns[0].steps.length}`); // back at the start, every step seen
@@ -269,7 +269,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await page.getByRole("link", { name: about.hero.secondary }).click();
     await page.waitForLoadState("networkidle");
     expect(outside).toEqual([]);
-    expect(await page.evaluate(() => sessionStorage.getItem("sessionId"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("saathi.sessionId"))).toBeNull();
     expect(logged).toEqual([]);
   });
 }
