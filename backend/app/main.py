@@ -32,7 +32,25 @@ from app.search.index import SearchIndex, load_index
 from app.sse import format_event
 from app.tracing import TraceOptions, setup_tracing, shutdown_tracing
 
+# Only turns are traced (docs/10-observability.md, Scope), never requests, metrics or logs, and never from env vars.
+NO_FASTAPI_TELEMETRY = {"tracing": False, "metrics": False, "logs": False, "operation_spans": False, "auto_configure": False}
+
 log = logging.getLogger(__name__)
+
+HEALTH_PATH = "/api/health"
+
+
+class SkipHealthChecks(logging.Filter):
+    """Drops uvicorn's access-log line for the health check, which the container runs every ten seconds
+    (docs/13-deployment.md); every other request is still logged. Uvicorn's access record is
+    `'%s - "%s %s HTTP/%s" %d'` with the path as the third argument."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args if isinstance(record.args, tuple) else ()
+        return not (len(args) >= 3 and isinstance(args[2], str) and args[2].split("?", 1)[0] == HEALTH_PATH)
+
+
+SKIP_HEALTH_CHECKS = SkipHealthChecks()  # one instance, so adding it on every create_app adds it once
 
 # Session errors -> (HTTP status, code). Raised before a response starts, or as an error event once streaming.
 HTTP_ERRORS = {
@@ -177,7 +195,10 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
         shutdown_tracing(tracing)  # flushes the remaining spans
 
     # Endpoints are async so all session-store access stays on the event loop thread.
-    app = FastAPI(title="AI shopping assistant", lifespan=lifespan)
+    # FastAPI's own OpenTelemetry is off: left on, it reads OTEL_EXPORTER_OTLP_ENDPOINT at startup, installs its own
+    # exporter and sends a trace for every HTTP request (health checks included) to Langfuse (docs/10-observability.md).
+    app = FastAPI(title="AI shopping assistant", lifespan=lifespan, telemetry=NO_FASTAPI_TELEMETRY)
+    logging.getLogger("uvicorn.access").addFilter(SKIP_HEALTH_CHECKS)
     app.state.budget = DailyBudget(settings.daily_budget_usd)
     app.state.session_rate = RateLimit([(settings.rate_limit_sessions_per_hour, 3600)])
     app.state.chat_rate = RateLimit([(settings.rate_limit_chat_per_minute, 60), (settings.rate_limit_chat_per_day, 86400)])
@@ -261,7 +282,7 @@ def create_app(settings: Settings | None = None, provider: LLMProvider | None = 
             return error_response(404, "product_not_found")
         return {**product, "card": build_card(product), "details": attribute_details(product)}
 
-    @app.get("/api/health")
+    @app.get(HEALTH_PATH)
     async def health(request: Request) -> dict:
         count = request.app.state.index.conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
         return {"status": "ok", "products": count}

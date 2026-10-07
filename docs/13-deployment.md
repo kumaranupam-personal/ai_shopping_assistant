@@ -303,7 +303,7 @@ All commands run in the repository's folder on the server.
 - **Change a secret or setting:** edit `.env`, then `sudo docker compose up -d`, which recreates the backend with the new values. A changed `VITE_TURNSTILE_SITE_KEY` needs `sudo docker compose up -d --build frontend`, since it is built into the frontend.
 - **Pause chat:** `CHAT_ENABLED=false` in `.env`, then `sudo docker compose up -d`.
 - **Memory:** recreating the backend container resets everything it holds in memory (`11-abuse-protection.md`, State and logging). Visitors with an open chat see the expired-chat notice, and since the day's spend starts again from 0, more than one restart in a UTC day can let spending exceed `DAILY_BUDGET_USD`. A frontend-only release leaves the backend running.
-- **Logs:** `sudo docker compose logs -f backend`, including one line per abuse-protection rejection with the client IP; `sudo docker compose logs -f frontend`.
+- **Logs:** `sudo docker compose logs -f backend`, including one line per abuse-protection rejection with the client IP. Uvicorn's access line for `GET /api/health` is dropped by a filter in `create_app`, so the health check every ten seconds doesn't fill the log; every other request is logged; `sudo docker compose logs -f frontend`.
 - **Status:** `sudo docker compose ps`.
 
 ## Adding Cloudflare
