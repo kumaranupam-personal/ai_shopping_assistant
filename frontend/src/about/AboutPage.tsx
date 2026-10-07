@@ -38,7 +38,7 @@ export default function AboutPage() {
 }
 
 function Header() {
-  const { header, repositoryUrl, chatUrl } = about;
+  const { header, repositoryUrl, linkedinUrl, chatUrl } = about;
   return (
     <header className="border-b border-line">
       <Column className="flex h-14 items-center justify-between gap-3">
@@ -47,10 +47,15 @@ function Header() {
           <a href={`#${REPLAY_ID}`} onClick={scrollToReplay} className="hidden text-sm font-medium text-fg-muted hover:text-fg sm:inline">
             {header.howItWorks}
           </a>
-          {/* Below 640 px both header links are hidden; the wrapper hides this one, since a link sets its own display. */}
+          {/* Below 640 px the header's links are hidden; the wrappers hide these, since a link sets its own display. */}
           <span className="hidden sm:inline-flex">
             <NewTabLink href={repositoryUrl} className="text-sm font-medium text-fg-muted hover:text-fg">
               {header.github}
+            </NewTabLink>
+          </span>
+          <span className="hidden sm:inline-flex">
+            <NewTabLink href={linkedinUrl} className="text-sm font-medium text-fg-muted hover:text-fg">
+              {header.linkedin}
             </NewTabLink>
           </span>
           <ThemeSwitch />
@@ -153,12 +158,15 @@ function Closing() {
 }
 
 function Footer() {
-  const { footer, repositoryUrl } = about;
+  const { footer, repositoryUrl, linkedinUrl } = about;
   return (
     <footer className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-6 text-center text-xs text-fg-muted">
       <span>{footer.text}</span>
       <NewTabLink href={repositoryUrl} className="font-medium underline-offset-2 hover:text-fg hover:underline">
         {footer.github}
+      </NewTabLink>
+      <NewTabLink href={linkedinUrl} className="font-medium underline-offset-2 hover:text-fg hover:underline">
+        {footer.linkedin}
       </NewTabLink>
     </footer>
   );

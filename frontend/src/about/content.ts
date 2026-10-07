@@ -56,14 +56,16 @@ export type Step = {
 export type Turn = { tab: string; message: string; summary: string; traceUrl: string | null; steps: Step[] };
 
 const REPOSITORY = "https://github.com/kumaranupam-personal/ai_shopping_assistant";
+const LINKEDIN = "https://www.linkedin.com/in/anupam-kumar-50609b18a";
 
 export const about = {
   title: "How Saathi works",
   description: "How an AI agent turns a shopping request into a catalog search, step by step.",
   repositoryUrl: REPOSITORY,
+  linkedinUrl: LINKEDIN,
   chatUrl: "/saathi/",
 
-  header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", cta: "Try Saathi" },
+  header: { wordmark: "Saathi", howItWorks: "How it works", github: "GitHub", linkedin: "LinkedIn", cta: "Try Saathi" },
 
   hero: {
     heading: "Describe it. Saathi finds it.",
@@ -128,7 +130,7 @@ export const about = {
           edges: ["message-api", "api-model", "memory-model"],
         },
         {
-          title: "Model call 1: search the catalog",
+          title: "Model call 1: read the intent, search the catalog",
           description: "\"8k\" becomes a budget of 8000, and Ladakh in December becomes warmth words in the free-text query.",
           code: 'search_products({\n  "query": "Ladakh winter trekking jacket extreme warmth",\n  "category": "jackets",\n  "size": "L",\n  "price_max": 8000\n})',
           nodes: ["model", "search_products"],
@@ -136,13 +138,13 @@ export const about = {
         },
         {
           title: "Ten results from 163 matches",
-          description: "SQL filters apply the limits, keyword and meaning rankings are merged, at most 3 per brand, and the top 10 go back to the model. A down jacket comes first, and most of the rest are fleece.",
+          description: "SQL filters apply the limits, keyword and meaning rankings are merged, at most 3 per brand, and the top 10 go back to the model, which picks the best of them.",
           code: '{"total_matches": 163, "results": [\n  {"id": "JKT-00230", "title": "TrekNorth Summit Down Jacket", "price": 7809, … "warmth": "extreme" …},\n  {"id": "JKT-00248", "title": "TrekNorth Glacier Fleece Jacket", "price": 4769, … "warmth": "high" …},\n  {"id": "JKT-00221", "title": "TrekNorth Zanskar Fleece Jacket", "price": 4209, … "warmth": "high" …},\n  …\n]}',
           nodes: ["search_products", "sql", "keyword", "meaning", "merge", "brand", "top", "catalog"],
           edges: ["search_products-search", "search-catalog"],
         },
         {
-          title: "Model call 2: show eight products",
+          title: "Model call 2: show the eight closest to the user's intent",
           description: "The model only picks IDs. The grounding gate checks each one and builds the cards from catalog rows, so no price or title comes from the model.",
           code: 'show_products({\n  "product_ids": ["JKT-00230", "JKT-00248", "JKT-00221", "JKT-00097", "JKT-00015", "JKT-00004", "JKT-00037", "JKT-00150"],\n  "headline": "Jackets for Ladakh Winter Trekking in Size L",\n  "suggestions": ["Only waterproof", "Only down jackets", "Under ₹5,000"],\n  "reply": "For Ladakh\'s extreme sub-zero winter temperatures, …"\n})',
           nodes: ["model", "show_products", "gate", "catalog"],
@@ -165,14 +167,14 @@ export const about = {
         "https://cloud.langfuse.com/project/cmus314rs0f4sad0c0vp141i2/traces/280044e44ff2d2fa57b18f22cc689b01?observation=fbb14bf6c65eb58e&timestamp=2026-10-05T10%3A10%3A15.808Z&traceId=280044e44ff2d2fa57b18f22cc689b01&view=graph",
       steps: [
         {
-          title: "Three words, read with the history",
+          title: "New words, read with the history",
           description: "On its own the message says little. The model reads it against turn 1, which is in the session's history.",
           code: "only waterproof ones",
           nodes: ["message", "api", "model", "memory"],
           edges: ["message-api", "api-model", "memory-model"],
         },
         {
-          title: "Model call 1: the same search, plus one filter",
+          title: "Model call 1: the same search, plus a waterproof filter",
           description: "Everything from turn 1's search is kept. The marked line is new.",
           code: 'search_products({\n  "query": "Ladakh winter trekking jacket extreme warmth",\n  "category": "jackets",\n  "size": "L",\n  "price_max": 8000,\n+ "attributes": [{"name": "waterproof", "any_of": ["true"]}]\n})',
           nodes: ["model", "search_products"],
@@ -186,7 +188,7 @@ export const about = {
           edges: ["search_products-search", "search-catalog"],
         },
         {
-          title: "Model call 2: show eight products",
+          title: "Model call 2: show the eight closest to the user's intent",
           description: "The gate checks the eight IDs against the catalog again before any card is built.",
           code: 'show_products({\n  "product_ids": ["JKT-00230", "JKT-00017", "JKT-00061", "JKT-00279", "JKT-00125", "JKT-00011", "JKT-00014", "JKT-00252"],\n  "headline": "Waterproof Winter Jackets in Size L under ₹8,000",\n  "suggestions": ["Extreme warmth only", "Under ₹5,000", "Show down jackets"],\n  …\n})',
           nodes: ["model", "show_products", "gate", "catalog"],
@@ -217,21 +219,21 @@ export const about = {
         },
         {
           title: "Model call 1: compare by ID",
-          description: "No new search: the model passes the two IDs, and the tool reads both rows from the catalog.",
+          description: "No new search: the model passes the two IDs to the compare tool, which reads both rows from the catalog.",
           code: 'compare_products({"product_ids": ["JKT-00230", "JKT-00017"]})',
           nodes: ["model", "compare_products", "catalog"],
           edges: ["model-compare_products", "compare_products-catalog"],
         },
         {
           title: "Only the weight differs",
-          description: "The tool returns both products and names the attributes whose values differ.",
+          description: "The compare tool returns both products and names the attributes whose values differ.",
           code: '{"products": [\n  {"id": "JKT-00230", "title": "TrekNorth Summit Down Jacket", "price": 7809, … "weight_g": 962 …},\n  {"id": "JKT-00017", "title": "UrbanLayer Pamir Down Jacket", "price": 4429, … "weight_g": 401 …}\n], "differing_attributes": ["weight_g"], "not_found": []}',
           nodes: ["compare_products", "catalog"],
           edges: ["compare_products-catalog"],
         },
         {
           title: "Model call 2: a text reply",
-          description: "Nothing new to show, so there are no cards. The reply uses the prices and weights the tool returned.",
+          description: "Nothing new to show, so there are no cards. The model writes the reply from the prices and weights the compare tool returned.",
           code: "Both are waterproof down jackets with extreme warmth for men. The TrekNorth Summit Down Jacket weighs 962 g and costs ₹7,809, while the UrbanLayer Pamir Down Jacket is lighter at 401 g and costs less at ₹4,429.",
           nodes: ["model", "api", "reply"],
           edges: ["api-reply"],
@@ -259,8 +261,8 @@ export const about = {
     tiles: [
       { label: "Grounding violations", value: "0" },
       { label: "Eval cases passed, 3 providers", value: "59 / 60" },
-      { label: "Cost per turn, from", value: "$0.005" },
-      { label: "Search time", value: "≈12 ms" },
+      { label: "Cost per turn on Gemini", value: "$0.005" },
+      { label: "Product Search time", value: "≈12 ms" },
     ],
     note: {
       title: "Tuned by measurement",
@@ -272,5 +274,5 @@ export const about = {
 
   closing: { heading: "Now try it yourself", line: "Ask for anything in the catalog and see how it answers.", cta: "Talk to Saathi" },
 
-  footer: { text: "A demo project. The catalog is synthetic.", github: "GitHub" },
+  footer: { text: "A demo project. The catalog is synthetic.", github: "GitHub", linkedin: "LinkedIn" },
 };

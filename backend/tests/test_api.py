@@ -1,9 +1,11 @@
 import asyncio
 import json
+import logging
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from opentelemetry import trace
 
 from app.agent.loop import MAX_MODEL_CALLS
 from app.catalog.cards import build_card, featured_cards
@@ -12,7 +14,7 @@ from app.catalog.ingest import ingest
 from app.catalog.store import open_catalog
 from app.config import Settings
 from app.llm.base import LLMConfigError, LLMUpstreamError, Prices
-from app.main import create_app, stream_turn
+from app.main import SKIP_HEALTH_CHECKS, create_app, stream_turn
 from app.search.index import load_index
 from tests.conftest import CATALOG, jacket
 from tests.test_embed import FakeModel
@@ -436,3 +438,30 @@ def test_behind_a_proxy_startup_warns_about_each_control_that_is_off(make_client
 def test_without_a_proxy_startup_does_not_warn(make_client, caplog):
     make_client()
     assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+
+def test_fastapi_native_telemetry_stays_off(index, monkeypatch):
+    """Only turns are traced: with an OTLP endpoint in the environment, FastAPI must not install its own exporter
+    and trace every request, which would send a trace per health check to Langfuse."""
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://cloud.langfuse.com/api/public/otel")
+    settings = Settings(_env_file=None, max_turns_per_session=MAX_TURNS)
+    with TestClient(create_app(settings, ScriptedProvider(), index)) as client:  # startup is when FastAPI would configure itself
+        assert client.get("/api/health").status_code == 200
+        assert isinstance(trace.get_tracer_provider(), trace.ProxyTracerProvider)  # the global provider is still unconfigured
+
+
+def access_record(path, status=200):
+    """A log record as uvicorn's access logger makes it."""
+    return logging.LogRecord("uvicorn.access", logging.INFO, "", 0, '%s - "%s %s HTTP/%s" %d', ("127.0.0.1:1", "GET", path, "1.1", status), None)
+
+
+def test_health_checks_are_left_out_of_access_logs(make_client):
+    make_client()
+    make_client()  # a second app adds no second filter
+    logger = logging.getLogger("uvicorn.access")
+    assert logger.filters.count(SKIP_HEALTH_CHECKS) == 1
+    assert not logger.filter(access_record("/api/health"))
+    assert not logger.filter(access_record("/api/health?x=1", status=503))  # a failing one too: Docker reports it
+    assert logger.filter(access_record("/api/healthz"))
+    assert logger.filter(access_record("/api/featured"))
+    assert logger.filter(logging.LogRecord("uvicorn.access", logging.INFO, "", 0, "no args", None, None))

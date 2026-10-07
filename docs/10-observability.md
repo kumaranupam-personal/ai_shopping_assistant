@@ -6,6 +6,7 @@ Every agent turn is traced with OpenTelemetry and, when an endpoint is configure
 
 - Every turn is traced, wherever it runs (API, terminal chat, eval runner), including failed and cancelled turns. There is no sampling.
 - Nothing else is traced: no other HTTP request, status event, stream or session-store operation adds a span. There are no metric or log exports.
+- FastAPI's built-in OpenTelemetry (FastAPI 0.142+) is turned off in `create_app` with `telemetry={"tracing": False, "metrics": False, "logs": False, "operation_spans": False, "auto_configure": False}`. Left on, it reads `OTEL_EXPORTER_OTLP_ENDPOINT` at startup, installs its own exporters on the global providers, and sends a trace with four spans for every HTTP request, including the container health check every ten seconds, to the same Langfuse project.
 
 ## Trace shape
 

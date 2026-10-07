@@ -14,7 +14,7 @@ The backend runs as exactly one container with one uvicorn process. Sessions, ra
 The app lives under `/saathi/`, so the domain can hold other projects beside it later.
 
 - `/saathi/` is the chat, `/saathi/about/` the about page (`12-about-page.md`) and `/saathi/api/` the API. The server's nginx forwards `/saathi/api/...` to the backend as `/api/...`, so the backend's own paths in `05-api.md` don't change. In development, Vite serves the same pages at `http://localhost:5173/saathi/` and the API stays at `http://localhost:8000/api/`.
-- `/` redirects to `/saathi/` with a 302, which browsers don't keep, so the root can lead elsewhere later. `/saathi` redirects to `/saathi/`, and the about page's old addresses `/about` and `/about/`, as well as `/saathi/about`, redirect to `/saathi/about/`, all with a 301. Redirects keep the query string and carry only the path in `Location`. The frontend container's nginx makes them, and a Vite plugin makes the same ones in development and preview.
+- `/` redirects to `/saathi/about/`, the about page, with a 302, which browsers don't keep, so the root can lead elsewhere later. The chat is reached from the page's calls to action, or directly at `/saathi/`. `/saathi` redirects to `/saathi/`, and the about page's old addresses `/about` and `/about/`, as well as `/saathi/about`, redirect to `/saathi/about/`, all with a 301. Redirects keep the query string and carry only the path in `Location`. The frontend container's nginx makes them, and a Vite plugin makes the same ones in development and preview.
 - Anything else outside `/saathi/` is a 404.
 - Browser storage belongs to the whole domain, not to a path, so every key the frontend saves starts with `saathi.` (`06-frontend.md`, Client state). Another project on the same domain uses its own prefix.
 
@@ -56,7 +56,7 @@ The app lives under `/saathi/`, so the domain can hold other projects beside it 
    ```
 
 5. **Server nginx and HTTPS:** see the next section. It needs a domain whose `A` record points at the Elastic IP.
-6. **Check:** the domain leads to `/saathi/`, which shows the landing with the featured products, and a chat message gets a reply that streams in. The checks under "Verifying HTTPS and the headers" pass.
+6. **Check:** the domain leads to `/saathi/about/`, the about page, and `/saathi/` shows the landing with the featured products, where a chat message gets a reply that streams in. The checks under "Verifying HTTPS and the headers" pass.
 
 ## Server nginx and HTTPS
 
@@ -281,7 +281,7 @@ Three settings in the HTTPS site follow from the app and need care when it chang
 
 ```bash
 curl -sI http://example.com/ | head -3                      # 301 to https://example.com/
-curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://example.com/        # 302 to https://example.com/saathi/
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://example.com/        # 302 to https://example.com/saathi/about/
 curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://example.com/about   # 301 to https://example.com/saathi/about/
 curl -sI https://example.com/saathi/ | grep -iE 'strict-transport|content-security|x-frame|server'
 curl -s -o /dev/null -w '%{http_code}\n' https://example.com/saathi/api/featured              # 200
@@ -303,7 +303,7 @@ All commands run in the repository's folder on the server.
 - **Change a secret or setting:** edit `.env`, then `sudo docker compose up -d`, which recreates the backend with the new values. A changed `VITE_TURNSTILE_SITE_KEY` needs `sudo docker compose up -d --build frontend`, since it is built into the frontend.
 - **Pause chat:** `CHAT_ENABLED=false` in `.env`, then `sudo docker compose up -d`.
 - **Memory:** recreating the backend container resets everything it holds in memory (`11-abuse-protection.md`, State and logging). Visitors with an open chat see the expired-chat notice, and since the day's spend starts again from 0, more than one restart in a UTC day can let spending exceed `DAILY_BUDGET_USD`. A frontend-only release leaves the backend running.
-- **Logs:** `sudo docker compose logs -f backend`, including one line per abuse-protection rejection with the client IP; `sudo docker compose logs -f frontend`.
+- **Logs:** `sudo docker compose logs -f backend`, including one line per abuse-protection rejection with the client IP. Uvicorn's access line for `GET /api/health` is dropped by a filter in `create_app`, so the health check every ten seconds doesn't fill the log; every other request is logged; `sudo docker compose logs -f frontend`.
 - **Status:** `sudo docker compose ps`.
 
 ## Adding Cloudflare
