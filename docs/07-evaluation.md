@@ -126,7 +126,7 @@ Examples here and in the judge's instructions are made up and match no eval case
 
 ## Labeling guide
 
-Human labels calibrate the judge (`08-roadmap.md`, Phase 19): the judge is trusted only as far as it agrees with them.
+Human labels calibrate the judge (`08-roadmap.md`, Phase 19): the judge is trusted only as far as it agrees with them. `backend/evals/labels/build_sheet.py` builds the labeling sheet and the recheck sheet from dev runs that store tool calls, rebuilding each shown product from the catalog; `labels/key/` holds what the sheets hide (`key.json`) and the hand-written breaks (`broken.json`).
 
 - **Unit:** one row of the labeling sheet is one turn. Label every criterion in the rubric for it: pass, fail or n/a, with a short note for every fail and for any call that felt close.
 - **Order:** read the user's message and the earlier conversation first, then the tool calls and the products, then the reply. Check faithfulness against the tool results and products in the row, not against memory.

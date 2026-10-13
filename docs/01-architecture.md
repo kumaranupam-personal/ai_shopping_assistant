@@ -95,6 +95,7 @@ ai_shopping_assistant/
       run.py                 eval runner
       checks.py              grounding check, case expectations and the prompt leak check
       prompts/               one snapshot of the system prompt and tools per prompt version
+      labels/                the judge's labeling sheets, the script that builds them, and their key
       results/               eval run outputs, tracked in git so runs can be compared
         dev/                 dev runs and each provider's baseline
         holdout/             holdout runs
