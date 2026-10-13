@@ -17,7 +17,7 @@ HINDI_NUMBERS = {
 HINDI_THOUSANDS = re.compile(rf"\b({'|'.join(HINDI_NUMBERS)})\s+hazaa?r\b", re.IGNORECASE)
 HINDI_WORDS = frozenset(
     "hai hain aur ke ki ka liye yeh ye aap mein sasta saste sabse accha achha wala wali nahi bhi toh kya "
-    "dikhao chahiye".split()
+    "dikhao chahiye kis kaun kaunsa ho rahe raha rahi hum ko se lena leni kuch koi sirf lekin batao".split()
 )
 
 

@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 
 import pytest
@@ -51,7 +52,15 @@ def test_a_title_shared_by_several_products_is_grounded_when_any_of_them_was_ret
     assert grounding_violations("Try the Snowline Parka.", catalog, {"J3"}, set(), set()) == ["title 'Snowline Parka' was named but no tool returned it"]
 
 
-@pytest.mark.parametrize(("text", "language"), [("Yeh jackets aapke budget mein hain.", "hinglish"), ("These are warm.", "english")])
+@pytest.mark.parametrize(
+    ("text", "language"),
+    [
+        ("Yeh jackets aapke budget mein hain.", "hinglish"),
+        ("Kis category mein dekh rahe ho?", "hinglish"),  # a one-line question with only common words
+        ("These are warm.", "english"),
+        ("Which category are you looking for, so I can help?", "english"),
+    ],
+)
 def test_reply_language(text, language):
     assert reply_language(text) == language
 
@@ -127,9 +136,9 @@ def test_each_case_file_is_valid(index, eval_set):
             matching_ids(index, Filters(**case.expect.shown), ["J1"])  # raises on an unknown filter value
 
 
-def test_the_dev_set_has_20_cases_and_no_case_is_in_both_sets():
+def test_the_dev_set_has_40_cases_and_no_case_is_in_both_sets():
     cases = all_cases()
-    assert len(cases["dev"]) == 20
+    assert len(cases["dev"]) == 40
     assert not {c.id for c in cases["dev"]} & {c.id for c in cases["holdout"]}
     assert not {tuple(c.turns) for c in cases["dev"]} & {tuple(c.turns) for c in cases["holdout"]}
 
@@ -159,6 +168,15 @@ def test_a_prompt_leak_is_a_shared_word_pair_or_a_distinctive_word(example, leak
 def test_quoted_examples_come_from_the_prompt_and_the_tools_but_not_apostrophes():
     snapshot = {"system_prompt": 'Say "cheaper" for the user\'s budget.', "tools": [{"description": "A size such as 'M'."}]}
     assert quoted_examples(snapshot) == {"cheaper", "M"}
+
+
+# The holdout file's SHA-256. Changing a holdout case means updating this on purpose, in its own commit (docs/07-evaluation.md).
+HOLDOUT_SHA256 = "b057620bb2b675a0354d4c79d0e07553d5c224ed690fb5ce5d0660594aa0e638"
+
+
+def test_the_holdout_set_is_frozen():
+    assert len(all_cases()["holdout"]) == 40
+    assert hashlib.sha256((SETS_DIR / "holdout.yaml").read_bytes()).hexdigest() == HOLDOUT_SHA256
 
 
 def test_the_holdout_set_runs_only_in_full():

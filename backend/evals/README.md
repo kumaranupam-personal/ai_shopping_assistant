@@ -16,6 +16,23 @@ Rules, in short (`docs/07-evaluation.md`, Dev and holdout sets, is authoritative
 - If a holdout failure ever leads to a prompt or tool change, that case moves to dev and a new one replaces it.
 - No example in the prompt or tool definitions may repeat an eval case's words. `tests/test_evals.py` enforces this.
 
+## Holdout coverage
+
+One author that never saw the prompt or the tool descriptions wrote a pool of 60 cases from the specs and the catalog, and checked every expected result against the demo catalog. A second agent that never saw them either checked that an agent following `docs/04-agent.md` exactly would pass every case, and the cases it flagged were fixed. The pool was then split at random within each behavior, as the plan below describes: 20 cases joined the dev set and 40 became the holdout set, so both come from the same distribution.
+
+| Category | Search | Refinement | Product question | Relaxation | Total |
+|---|---|---|---|---|---|
+| jackets | 2 | 1 | 1 | 1 | 5 |
+| shoes | 2 | – | 1 | 1 | 4 |
+| phones | 2 | – | 2 | 1 | 5 |
+| laptops | 2 | 2 | 1 | – | 5 |
+| backpacks | 2 | 1 | – | – | 3 |
+| watches | 1 | 2 | – | – | 3 |
+| kurtas | 2 | 1 | 1 | – | 4 |
+| kitchen appliances | 1 | 1 | – | 1 | 3 |
+
+Plus 8 cases with no category: 4 clarifying questions and 4 declines, 2 of them adversarial. In all: 12 Hinglish and 28 English, 14 multi-turn and 26 single-turn.
+
 ## Running
 
 From `backend/`, with the provider's API key set (each run makes paid API calls):
@@ -38,7 +55,7 @@ Every holdout run is listed here, so the number of times the set has been looked
 
 **Plan, recorded 2026-10-13, before the holdout cases were written or any holdout run:**
 
-1. Write 20 new dev cases (40 in total) and 40 holdout cases, all before any holdout run. Holdout cases are written from the specs, the catalog and real phrasings, without reading the prompt.
+1. Write 20 new dev cases (40 in total) and 40 holdout cases, all before any holdout run. So that both come from the same distribution, one author that never saw the prompt writes a pool of 60 cases from the specs, the catalog and real phrasings, with 21 searches, 12 refinements, 9 product questions, 6 clarifications, 6 declines and 6 relaxations. A second agent that never saw the prompt checks every case can be passed by an agent that follows `docs/04-agent.md` exactly, and failing cases are fixed or replaced. The pool is then split at random within each behavior: for each behavior, its case IDs are sorted and shuffled with a new `random.Random(20261013)`, and the first third go to the dev set and the rest to the holdout set.
 2. **v1:** run the holdout set once on each provider (Anthropic, OpenAI, Gemini) with the current prompt version, `a8130bf25dd1`.
 3. **Blinding:** after v1, only each provider's summary (pass rate, grounding violations, latency, cost) is looked at. Which cases failed, their replies, their results files and their traces stay unread until v2 is done.
 4. **Tuning:** on the 40 dev cases only, one change per commit, with the dev set rerun on all three providers after each change. Tuning stops when every dev target is met on all three providers, or after at most 5 tuning commits, whichever comes first. The holdout set doesn't run during tuning.

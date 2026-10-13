@@ -14,7 +14,7 @@
 - Frontend: Playwright, running against a mocked API that replays recorded event streams, checks every quality-bar item in `06-frontend.md` that can be automated (the listed widths in both themes, the drag-resize sweep, layout shift, and console errors), in every state the quality bar names. Lighthouse runs on the production build with `npm run lighthouse`.
 - API: with a stubbed agent, the event order and error codes match `05-api.md`, and the session rules from `04-agent.md` hold (busy, full, expired, rollback on failure, cancellation and rollback on client disconnect). The featured list follows its selection rule. Restoring a session returns only committed turns, and its cards reflect the current catalog: a price changed after the turn shows the new price, and a removed product is left out.
 - Session restore in the browser: reloading restores messages, result markers and the latest result set. A new tab starts a new session. An expired session shows the notice. Reloading during a turn puts the interrupted message back in the composer. A message rejected with `session_full` shows a "New chat" button instead of "Retry".
-- Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM. Both case files are valid, no case ID or message is in both sets, and no example in the prompt or a tool definition repeats an eval case (see Dev and holdout sets).
+- Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM. Both case files are valid, no case ID or message is in both sets, the holdout file matches its pinned SHA-256 hash, and no example in the prompt or a tool definition repeats an eval case (see Dev and holdout sets).
 - Product tiles in the browser: in both themes, a card without an image, and a card whose image fails to load, show a tile with their category's icon, one dot per product color in order, each in its swatch, the brand label and no brand line under the tile, on a background tinted from the first color (see `06-frontend.md`, Product tiles). Jackets and kurtas show different icons from each other and from the other categories. A card with an image shows the brand under it and no label. Strip tiles and cart rows show the icon on the tint with no dots and no label. In the drawer, a product without an image shows the 2:1 banner with its dots and label, with the title, price and action bar in view at 1280 by 800, and a product with an image shows it square with the brand under it.
 - Cards in the browser: every row of the highlight pill table in `06-frontend.md` renders as listed, a discounted card shows its badge and an undiscounted one shows none, and strip cards show neither badge nor pills.
 - Tracing: with an in-memory span exporter, a turn's spans and their attributes match `10-observability.md`, for a successful, a failed and a cancelled turn, a raising provider call, a tool error result, message text on and off, the eval runner's turns, and a model without prices. With no endpoint configured, nothing is exported, and a failing exporter never fails a turn.
@@ -31,7 +31,7 @@
 
 ## Eval suite
 
-The cases are split into two sets in `backend/evals/sets/`: `dev.yaml` holds 20 cases, each checking something the others don't, and `holdout.yaml` holds cases that were never used for tuning (see Dev and holdout sets). `backend/evals/run.py` runs one set against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning both sets. Both files use the same format, and each case contains:
+The cases are split into two sets in `backend/evals/sets/`: `dev.yaml` holds 40 cases and `holdout.yaml` holds 40 cases that were never used for tuning (see Dev and holdout sets). `backend/evals/run.py` runs one set against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning both sets. Both files use the same format, and each case contains:
 
 - `id` and a one-line `description`.
 - `turns`: an ordered list of user messages.
@@ -43,7 +43,7 @@ The cases are split into two sets in `backend/evals/sets/`: `dev.yaml` holds 20 
   - `mentions`: case-insensitive substrings the final reply must contain, such as a brand name the reply should name.
   - `reply_language`: `english` or `hinglish`. It is checked with a word-list heuristic: a reply counts as Hinglish when at least 2 distinct words from a fixed list of common Hindi words (such as hai, aur, ke, liye, yeh, aap, mein, sasta) appear in it.
 
-Dev set coverage:
+Coverage of the dev set's first 20 cases, written before the split, each checking something the others don't:
 
 - Every category in at least one case.
 - 4 multi-turn refinements: a different attribute, a brand, an ordinal reference and a comparison.
@@ -52,12 +52,14 @@ Dev set coverage:
 - 2 no-result requests that should trigger relaxation: one fixed by raising the budget, one by dropping an inferred attribute.
 - 6 Hinglish cases, all scored: a single-turn intent, a refinement ("aur sasta dikhao"), an ordinal reference ("dusra wala"), an amount in Hindi number words ("teen hazaar tak"), a clarification and an out-of-scope request.
 
+The dev set's other 20 cases and the 40 holdout cases come from one pool of 60, written without the prompt and split at random within each behavior, so the two sets share a distribution. `backend/evals/README.md` gives the holdout set's coverage and how the pool was written, checked and split.
+
 ## Dev and holdout sets
 
 The dev set is for finding failures and tuning the prompt and tools, so its scores show what the tuning fixed, not how the agent handles requests it wasn't tuned on. The holdout set measures that. The rules:
 
 - Tune only on the dev set. Debugging single cases (`CASE_ID` arguments) works only on the dev set; the holdout set always runs in full.
-- Write holdout cases from the specs, the catalog and real user phrasings, without reading the prompt, and change them only on purpose, in their own commit.
+- Write holdout cases from the specs, the catalog and real user phrasings, without reading the prompt, and change them only on purpose, in their own commit, which also updates the hash pinned in `tests/test_evals.py`.
 - Run the holdout set only on a finished prompt version, once per provider, and report the result as it comes out. Choosing between prompt versions by their holdout scores would turn it into a second dev set. Choosing between prompt versions by their holdout scores would turn it into a second dev set.
 - If a holdout failure leads to a prompt or tool change, move that case to the dev set and write a new one in its place, and say so in the run log in `backend/evals/README.md`. Every holdout run goes in that log.
 - No example in the system prompt or a tool definition may repeat an eval case's message or its expected result, such as a phrase from a case together with the filter value it should map to, because a case that passes by copying an example measures nothing. A test checks the quoted examples against the messages of both sets: they may share no pair of adjacent words, unless both are common words such as "for my", and no one-word example of 4 letters or more may be a word a case uses.
