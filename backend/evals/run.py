@@ -66,12 +66,14 @@ class Recorder:
     def __init__(self, provider: LLMProvider):
         self.provider, self.name, self.model = provider, provider.name, provider.model
         self.min_cache_tokens, self.prices = provider.min_cache_tokens, provider.prices
-        self.tools: list[str] = []  # both lists only grow; a turn's share is the slice it added
+        self.tools: list[str] = []  # the lists only grow; a turn's share is the slice it added
         self.results: list[ToolResult] = []
+        self.calls: list[dict] = []  # each call with its arguments and, once it has run, its result
 
     async def complete(self, system, history, tools):
         response = await self.provider.complete(system, history, tools)
         self.tools += [call.name for call in response.tool_calls]
+        self.calls += [{"id": call.id, "name": call.name, "arguments": call.arguments} for call in response.tool_calls]
         return response
 
     def user_message(self, text):
@@ -79,6 +81,11 @@ class Recorder:
 
     def tool_results_message(self, results):
         self.results += results
+        by_id = {call["id"]: call for call in self.calls}
+        for result in results:
+            if call := by_id.get(result.call_id):
+                call["result"] = result.content if result.is_error else json.loads(result.content)
+                call["is_error"] = result.is_error
         return self.provider.tool_results_message(results)
 
 
@@ -127,7 +134,7 @@ async def run_case(
     options = TraceOptions(["eval", eval_set, case.id], message_text=True)  # the messages are the eval cases, never private
     turns, calls, error, last = [], [], None, TurnResult()
     for text in case.turns:
-        events, first_tool = [], len(recorder.tools)
+        events, first_tool, first_call = [], len(recorder.tools), len(recorder.calls)
         user_numbers |= user_amounts(text)
         started = time.perf_counter()
         try:
@@ -147,6 +154,8 @@ async def run_case(
         turns.append({
             "user": text,
             **vars(last),
+            # What the agent searched and got back, so a reply can be judged against it (docs/07-evaluation.md).
+            "tool_calls": [{k: v for k, v in call.items() if k != "id"} for call in recorder.calls[first_call:]],
             "latency_s": round(time.perf_counter() - started, 2),
             "model_calls": len(usages),
             **{name: sum(getattr(u, name) for u in usages) for name in USAGE_FIELDS},

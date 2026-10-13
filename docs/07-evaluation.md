@@ -54,7 +54,7 @@ Coverage of the dev set's first 20 cases, written before the split, each checkin
 
 The dev set's other 20 cases and the 40 holdout cases come from one pool of 60, written without the prompt and split at random within each behavior, so the two sets share a distribution. `backend/evals/README.md` gives the holdout set's coverage and how the pool was written, checked and split.
 
-The `expect` keys and the grounding check are rules, so they test what the agent did (filters, products, grounding, language), not how good its reply is. Grading reply quality with an LLM judge is planned in `08-roadmap.md`, Phase 19.
+The `expect` keys and the grounding check are rules, so they test what the agent did (filters, products, grounding, language), not how good its reply is. Grading reply quality with an LLM judge, against the rubric under Judge rubric below, is planned in `08-roadmap.md`, Phase 19.
 
 ## Dev and holdout sets
 
@@ -79,6 +79,8 @@ The runner uses the provider named by `LLM_PROVIDER`. `--set dev` (the default) 
 - `prompt_version`: the first 12 hex characters of a SHA-256 hash of exactly what the model sees, the system prompt and every tool's name, description and schema, so any change to them gives a new version;
 - `git_commit` and `git_dirty`: the commit the run used, and whether `backend/` had uncommitted changes outside `evals/results/` and `evals/prompts/`, so leftover run files don't count.
 
+Each turn in a results file also records `tool_calls`: every tool call in order, with its arguments and its result (the tool's JSON, or the error message when it failed), so a reply can be judged against what the agent searched and got back (see Judge rubric). Runs from before this was added don't have it.
+
 The first run of a prompt version also saves its system prompt and tools as `evals/prompts/<prompt_version>.json`, so any two versions can be diffed. Each provider's reference run on the dev set is `evals/results/dev/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit. A baseline recorded before prompt versioning carries the version it ran with, marked `prompt_version_backfilled`, and no commit.
 
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
@@ -89,3 +91,48 @@ The first run of a prompt version also saves its system prompt and tools as `eva
 - Input and output tokens per turn, plus cache-read and cache-write tokens, are reported. From the second model call of a conversation onward, every call whose input (uncached, cache-read and cache-write tokens) is at least the provider's `min_cache_tokens` (see `09-llm-providers.md`) must read tokens from the cache, which confirms prompt caching works. Smaller calls aren't counted, because the provider can't cache them, and a provider that caches on a best-effort basis (no `min_cache_tokens`) isn't checked.
 
 Every change to the prompt or the tools reruns the dev set on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message. The holdout set isn't rerun for these changes (see Dev and holdout sets above).
+
+## Judge rubric
+
+The rubric, with decisions D1 to D8 below, is frozen for labeling and calibration: changing it afterwards means relabeling.
+
+The judge, and a person labeling replies for its calibration, grades one turn at a time against the criteria below. Each criterion gets **pass**, **fail** or **n/a**, with a one-line reason for every fail. A turn passes when every criterion that applies passes. The rubric grades only the current turn's reply, cards and suggestions; earlier turns are context, and a mistake in an earlier turn doesn't fail a later one.
+
+What is graded for a turn: the earlier conversation, the user's message, the agent's tool calls with their inputs and results, the products shown (from the catalog), and the reply with its headline and suggestions. It never sees the agent's system prompt, the provider, the case or its expected result.
+
+| Criterion | Applies when | Pass | Fail | From `04-agent.md` |
+|---|---|---|---|---|
+| **Relevance** | The turn shows products | Every shown product is a sensible candidate for the request: it meets the user's stated constraints, or the ones left after a relaxation the reply discloses, and doesn't clearly contradict the stated need or use | A shown product plainly doesn't fit the request (wrong kind of product, ignores a stated constraint, unsuited to the stated use when relevant products were among the results) | Rules 2, 4, 5 |
+| **Helpfulness** | The turn shows products or answers a question | The reply gives the user something to decide with beyond what the cards show (a trade-off, a recommendation, what was relaxed), or directly answers every part of the question asked | The reply only restates what the cards show, is generic filler, or leaves part of the question unanswered | Rules 9, 10 |
+| **Faithfulness** | The reply states any product fact | Every product fact (price, MRP, spec, attribute, rating, stock, availability, a comparison between products) is supported by a tool result in the conversation, and no amount is computed or rounded | Any fact unsupported by or contradicting the tool results; any invented discount, delivery date, stock level or product; any computed difference, total, saving, percentage or rounded amount | Rules 8, 11 |
+| **Relaxation honesty** | The agent loosened a constraint the user gave or the agent inferred (it dropped a filter, raised the budget or dropped the size before showing results) | The reply says which constraint was loosened | The reply presents the results as if they met the original request | Rule 7 |
+| **Clarification quality** | The reply asks the user a question instead of showing products | Exactly one short question, asked because neither a category nor a clear use case could be inferred, that would let the next turn search | More than one question; a question when a category or use case could be inferred; a question that wouldn't help narrow the search | Rule 3 |
+| **Decline quality** | The agent declines the request | Polite and brief, says what it can't help with, and doesn't do any of the unrelated task | Does the unrelated task (fully or partly), lectures, is rude, or is so vague the user can't tell why | Rule 1 |
+| **Language and style** | Every turn | Same language as the user's latest message (Hinglish or English), suggestions included; at most 2 sentences and 50 words (see D4); plain text; titles, brands and amounts as the tools returned them; no internal reasoning or commentary about the agent's own process | Any of these broken, such as a reply that explains which filters it inferred | Rules 10, 13 |
+
+### Decisions
+
+Examples here and in the judge's instructions are made up and match no eval case, so they can't decide a labeled row.
+
+- **D1, a pick without a reason.** A reply that names a preferred product but gives no reason for it: helpfulness **pass**, because a recommendation helps the user choose; a reason is better but not required.
+- **D2, opinion words.** Claims such as "good for long commutes" or "great for daily use": faithfulness **pass** when it's a reasonable reading of the product's attributes (a large battery for heavy use), and **fail** when the attributes contradict it or give no basis for it.
+- **D3, specs used as a trade-off.** Rule 10 says not to repeat specs the cards show, but language and style **pass** when a spec is named to compare products or justify a recommendation ("the first has a bigger 30 L capacity, the second weighs less"), and **fail** when the reply only lists what the cards show.
+- **D4, the length limit.** Up to 55 words **passes**, a tolerance of 5 words over rule 10's 50, and 56 or more is a **fail**. The 2-sentence limit has no tolerance: 3 or more sentences is a **fail**. Words are counted as text separated by spaces; a sentence ends with ".", "?" or "!", and a semicolon doesn't end one.
+- **D5, replies without cards.** Answers to product questions and comparisons have no cards to carry the detail, but the same limit applies, as rule 10 states it for every reply.
+- **D6, relevance after relaxation.** Products are judged against the request as relaxed, provided the reply discloses the relaxation (relaxation honesty covers the disclosure). Cotton kurtas shown for a rayon kurta request under a budget no rayon kurta meets is a relevance **pass** if the reply says so.
+- **D7, a clarifying question with suggestions.** A question that also lists what the store sells ("Are you looking for clothes, electronics or kitchen items?"): clarification **pass**; it's still one question, and the options help the user answer.
+- **D8, a decline that offers an alternative.** A decline that also suggests something the store does carry: decline **pass**, as long as it doesn't do the unrelated task and doesn't run a search in that turn.
+
+## Labeling guide
+
+Human labels calibrate the judge (`08-roadmap.md`, Phase 19): the judge is trusted only as far as it agrees with them.
+
+- **Unit:** one row of the labeling sheet is one turn. Label every criterion in the rubric for it: pass, fail or n/a, with a short note for every fail and for any call that felt close.
+- **Order:** read the user's message and the earlier conversation first, then the tool calls and the products, then the reply. Check faithfulness against the tool results and products in the row, not against memory.
+- **n/a:** use it only when the criterion's "applies when" doesn't hold. If unsure whether it applies, label it and add a note.
+- **Strictness:** apply the rubric and the decisions as written, not a personal standard. If a reply feels wrong for a reason the rubric doesn't cover, note it in the comment column; the rubric may need a new criterion, but the row's labels follow the current rubric.
+- **No outside information:** label from what's in the row. The provider, the case and the rule-check result are deliberately left out and stay in the key file until labeling is finished, and some rows are deliberately broken copies of real replies.
+- **Sittings:** label in two or three sittings of about 20 rows each, to avoid fatigue.
+- **Consistency check:** after a break of at least a few hours, about a fifth of the rows, reshuffled, are labeled again on a second sheet, without looking at the first. A criterion on which the two sittings disagree often needs a clearer definition: fix the rubric, not just the labels, and record the change.
+- **Holdout replies** are never labeled.
+

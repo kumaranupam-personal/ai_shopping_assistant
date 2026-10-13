@@ -136,9 +136,9 @@ Phase 18 ended with every rule-based check passing on both sets, so those checks
 - Part 1: the rubric and the labeling guide in `07-evaluation.md`: pass/fail criteria drawn from the required behaviors in `04-agent.md` (such as relevance, helpfulness, faithfulness, relaxation honesty, clarification and decline quality, and language and style), when each applies, and how borderline replies are decided.
 - Part 2: the eval runner also saves each turn's tool calls and tool results, and the dev set reruns on every provider, so a reply can be judged against what the agent searched and what it got back.
 - Part 3: the labeling sheet: about 60 dev turns chosen across behaviors, providers, languages and runs, plus deliberately broken copies of real replies so every criterion has failures, shuffled, with the provider, case and rule-check result kept in a separate key. Holdout replies are never labeled.
-- Part 4: human labels on the sheet, a later relabel of a fifth of it to measure the labeler's own consistency, and a random split of the labels into a calibration part and a held-out part.
+- Part 4: human labels on the sheet, a relabel of a fifth of it after a break to measure the labeler's own consistency, and a random split of the labels into a calibration part and a held-out part.
 - Part 5: the judge in `evals/`, called through the LLM layer from `09-llm-providers.md` with its own provider, model and prompt version recorded in the results, a `--judge` option in the runner and a way to judge an existing results file, with tests against a scripted provider.
-- Part 6: calibration: the judge prompt is refined against the calibration labels only, and its agreement with the held-out labels is reported once, per criterion.
+- Part 6: calibration: the judge prompt is refined, in one or two rounds, against the calibration labels only, and its agreement with the held-out labels is reported once, per criterion.
 - Then a new plan, recorded in the holdout run log before any judged holdout result, for judged dev and holdout runs.
 - Done when the tests in `07-evaluation.md` pass, the judge's agreement with the held-out labels is reported, and the judged runs the new plan names are in the log.
 

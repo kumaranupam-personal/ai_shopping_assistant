@@ -113,6 +113,9 @@ def test_a_case_runs_end_to_end_and_is_graded(index, prices, cost):
     assert (result["scored"], result["passed"], result["failures"]) == (True, True, [])
     [turn] = result["turns"]
     assert turn["tools"] == ["search_products", "show_products"] and turn["shown"] == ["J3", "J1"]
+    search, shown = turn["tool_calls"]
+    assert (search["name"], search["arguments"], search["is_error"]) == ("search_products", SEARCH.arguments, False)
+    assert search["result"]["results"] and shown["arguments"] == show.arguments and "shown" in shown["result"]
     assert turn["model_calls"] == 2 and turn["grounding"] == []  # ₹1,000 is J1's price, from the search result
     assert (turn["input_tokens"], turn["output_tokens"], turn["cache_read_tokens"], turn["cache_write_tokens"]) == (200, 40, 160, 0)
     summary = summarize([result])
