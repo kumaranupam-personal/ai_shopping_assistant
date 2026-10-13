@@ -54,13 +54,15 @@ Coverage of the dev set's first 20 cases, written before the split, each checkin
 
 The dev set's other 20 cases and the 40 holdout cases come from one pool of 60, written without the prompt and split at random within each behavior, so the two sets share a distribution. `backend/evals/README.md` gives the holdout set's coverage and how the pool was written, checked and split.
 
+The `expect` keys and the grounding check are rules, so they test what the agent did (filters, products, grounding, language), not how good its reply is. Grading reply quality with an LLM judge is planned in `08-roadmap.md`, Phase 19.
+
 ## Dev and holdout sets
 
 The dev set is for finding failures and tuning the prompt and tools, so its scores show what the tuning fixed, not how the agent handles requests it wasn't tuned on. The holdout set measures that. The rules:
 
 - Tune only on the dev set. Debugging single cases (`CASE_ID` arguments) works only on the dev set; the holdout set always runs in full.
 - Write holdout cases from the specs, the catalog and real user phrasings, without reading the prompt, and change them only on purpose, in their own commit, which also updates the hash pinned in `tests/test_evals.py`.
-- Run the holdout set only on a finished prompt version, once per provider, and report the result as it comes out. Choosing between prompt versions by their holdout scores would turn it into a second dev set. Choosing between prompt versions by their holdout scores would turn it into a second dev set.
+- Run the holdout set only on a finished prompt version, once per provider, and report the result as it comes out. Choosing between prompt versions by their holdout scores would turn it into a second dev set.
 - If a holdout failure leads to a prompt or tool change, move that case to the dev set and write a new one in its place, and say so in the run log in `backend/evals/README.md`. Every holdout run goes in that log.
 - No example in the system prompt or a tool definition may repeat an eval case's message or its expected result, such as a phrase from a case together with the filter value it should map to, because a case that passes by copying an example measures nothing. A test checks the quoted examples against the messages of both sets: they may share no pair of adjacent words, unless both are common words such as "for my", and no one-word example of 4 letters or more may be a word a case uses.
 
@@ -86,4 +88,4 @@ The first run of a prompt version also saves its system prompt and tools as `eva
 - Cost per turn and for the whole run, in USD, from the provider's `prices` (see `09-llm-providers.md`), is reported. It is left out when `prices` is unset. Cost has no target.
 - Input and output tokens per turn, plus cache-read and cache-write tokens, are reported. From the second model call of a conversation onward, every call whose input (uncached, cache-read and cache-write tokens) is at least the provider's `min_cache_tokens` (see `09-llm-providers.md`) must read tokens from the cache, which confirms prompt caching works. Smaller calls aren't counted, because the provider can't cache them, and a provider that caches on a best-effort basis (no `min_cache_tokens`) isn't checked.
 
-Every change to the prompt or the tools reruns the dev set on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message. The holdout set does not rerun after every change: it runs only on a finished prompt version, once per provider (see Dev and holdout sets above).
+Every change to the prompt or the tools reruns the dev set on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message. The holdout set isn't rerun for these changes (see Dev and holdout sets above).

@@ -18,7 +18,7 @@ Rules, in short (`docs/07-evaluation.md`, Dev and holdout sets, is authoritative
 
 ## Holdout coverage
 
-One author that never saw the prompt or the tool descriptions wrote a pool of 60 cases from the specs and the catalog, and checked every expected result against the demo catalog. A second agent that never saw them either checked that an agent following `docs/04-agent.md` exactly would pass every case, and the cases it flagged were fixed. The pool was then split at random within each behavior, as the plan below describes: 20 cases joined the dev set and 40 became the holdout set, so both come from the same distribution.
+The holdout cases are 40 of the pool of 60 described in step 1 of the plan below; the other 20 joined the dev set, so both sets come from the same distribution. Every expected result was checked against the demo catalog, and every case was checked to be passable by an agent that follows `docs/04-agent.md` exactly.
 
 | Category | Search | Refinement | Product question | Relaxation | Total |
 |---|---|---|---|---|---|
@@ -67,3 +67,7 @@ Every holdout run is listed here, so the number of times the set has been looked
 | 2026-10-13 | `a8130bf25dd1` (v1) | Anthropic (`claude-opus-5-5`) | 40/40 | 0 grounding violations, p50 5.8 s, p95 9.9 s, $0.86. |
 | 2026-10-13 | `a8130bf25dd1` (v1) | OpenAI (`gpt-6-astra`) | 40/40 | 0 grounding violations, p50 7.0 s, p95 16.1 s (over the 15 s target), $1.22. |
 | 2026-10-13 | `a8130bf25dd1` (v1) | Gemini (`gemini-3.8-flash`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 16.1 s (over the 15 s target), $0.29. The three runs ran at the same time. |
+
+**Closed 2026-10-13, following the plan's stop rule.** After v1, the dev set ran once on each provider with the same prompt version, one provider at a time: Anthropic, OpenAI and Gemini each passed 40/40 with 0 grounding violations and met every dev target (p95 10.2 s, 14.5 s and 9.8 s). Tuning therefore stopped at zero commits, so the final prompt version is still `a8130bf25dd1`. v2 would have rerun that same version on the same cases, so it wasn't run, and v1 is the final holdout result. Run alone, Gemini's p95 was well under v1's 16.1 s, which suggests running the three providers at once inflated v1's latency; OpenAI stays close to the 15 s limit either way. Step 3's blinding stays in force: the holdout's per-case results remain unread, so the set stays usable for a later plan.
+
+Next: with every rule-based check passing on both sets, the next step is an LLM judge for reply quality, calibrated against human labels on dev replies (`docs/08-roadmap.md`, Phase 19). Any judged holdout run gets its own plan here first.

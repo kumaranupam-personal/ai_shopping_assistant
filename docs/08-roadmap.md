@@ -126,13 +126,25 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 1: the dev and holdout split from `07-evaluation.md`: the case files in `evals/sets/`, the results folders per set, `--set` in the runner, the prompt leak test and `evals/README.md`.
 - Part 2: 20 new dev cases and the 40 holdout cases, written as `07-evaluation.md` (Dev and holdout sets) requires, and a test that pins the holdout file's hash, so any change to it is deliberate.
 - Part 3: the first holdout run (v1) on every provider with the prompt version current at the end of Part 2.
-- Parts 4 onward: tuning on the dev set, one change per commit, then the second holdout run (v2) on the final prompt version, both as the plan in the holdout run log of `evals/README.md` sets out.
-- Last part: the Evaluation section of `README.md`, with the about page's evidence figures (`12-about-page.md`), reporting both holdout runs as the headline and the dev results as tuning results.
-- Done when the tests in `07-evaluation.md` pass and both holdout runs have written their results files on every provider and are in the log.
+- Part 4: the dev set run on every provider that the plan's stop rule called for. It ended the phase without tuning or a second holdout run, as the closing note in the holdout run log of `evals/README.md` records.
+- Done when the tests in `07-evaluation.md` pass, v1 has written its results file on every provider and is in the log, and the dev run meets every target or tuning has followed the plan.
+
+## Phase 19: LLM judge
+
+Phase 18 ended with every rule-based check passing on both sets, so those checks can no longer show progress, and they don't grade reply quality (`07-evaluation.md`, Eval suite): a dev reply that explained the agent's own reasoning to the shopper in 5 sentences passed every check. This phase adds an LLM judge that grades reply quality against a written rubric, and shows with human labels that the judge can be trusted. Its details are specified in `07-evaluation.md` in Part 1, before anything is built.
+
+- Part 1: the rubric and the labeling guide in `07-evaluation.md`: pass/fail criteria drawn from the required behaviors in `04-agent.md` (such as relevance, helpfulness, faithfulness, relaxation honesty, clarification and decline quality, and language and style), when each applies, and how borderline replies are decided.
+- Part 2: the eval runner also saves each turn's tool calls and tool results, and the dev set reruns on every provider, so a reply can be judged against what the agent searched and what it got back.
+- Part 3: the labeling sheet: about 60 dev turns chosen across behaviors, providers, languages and runs, plus deliberately broken copies of real replies so every criterion has failures, shuffled, with the provider, case and rule-check result kept in a separate key. Holdout replies are never labeled.
+- Part 4: human labels on the sheet, a later relabel of a fifth of it to measure the labeler's own consistency, and a random split of the labels into a calibration part and a held-out part.
+- Part 5: the judge in `evals/`, called through the LLM layer from `09-llm-providers.md` with its own provider, model and prompt version recorded in the results, a `--judge` option in the runner and a way to judge an existing results file, with tests against a scripted provider.
+- Part 6: calibration: the judge prompt is refined against the calibration labels only, and its agreement with the held-out labels is reported once, per criterion.
+- Then a new plan, recorded in the holdout run log before any judged holdout result, for judged dev and holdout runs.
+- Done when the tests in `07-evaluation.md` pass, the judge's agreement with the held-out labels is reported, and the judged runs the new plan names are in the log.
 
 ## Stretch goals
 
-These come after Phase 18 and are each specified in a new doc before being built.
+These come after Phase 19 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.
