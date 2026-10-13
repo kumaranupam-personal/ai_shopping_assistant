@@ -75,11 +75,12 @@ The eval applies this to every turn of every case. A rupee amount is a number wr
 The runner uses the provider named by `LLM_PROVIDER`. `--set dev` (the default) or `--set holdout` picks the set. It prints a summary and writes `evals/results/<set>/<timestamp>-<set>-<provider>-<prompt_version>.json`; dev runs from before the split are named without the set. The targets apply to each provider and set separately. Each results file records:
 
 - `eval_set`, and `cases_sha256`: a SHA-256 hash of the case file, so a run can be matched to the exact cases it used (left out of dev runs from before the split);
+- `catalog_sha256`: a SHA-256 hash of every product row in the catalog the run used, so the product IDs it stores can be checked against that catalog (left out of earlier runs);
 - the provider and model;
 - `prompt_version`: the first 12 hex characters of a SHA-256 hash of exactly what the model sees, the system prompt and every tool's name, description and schema, so any change to them gives a new version;
 - `git_commit` and `git_dirty`: the commit the run used, and whether `backend/` had uncommitted changes outside `evals/results/` and `evals/prompts/`, so leftover run files don't count.
 
-Each turn in a results file also records `tool_calls`: every tool call in order, with its arguments and its result (the tool's JSON, or the error message when it failed), so a reply can be judged against what the agent searched and got back (see Judge rubric). Runs from before this was added don't have it.
+Each turn in a results file also records `tool_calls`: every tool call in order, with its arguments and its result (the tool's JSON, or the error message when it failed), so a reply can be judged against what the agent searched and got back (see Judge rubric). A search result keeps its product IDs as `ids` in place of the product rows, with `total_matches`, `applied` and `warnings`; whatever rebuilds the rows reads them from a catalog whose hash matches `catalog_sha256`, and refuses one that doesn't. Runs from before this was added don't have `tool_calls`.
 
 The first run of a prompt version also saves its system prompt and tools as `evals/prompts/<prompt_version>.json`, so any two versions can be diffed. Each provider's reference run on the dev set is `evals/results/dev/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit. A baseline recorded before prompt versioning carries the version it ran with, marked `prompt_version_backfilled`, and no commit.
 

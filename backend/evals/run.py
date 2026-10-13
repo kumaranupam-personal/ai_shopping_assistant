@@ -84,9 +84,24 @@ class Recorder:
         by_id = {call["id"]: call for call in self.calls}
         for result in results:
             if call := by_id.get(result.call_id):
-                call["result"] = result.content if result.is_error else json.loads(result.content)
+                call["result"] = result.content if result.is_error else compact_result(call["name"], json.loads(result.content))
                 call["is_error"] = result.is_error
         return self.provider.tool_results_message(results)
+
+
+def compact_result(tool: str, result: dict) -> dict:
+    """A search result keeps its product IDs instead of the product rows, which the catalog rebuilds when needed."""
+    if tool == "search_products" and "results" in result:
+        return {"ids": [row["id"] for row in result["results"]], **{k: v for k, v in result.items() if k != "results"}}
+    return result
+
+
+def catalog_fingerprint(index: SearchIndex) -> str:
+    """A SHA-256 hash of every product row, so stored product IDs can be checked against the catalog they came from."""
+    digest = hashlib.sha256()
+    for row in index.conn.execute("SELECT * FROM products ORDER BY id"):
+        digest.update(json.dumps(list(row), ensure_ascii=False).encode())
+    return digest.hexdigest()
 
 
 def git_state(cwd: Path = BACKEND_DIR) -> tuple[str | None, bool | None]:
@@ -255,7 +270,8 @@ async def main(argv: list[str] | None = None) -> int:
     (RESULTS_DIR / args.eval_set).mkdir(parents=True, exist_ok=True)
     out = RESULTS_DIR / args.eval_set / f"{datetime.now():%Y%m%d-%H%M%S}-{args.eval_set}-{provider.name}-{version}.json"
     header = {
-        "eval_set": args.eval_set, "cases_sha256": cases_sha256, "provider": provider.name, "model": provider.model,
+        "eval_set": args.eval_set, "cases_sha256": cases_sha256, "catalog_sha256": catalog_fingerprint(index),
+        "provider": provider.name, "model": provider.model,
         "prompt_version": version, "git_commit": commit, "git_dirty": dirty,
     }
     out.write_text(json.dumps({**header, "summary": summary, "cases": results}, indent=2, ensure_ascii=False) + "\n")

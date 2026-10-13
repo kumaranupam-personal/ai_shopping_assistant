@@ -1,6 +1,8 @@
 import asyncio
 import hashlib
 import json
+import sqlite3
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,7 +14,7 @@ from evals.checks import (
     TurnResult, expect_failures, grounding_violations, prompt_leaks, quoted_examples, reply_language, rupee_amounts, tool_facts,
     user_amounts,
 )
-from evals.run import EVAL_SETS, SETS_DIR, Case, cache_misses, git_state, load_cases, main, run_case, summarize
+from evals.run import EVAL_SETS, SETS_DIR, Case, cache_misses, catalog_fingerprint, git_state, load_cases, main, run_case, summarize
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -115,7 +117,8 @@ def test_a_case_runs_end_to_end_and_is_graded(index, prices, cost):
     assert turn["tools"] == ["search_products", "show_products"] and turn["shown"] == ["J3", "J1"]
     search, shown = turn["tool_calls"]
     assert (search["name"], search["arguments"], search["is_error"]) == ("search_products", SEARCH.arguments, False)
-    assert search["result"]["results"] and shown["arguments"] == show.arguments and "shown" in shown["result"]
+    assert search["result"]["ids"] and "results" not in search["result"]  # product rows come back from the catalog by ID
+    assert shown["arguments"] == show.arguments and "shown" in shown["result"]
     assert turn["model_calls"] == 2 and turn["grounding"] == []  # ₹1,000 is J1's price, from the search result
     assert (turn["input_tokens"], turn["output_tokens"], turn["cache_read_tokens"], turn["cache_write_tokens"]) == (200, 40, 160, 0)
     summary = summarize([result])
@@ -210,6 +213,16 @@ def test_prompt_version_changes_with_any_word_of_the_prompt_or_a_tool():
     edited_tool = {**snapshot, "tools": [{**snapshot["tools"][0], "description": "Search."}, *snapshot["tools"][1:]]}
     edited_prompt = {**snapshot, "system_prompt": snapshot["system_prompt"] + " "}
     assert len({version, prompt_version(edited_tool), prompt_version(edited_prompt)}) == 3
+
+
+def test_the_catalog_fingerprint_is_stable_and_changes_with_any_product(index):
+    assert len(catalog_fingerprint(index)) == 64 and catalog_fingerprint(index) == catalog_fingerprint(index)
+    catalog = SimpleNamespace(conn=sqlite3.connect(":memory:"))
+    catalog.conn.execute("CREATE TABLE products (id TEXT, price INTEGER)")
+    catalog.conn.executemany("INSERT INTO products VALUES (?, ?)", [("A", 100), ("B", 200)])
+    before = catalog_fingerprint(catalog)
+    catalog.conn.execute("UPDATE products SET price = 201 WHERE id = 'B'")
+    assert catalog_fingerprint(catalog) != before
 
 
 def test_git_state_is_unknown_outside_a_checkout(tmp_path):
