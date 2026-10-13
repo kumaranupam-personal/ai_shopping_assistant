@@ -142,11 +142,12 @@ def test_a_tool_error_result_marks_only_its_span(traced, index):
     assert root.attributes["langfuse.trace.metadata.outcome"] == "done"
 
 
-def test_eval_turns_are_tagged_with_their_case_and_always_carry_message_text(traced, index):
+def test_eval_turns_are_tagged_with_their_set_and_case_and_always_carry_message_text(traced, index):
     case = Case(id="refine-brand", description="d", turns=["hi"])
-    asyncio.run(run_case(ScriptedProvider(reply("Hello! What are you shopping for?")), index, [], case, Settings(_env_file=None)))
+    provider = ScriptedProvider(reply("Hello! What are you shopping for?"))
+    asyncio.run(run_case(provider, index, [], case, Settings(_env_file=None), "holdout"))
     root, _ = traced.spans()
-    assert root.attributes["langfuse.trace.tags"] == ("eval", "refine-brand", "scripted")  # the provider comes last
+    assert root.attributes["langfuse.trace.tags"] == ("eval", "holdout", "refine-brand", "scripted")  # the provider comes last
     assert root.attributes["langfuse.observation.input"] == "hi"  # although TRACE_MESSAGE_TEXT is off
 
 

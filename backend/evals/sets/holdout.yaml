@@ -1,0 +1,6 @@
+# HOLDOUT SET (docs/07-evaluation.md): never used for tuning. Run only to report a finished prompt version, once per
+# provider, with `--set holdout`, and log every run in evals/README.md. A case whose failure leads to a prompt or tool
+# change moves to sets/dev.yaml and is replaced here by a new one. Same format as sets/dev.yaml.
+#
+# Not written yet: the runner refuses an empty set.
+[]

@@ -68,7 +68,7 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 
 ## Phase 9: Tuning
 
-- Parts: prompt and tool-description tuning, one change per commit, rerunning the suite as `07-evaluation.md` requires.
+- Parts: prompt and tool-description tuning, one change per commit, rerunning the dev set as `07-evaluation.md` requires.
 - Done when every target in `07-evaluation.md` is met on all three providers, which completes step 3 of "Adding a provider" for OpenAI and Gemini. If a target fails, iterate on the prompt and tool descriptions before changing the search code.
 
 ## Phase 10: Product tiles
@@ -121,9 +121,18 @@ Each part follows steps 1 and 2 of "Adding a provider" in `09-llm-providers.md`.
 - Part 1: the two Dockerfiles, the compose file, the production `.env.example` and the server setup from `13-deployment.md`.
 - Done when the tests in `07-evaluation.md` pass, the stack runs on EC2 behind the server's nginx over HTTPS, and the checks under "Verifying HTTPS and the headers" in `13-deployment.md` pass.
 
+## Phase 18: Holdout evaluation
+
+- Part 1: the dev and holdout split from `07-evaluation.md`: the case files in `evals/sets/`, the results folders per set, `--set` in the runner, the prompt leak test and `evals/README.md`.
+- Part 2: 20 new dev cases and the 40 holdout cases, written as `07-evaluation.md` (Dev and holdout sets) requires, and a test that pins the holdout file's hash, so any change to it is deliberate.
+- Part 3: the first holdout run (v1) on every provider with the prompt version current at the end of Part 2.
+- Parts 4 onward: tuning on the dev set, one change per commit, then the second holdout run (v2) on the final prompt version, both as the plan in the holdout run log of `evals/README.md` sets out.
+- Last part: the Evaluation section of `README.md`, with the about page's evidence figures (`12-about-page.md`), reporting both holdout runs as the headline and the dev results as tuning results.
+- Done when the tests in `07-evaluation.md` pass and both holdout runs have written their results files on every provider and are in the log.
+
 ## Stretch goals
 
-These come after Phase 17 and are each specified in a new doc before being built.
+These come after Phase 18 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.

@@ -126,4 +126,4 @@ Every adapter times out each attempt after 60 seconds and retries a failed attem
 
 1. Add `app/llm/<provider>_provider.py` implementing the protocol, and register it.
 2. Document its section in this file: default model, effort mapping, caching approach and minimum cacheable input, message format notes and refusal mapping. Give the adapter its price table (see Prices).
-3. Pass the adapter tests and the eval targets in `07-evaluation.md` with `LLM_PROVIDER` set to it.
+3. Pass the adapter tests and the eval targets in `07-evaluation.md` on the dev set with `LLM_PROVIDER` set to it.

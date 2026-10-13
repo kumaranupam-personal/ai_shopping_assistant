@@ -14,7 +14,7 @@
 - Frontend: Playwright, running against a mocked API that replays recorded event streams, checks every quality-bar item in `06-frontend.md` that can be automated (the listed widths in both themes, the drag-resize sweep, layout shift, and console errors), in every state the quality bar names. Lighthouse runs on the production build with `npm run lighthouse`.
 - API: with a stubbed agent, the event order and error codes match `05-api.md`, and the session rules from `04-agent.md` hold (busy, full, expired, rollback on failure, cancellation and rollback on client disconnect). The featured list follows its selection rule. Restoring a session returns only committed turns, and its cards reflect the current catalog: a price changed after the turn shows the new price, and a removed product is left out.
 - Session restore in the browser: reloading restores messages, result markers and the latest result set. A new tab starts a new session. An expired session shows the notice. Reloading during a turn puts the interrupted message back in the composer. A message rejected with `session_full` shows a "New chat" button instead of "Retry".
-- Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM.
+- Eval checks: the grounding check, amount normalization and each `expect` key, plus one case run end to end against a scripted stub provider, all without an LLM. Both case files are valid, no case ID or message is in both sets, and no example in the prompt or a tool definition repeats an eval case (see Dev and holdout sets).
 - Product tiles in the browser: in both themes, a card without an image, and a card whose image fails to load, show a tile with their category's icon, one dot per product color in order, each in its swatch, the brand label and no brand line under the tile, on a background tinted from the first color (see `06-frontend.md`, Product tiles). Jackets and kurtas show different icons from each other and from the other categories. A card with an image shows the brand under it and no label. Strip tiles and cart rows show the icon on the tint with no dots and no label. In the drawer, a product without an image shows the 2:1 banner with its dots and label, with the title, price and action bar in view at 1280 by 800, and a product with an image shows it square with the brand under it.
 - Cards in the browser: every row of the highlight pill table in `06-frontend.md` renders as listed, a discounted card shows its badge and an undiscounted one shows none, and strip cards show neither badge nor pills.
 - Tracing: with an in-memory span exporter, a turn's spans and their attributes match `10-observability.md`, for a successful, a failed and a cancelled turn, a raising provider call, a tool error result, message text on and off, the eval runner's turns, and a model without prices. With no endpoint configured, nothing is exported, and a failing exporter never fails a turn.
@@ -31,7 +31,7 @@
 
 ## Eval suite
 
-`backend/evals/cases.yaml` holds 20 cases, each checking something the others don't, and `backend/evals/run.py` runs them against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning the suite. Each case contains:
+The cases are split into two sets in `backend/evals/sets/`: `dev.yaml` holds 20 cases, each checking something the others don't, and `holdout.yaml` holds cases that were never used for tuning (see Dev and holdout sets). `backend/evals/run.py` runs one set against the real agent and the demo catalog in-process, without the HTTP layer. Cases depend on the demo catalog, so a change to the generator requires rerunning both sets. Both files use the same format, and each case contains:
 
 - `id` and a one-line `description`.
 - `turns`: an ordered list of user messages.
@@ -43,7 +43,7 @@
   - `mentions`: case-insensitive substrings the final reply must contain, such as a brand name the reply should name.
   - `reply_language`: `english` or `hinglish`. It is checked with a word-list heuristic: a reply counts as Hinglish when at least 2 distinct words from a fixed list of common Hindi words (such as hai, aur, ke, liye, yeh, aap, mein, sasta) appear in it.
 
-Case coverage:
+Dev set coverage:
 
 - Every category in at least one case.
 - 4 multi-turn refinements: a different attribute, a brand, an ordinal reference and a comparison.
@@ -52,19 +52,30 @@ Case coverage:
 - 2 no-result requests that should trigger relaxation: one fixed by raising the budget, one by dropping an inferred attribute.
 - 6 Hinglish cases, all scored: a single-turn intent, a refinement ("aur sasta dikhao"), an ordinal reference ("dusra wala"), an amount in Hindi number words ("teen hazaar tak"), a clarification and an out-of-scope request.
 
+## Dev and holdout sets
+
+The dev set is for finding failures and tuning the prompt and tools, so its scores show what the tuning fixed, not how the agent handles requests it wasn't tuned on. The holdout set measures that. The rules:
+
+- Tune only on the dev set. Debugging single cases (`CASE_ID` arguments) works only on the dev set; the holdout set always runs in full.
+- Write holdout cases from the specs, the catalog and real user phrasings, without reading the prompt, and change them only on purpose, in their own commit.
+- Run the holdout set only on a finished prompt version, once per provider, and report the result as it comes out. Choosing between prompt versions by their holdout scores would turn it into a second dev set. Choosing between prompt versions by their holdout scores would turn it into a second dev set.
+- If a holdout failure leads to a prompt or tool change, move that case to the dev set and write a new one in its place, and say so in the run log in `backend/evals/README.md`. Every holdout run goes in that log.
+- No example in the system prompt or a tool definition may repeat an eval case's message or its expected result, such as a phrase from a case together with the filter value it should map to, because a case that passes by copying an example measures nothing. A test checks the quoted examples against the messages of both sets: they may share no pair of adjacent words, unless both are common words such as "for my", and no one-word example of 4 letters or more may be a word a case uses.
+
 ## Grounding check
 
 The eval applies this to every turn of every case. A rupee amount is a number written after "₹", "Rs" or "Rs.", or before "rupees", with or without digit grouping, and a trailing "k" means thousands ("₹8k" counts as 8000). Each rupee amount in the assistant text must equal a `price` or `mrp` that appeared in a tool result during that conversation, a `price_min` or `price_max` in the `applied` filters a search reported (so a relaxed budget can be stated), or a number the user typed. User amounts are normalized before comparison, so "8k" counts as 8000, "5 hazaar" as 5000, and the Hindi number words one to ten followed by "hazaar" are recognized ("teen hazaar" counts as 3000). Each product ID or exact product title in the text must belong to a product returned by a tool in that conversation. Titles can repeat in a catalog, so a title counts as grounded when any product with that title was returned. Any mismatch counts as a grounding violation.
 
 ## Metrics and targets
 
-The runner uses the provider named by `LLM_PROVIDER`. It prints a summary and writes `evals/results/<timestamp>-<provider>-<prompt_version>.json`. The targets apply to each provider separately. Each results file records:
+The runner uses the provider named by `LLM_PROVIDER`. `--set dev` (the default) or `--set holdout` picks the set. It prints a summary and writes `evals/results/<set>/<timestamp>-<set>-<provider>-<prompt_version>.json`; dev runs from before the split are named without the set. The targets apply to each provider and set separately. Each results file records:
 
+- `eval_set`, and `cases_sha256`: a SHA-256 hash of the case file, so a run can be matched to the exact cases it used (left out of dev runs from before the split);
 - the provider and model;
 - `prompt_version`: the first 12 hex characters of a SHA-256 hash of exactly what the model sees, the system prompt and every tool's name, description and schema, so any change to them gives a new version;
-- `git_commit` and `git_dirty`: the commit the run used, and whether `backend/` had uncommitted changes outside `evals/results/`, so leftover run files don't count.
+- `git_commit` and `git_dirty`: the commit the run used, and whether `backend/` had uncommitted changes outside `evals/results/` and `evals/prompts/`, so leftover run files don't count.
 
-The first run of a prompt version also saves its system prompt and tools as `evals/results/prompts/<prompt_version>.json`, so any two versions can be diffed. Each provider's reference run is `evals/results/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit. A baseline recorded before prompt versioning carries the version it ran with, marked `prompt_version_backfilled`, and no commit.
+The first run of a prompt version also saves its system prompt and tools as `evals/prompts/<prompt_version>.json`, so any two versions can be diffed. Each provider's reference run on the dev set is `evals/results/dev/baseline-<provider>.json`, in the same format as a run's file; it is replaced only on purpose, in its own commit. A baseline recorded before prompt versioning carries the version it ran with, marked `prompt_version_backfilled`, and no commit.
 
 - Pass rate across scored cases: at least 90%. A case passes when every `expect` check holds and none of its turns has a grounding violation.
 - Grounding violations: 0.
@@ -73,4 +84,4 @@ The first run of a prompt version also saves its system prompt and tools as `eva
 - Cost per turn and for the whole run, in USD, from the provider's `prices` (see `09-llm-providers.md`), is reported. It is left out when `prices` is unset. Cost has no target.
 - Input and output tokens per turn, plus cache-read and cache-write tokens, are reported. From the second model call of a conversation onward, every call whose input (uncached, cache-read and cache-write tokens) is at least the provider's `min_cache_tokens` (see `09-llm-providers.md`) must read tokens from the cache, which confirms prompt caching works. Smaller calls aren't counted, because the provider can't cache them, and a provider that caches on a best-effort basis (no `min_cache_tokens`) isn't checked.
 
-Every change to the prompt or the tools reruns the suite on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message.
+Every change to the prompt or the tools reruns the dev set on every registered provider, and every change to a provider's adapter or default model reruns it on that provider. The summaries go in the commit message. The holdout set does not rerun after every change: it runs only on a finished prompt version, once per provider (see Dev and holdout sets above).

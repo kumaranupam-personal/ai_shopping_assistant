@@ -114,3 +114,38 @@ def expect_failures(expect: dict, turn: TurnResult, matching: Callable[[dict, li
     if "reply_language" in expect and (language := reply_language(turn.reply)) != expect["reply_language"]:
         failures.append(f"reply_language: replied in {language}, expected {expect['reply_language']}")
     return failures
+
+
+COMMON_WORDS = {"a", "an", "and", "at", "for", "from", "i", "in", "is", "it", "me", "my", "of", "on", "or", "the", "to", "under", "with"}
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[\w₹-]+", text.lower())
+
+
+def quoted_examples(snapshot: dict) -> set[str]:
+    """Every phrase in double or single quotes in the system prompt and the tool definitions: the examples the model sees."""
+    def strings(value) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        items = value.values() if isinstance(value, dict) else value if isinstance(value, list) else []
+        return [s for item in items for s in strings(item)]
+
+    text = "\n".join(strings(snapshot))
+    return set(re.findall(r'"([^"\n]+)"', text)) | set(re.findall(r"(?<!\w)'([^'\n]+)'(?!\w)", text))
+
+
+def prompt_leaks(examples: set[str], case_turns: dict[str, list[str]]) -> list[str]:
+    """Prompt examples that repeat an eval case's words: a shared pair of adjacent words (not both common words such as
+    "for my"), or a one-word example of at least 4 letters that the case uses. Such an example lets a case pass by
+    copying instead of following the rule."""
+    leaks = []
+    for example in sorted(examples):
+        words = _words(example)
+        pairs = {pair for pair in zip(words, words[1:]) if not set(pair) <= COMMON_WORDS}
+        for case_id, turns in case_turns.items():
+            for turn in turns:
+                turn_words = _words(turn)
+                if (pairs & set(zip(turn_words, turn_words[1:]))) or (len(words) == 1 and len(words[0]) >= 4 and words[0] in turn_words):
+                    leaks.append(f"{example!r} repeats {case_id}: {turn!r}")
+    return leaks

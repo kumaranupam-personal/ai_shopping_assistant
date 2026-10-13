@@ -1,4 +1,7 @@
-# Eval cases (docs/07-evaluation.md): 20, each checking something the others don't. Expectations are checked against
+# DEV SET (docs/07-evaluation.md): used to find failures and tune the prompt and tools, so its scores are not a
+# measure of how the agent handles new requests; sets/holdout.yaml is. Run with `--set dev` (the default).
+#
+# 20 cases, each checking something the others don't. Expectations are checked against
 # the demo catalog, so regenerating it means rerunning the suite. `shown` uses the search filter syntax from docs/03-search.md; in_stock_only defaults to true.
 
 # Single-turn intents. With the cases below, every category is covered at least once.
