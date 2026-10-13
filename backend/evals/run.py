@@ -237,9 +237,12 @@ async def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the eval cases against the configured LLM provider.")
     parser.add_argument("ids", nargs="*", help="case IDs to run (default: all; dev set only)")
     parser.add_argument("--set", dest="eval_set", choices=EVAL_SETS, default="dev", help="dev (tuning) or holdout (reporting)")
+    parser.add_argument("--judge", action="store_true", help="then grade every turn with the LLM judge (dev set only)")
     args = parser.parse_args(argv)
     if args.eval_set == "holdout" and args.ids:
         parser.error("the holdout set runs in full; debug single cases on the dev set")
+    if args.eval_set == "holdout" and args.judge:
+        parser.error("judge a holdout run with `python -m evals.judge --holdout`, after recording a plan in evals/README.md")
 
     settings = Settings()
     cases_file = SETS_DIR / f"{args.eval_set}.yaml"
@@ -277,6 +280,9 @@ async def main(argv: list[str] | None = None) -> int:
     out.write_text(json.dumps({**header, "summary": summary, "cases": results}, indent=2, ensure_ascii=False) + "\n")
     note = " with uncommitted changes" if dirty else ""
     print(json.dumps(summary, indent=2), f"Eval set: {args.eval_set}", f"Prompt version: {version} (commit {commit}{note})", f"Results: {out}", sep="\n")
+    if args.judge:
+        from evals.judge import judge_results_file
+        await judge_results_file(out, settings, index)
     return 0 if summary["targets_met"] else 1
 
 

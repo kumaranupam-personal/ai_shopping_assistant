@@ -20,7 +20,11 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 STOP_REASONS = {"end_turn", "tool_use", "max_tokens", "refusal"}
 CACHE = {"type": "ephemeral"}
 # From https://platform.claude.com/docs/en/about-claude/pricing. Cache writes are the 5-minute ones, which CACHE makes.
-PRICES = {DEFAULT_MODEL: Prices(input=4, output=20, cache_read=0.20, cache_write=5)}
+# Sonnet 5.5, the eval judge (docs/07-evaluation.md, Judge), has had cache reads at $0.10 since 2026-10-07.
+PRICES = {
+    DEFAULT_MODEL: Prices(input=4, output=20, cache_read=0.20, cache_write=5),
+    "claude-sonnet-5-5": Prices(input=2, output=10, cache_read=0.10, cache_write=2.50),
+}
 
 
 def echoable(content: list) -> list:

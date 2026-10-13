@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     llm_model: str | None = None
     llm_effort: Literal["low", "medium", "high"] = "low"
     llm_max_tokens: PositiveInt = 16000
+    # The eval judge (docs/07-evaluation.md, Judge rubric): its own provider, model and effort, read only by the evals.
+    judge_provider: str | None = None
+    judge_model: str | None = None
+    judge_effort: Literal["low", "medium", "high"] = "medium"
     data_dir: Path = Path("data")
     session_ttl_minutes: PositiveInt = 60
     max_turns_per_session: PositiveInt = 15

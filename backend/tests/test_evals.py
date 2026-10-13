@@ -185,9 +185,10 @@ def test_the_holdout_set_is_frozen():
     assert hashlib.sha256((SETS_DIR / "holdout.yaml").read_bytes()).hexdigest() == HOLDOUT_SHA256
 
 
-def test_the_holdout_set_runs_only_in_full():
+@pytest.mark.parametrize("argv", [["--set", "holdout", "jackets-ladakh"], ["--set", "holdout", "--judge"]])
+def test_the_holdout_set_runs_only_in_full_and_is_never_judged_by_the_runner(argv):
     with pytest.raises(SystemExit):  # argparse exits before any provider is built
-        asyncio.run(main(["--set", "holdout", "jackets-ladakh"]))
+        asyncio.run(main(argv))
 
 
 @pytest.mark.parametrize(
