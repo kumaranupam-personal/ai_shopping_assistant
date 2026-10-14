@@ -12,7 +12,7 @@ The eval suite runs scripted conversations against the real agent and the demo c
 Rules, in short (`docs/07-evaluation.md`, Dev and holdout sets, is authoritative):
 
 - Tune only on dev. The holdout set always runs in full; single cases can be run only from dev.
-- Run holdout only on a finished prompt version, once per provider, and report the result as it comes out.
+- Run holdout only on a finished prompt version, as a plan recorded in the run log below sets out, and report the result as it comes out.
 - If a holdout failure ever leads to a prompt or tool change, that case moves to dev and a new one replaces it.
 - No example in the prompt or tool definitions may repeat an eval case's words. `tests/test_evals.py` enforces this.
 

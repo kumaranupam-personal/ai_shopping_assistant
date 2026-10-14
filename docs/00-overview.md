@@ -12,7 +12,7 @@ A web app where a user describes what they want to buy in natural language, conv
 - Show results as product cards rendered from catalog data, never from model-written text.
 - Understand and reply in Hinglish as well as English.
 - Stay independent of any one LLM provider, with the provider chosen by configuration.
-- Be measurable: an eval suite reports pass rate, grounding violations, latency and cost, and every turn is traced.
+- Be measurable: an eval suite reports pass rate, grounding violations, latency and cost, an LLM judge checked against human labels grades reply quality, and every turn is traced.
 - Be safe to run as a public demo: the API limits how much visitors can make it spend.
 
 ## Non-goals
@@ -56,7 +56,7 @@ Each fact lives in exactly one document. Other documents refer to it by name.
 - `04-agent.md`: turn loop, agent behaviors, tool definitions, conversation state, session rules, error handling.
 - `05-api.md`: endpoints, stream events, product card shape, status text, error codes.
 - `06-frontend.md`: stack, brand, layout and resizing, visual design, UI states, cart, components, accessibility, client state, session lifecycle, stream handling, quality bar.
-- `07-evaluation.md`: automated tests, eval cases, dev and holdout sets, grounding check, metrics and targets.
+- `07-evaluation.md`: automated tests, eval cases, dev and holdout sets, grounding check, metrics and targets, the judge rubric, the labeling guide and the judge.
 - `08-roadmap.md`: build order, done criteria, stretch goals.
 - `09-llm-providers.md`: provider interface, boundary rules, registry, per-provider adapter details.
 - `10-observability.md`: turn tracing scope, trace shape and span attributes, message text, cost in traces, export to Langfuse.
