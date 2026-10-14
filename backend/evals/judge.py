@@ -19,7 +19,9 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
+from app.catalog.store import open_catalog
 from app.config import Settings
 from app.llm.base import LLMProvider, ToolSpec
 from app.llm.registry import build_provider
@@ -40,7 +42,9 @@ VERDICTS = ("pass", "fail", "n/a")
 # Refined during calibration against the calibration labels only (docs/08-roadmap.md, Phase 19, Part 6).
 INSTRUCTIONS = """You grade one turn of a conversation between a shopper and an online store's shopping assistant, against the rubric below. You are a strict, consistent grader, not the assistant.
 
-For every criterion, decide pass, fail or n/a exactly as the rubric and its decisions D1 to D8 define them, and give a one-line reason (for n/a, say why it doesn't apply). Grade only the current turn's reply, cards and suggestions; earlier turns are context. Check every product fact in the reply against "What the agent did" and "Products shown" in the turn, never against your own knowledge. Count words and sentences as decision D4 says; the turn's "Length" line already gives the counts.
+For every criterion, first write a one-line reason, then decide pass, fail or n/a exactly as the rubric and its decisions define them; the verdict must follow from the reason (for n/a, the reason says why the criterion doesn't apply). Grade only the current turn's reply, cards and suggestions; earlier turns are context. Check every product fact in the reply against "What the agent did" and "Products shown" in the turn, never against your own knowledge. Count words and sentences as decision D4 says; the turn's "Length" line already gives the counts. For language and style, first decide whether the user's latest message is English or Hinglish (Hindi written in Latin script), then check that the reply and the suggestions are in that same language.
+
+A name in a message can be one of the store's brands, listed below; a request naming a brand states the brand as a constraint.
 
 Record your verdicts by calling record_verdicts once."""
 
@@ -51,7 +55,17 @@ def rubric_text() -> str:
     return doc[doc.index("## Judge rubric"):doc.index("## Labeling guide")].strip()
 
 
-SYSTEM = f"{INSTRUCTIONS}\n\n{rubric_text()}"
+def brand_list(conn) -> dict[str, list[str]]:
+    """The brands the catalog carries in each category."""
+    brands: dict[str, list[str]] = {}
+    for row in conn.execute("SELECT DISTINCT category, brand FROM products ORDER BY category, brand"):
+        brands.setdefault(row[0], []).append(row[1])
+    return brands
+
+
+def system_prompt(brands: dict[str, list[str]]) -> str:
+    listed = "\n".join(f"- {category.replace('_', ' ')}: {', '.join(names)}" for category, names in brands.items())
+    return f"{INSTRUCTIONS}\n\nThe store's brands, by category:\n{listed}\n\n{rubric_text()}"
 VERDICT_TOOL = ToolSpec(
     name="record_verdicts",
     description="Record the verdict and a one-line reason for every criterion of the rubric, all in this one call.",
@@ -61,12 +75,12 @@ VERDICT_TOOL = ToolSpec(
         "properties": {
             field: spec
             for key, name in CRITERIA.items()
-            for field, spec in (
-                (f"{key}_verdict", {"type": "string", "enum": list(VERDICTS), "description": f"{name}: pass, fail or n/a"}),
+            for field, spec in (  # the reason first, so the verdict follows from it
                 (f"{key}_reason", {"type": "string", "description": f"{name}: one line on why, or why it doesn't apply"}),
+                (f"{key}_verdict", {"type": "string", "enum": list(VERDICTS), "description": f"{name}: pass, fail or n/a, following the reason"}),
             )
         },
-        "required": [f"{key}_{part}" for key in CRITERIA for part in ("verdict", "reason")],
+        "required": [f"{key}_{part}" for key in CRITERIA for part in ("reason", "verdict")],
         "additionalProperties": False,
     },
 )
@@ -80,9 +94,9 @@ def judge_provider(settings: Settings) -> LLMProvider:
     }))
 
 
-def judge_version(provider: LLMProvider, effort: str) -> str:
-    """A short hash of everything that decides a verdict: instructions, rubric, tool, model and effort."""
-    spec = {"system": SYSTEM, "tool": VERDICT_TOOL.parameters, "provider": provider.name, "model": provider.model, "effort": effort}
+def judge_version(provider: LLMProvider, effort: str, system: str) -> str:
+    """A short hash of everything that decides a verdict: instructions, brands, rubric, tool, model and effort."""
+    spec = {"system": system, "tool": VERDICT_TOOL.parameters, "provider": provider.name, "model": provider.model, "effort": effort}
     return hashlib.sha256(json.dumps(spec, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
 
 
@@ -111,13 +125,13 @@ def parse_verdicts(arguments: dict) -> dict | None:
     return {name: {"verdict": arguments[f"{key}_verdict"], "reason": arguments[f"{key}_reason"]} for key, name in CRITERIA.items()}
 
 
-async def judge_turn(provider: LLMProvider, fields: dict, attempts: int = 2) -> dict:
+async def judge_turn(provider: LLMProvider, system: str, fields: dict, attempts: int = 2) -> dict:
     """Grades one rendered turn. A response without a valid record_verdicts call is retried once, then recorded as an
     error with what each attempt got wrong (its stop reason, the tools it called and the problems with the call)."""
     cost, history, attempts_made = 0.0, [provider.user_message(turn_text(fields))], []
     for _ in range(attempts):
         try:
-            response = await provider.complete(SYSTEM, history, [VERDICT_TOOL])
+            response = await provider.complete(system, history, [VERDICT_TOOL])
         except Exception as e:  # noqa: BLE001 - a failed call fails this turn's judgment, not the whole run
             attempts_made.append({"exception": f"{type(e).__name__}: {e}"})
             continue
@@ -132,12 +146,12 @@ async def judge_turn(provider: LLMProvider, fields: dict, attempts: int = 2) -> 
     return {"error": "no valid record_verdicts call", "attempts": attempts_made, "cost_usd": round(cost, 6)}
 
 
-async def judge_all(provider: LLMProvider, items: dict[str, dict], concurrency: int = 4) -> dict[str, dict]:
+async def judge_all(provider: LLMProvider, system: str, items: dict[str, dict], concurrency: int = 4) -> dict[str, dict]:
     gate = asyncio.Semaphore(concurrency)
 
     async def one(item_id: str, fields: dict):
         async with gate:
-            result = await judge_turn(provider, fields)
+            result = await judge_turn(provider, system, fields)
             print(f"{item_id}: {'error' if 'error' in result else 'judged'}", file=sys.stderr)
             return item_id, result
 
@@ -178,9 +192,9 @@ async def judge_results_file(path: Path, settings: Settings, index: SearchIndex,
     data = json.loads(path.read_text())
     if data.get("eval_set") == "holdout" and not holdout:
         raise SystemExit("Judging holdout needs --holdout, and a plan recorded in evals/README.md first.")
-    provider = judge_provider(settings)
-    version = judge_version(provider, settings.judge_effort)
-    judged = await judge_all(provider, results_items(data, catalog_rows(index, data["catalog_sha256"])))
+    provider, system = judge_provider(settings), system_prompt(brand_list(index.conn))
+    version = judge_version(provider, settings.judge_effort, system)
+    judged = await judge_all(provider, system, results_items(data, catalog_rows(index, data["catalog_sha256"])))
     out = RESULTS_DIR / data["eval_set"] / "judged" / f"{path.stem}.judge-{version}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     header = {"results_file": path.name, "judge_version": version, "judge_provider": provider.name, "judge_model": provider.model,
@@ -215,16 +229,34 @@ def read_key() -> dict:
     return json.loads((LABELS_DIR / "key" / "key.json").read_text())
 
 
+def sheet_items(conn, key: dict) -> dict[str, dict]:
+    """Every sheet row rendered again from its source run, case and turn, with its break for a broken row."""
+    from evals.labels.build_sheet import KEY_DIR
+    edits = {e["id"]: e for e in json.loads((KEY_DIR / "broken.json").read_text())}
+    if catalog_fingerprint(SimpleNamespace(conn=conn)) != key["catalog_sha256"]:
+        raise SystemExit("The catalog doesn't match the one the sheet was built from.")
+    rows = {row["id"]: _summary(row) for row in conn.execute("SELECT * FROM products")}
+    runs: dict[str, dict] = {}
+    items = {}
+    for k in key["rows"]:
+        run = runs.setdefault(k["source_run"], json.loads((RESULTS_DIR / "dev" / k["source_run"]).read_text()))
+        case = next(c for c in run["cases"] if c["id"] == k["case"])
+        item = {"history": case["turns"][:k["turn"] - 1], "data": case["turns"][k["turn"] - 1]}
+        items[k["row"]] = render(item, rows, edits.get(k.get("broken_id")))
+    return items
+
+
 async def judge_sheet(split: str, settings: Settings, retry_errors: bool = False) -> Path:
     """Judges a split's rows; with `retry_errors`, only the rows that ended in an error in this judge version's file."""
-    sheet, key = read_sheet(LABELS_DIR / "labeling-sheet.xlsx"), read_key()
+    key, conn = read_key(), open_catalog(settings.data_dir)
     ids = [r["row"] for r in key["rows"] if r["split"] == split]
-    provider = judge_provider(settings)
-    version = judge_version(provider, settings.judge_effort)
+    items = sheet_items(conn, key)
+    provider, system = judge_provider(settings), system_prompt(brand_list(conn))
+    version = judge_version(provider, settings.judge_effort, system)
     out = LABELS_DIR / "judged" / f"{split}-judge-{version}.json"
     judged = json.loads(out.read_text())["rows"] if retry_errors else {}
     todo = [i for i in ids if "error" in judged[i]] if retry_errors else ids
-    judged.update(await judge_all(provider, {i: sheet[i]["fields"] for i in todo}))
+    judged.update(await judge_all(provider, system, {i: items[i] for i in todo}))
     judged = {i: judged[i] for i in ids}
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"split": split, "judge_version": version, "judge_provider": provider.name, "judge_model": provider.model,
@@ -241,7 +273,7 @@ def cohen_kappa(pairs: list[tuple[str, str]]) -> float | None:
         return None
     observed = sum(a == b for a, b in pairs) / len(pairs)
     first, second = Counter(a for a, _ in pairs), Counter(b for _, b in pairs)
-    expected = sum(first[v] * second[v] for v in VERDICTS) / len(pairs) ** 2
+    expected = sum(first[v] * second[v] for v in set(first) | set(second)) / len(pairs) ** 2
     return 1.0 if expected == 1 else round((observed - expected) / (1 - expected), 3)
 
 
@@ -260,16 +292,25 @@ def agreement(human: dict[str, dict], other: dict[str, dict]) -> dict:
             "false_pass": sum(a == "fail" and b == "pass" for a, b in pairs),  # the other rater missed a failure
             "false_fail": sum(a == "pass" and b == "fail" for a, b in pairs),
             "na_mismatch": sum((a == "n/a") != (b == "n/a") for a, b in pairs),
+            # Whether both found a problem: pass and n/a both mean none, so they count as the same answer here.
+            "found_agreement": round(sum((a == "fail") == (b == "fail") for a, b in pairs) / len(pairs), 3) if pairs else None,
+            "found_kappa": cohen_kappa([(a == "fail", b == "fail") for a, b in pairs]),
         }
     return report
 
 
 def print_report(title: str, report: dict) -> None:
-    print(f"\n{title}\n{'criterion':24} {'rows':>4} {'agree':>6} {'kappa':>6} {'false pass':>11} {'false fail':>11} {'n/a mismatch':>13}")
+    def pct(v):
+        return f"{v:.0%}" if v is not None else "-"
+
+    def num(v):
+        return f"{v:.2f}" if v is not None else "-"
+
+    print(f"\n{title}\n{'criterion':24} {'rows':>4} {'agree':>6} {'kappa':>6} {'false pass':>11} {'false fail':>11} {'n/a mismatch':>13}"
+          f" {'problem found: agree':>21} {'kappa':>6}")
     for name, r in report.items():
-        agree = f"{r['agreement']:.0%}" if r["agreement"] is not None else "-"
-        kappa = f"{r['kappa']:.2f}" if r["kappa"] is not None else "-"
-        print(f"{name:24} {r['rows']:>4} {agree:>6} {kappa:>6} {r['false_pass']:>11} {r['false_fail']:>11} {r['na_mismatch']:>13}")
+        print(f"{name:24} {r['rows']:>4} {pct(r['agreement']):>6} {num(r['kappa']):>6} {r['false_pass']:>11} {r['false_fail']:>11}"
+              f" {r['na_mismatch']:>13} {pct(r['found_agreement']):>21} {num(r['found_kappa']):>6}")
 
 
 def report_agreement(judged_path: Path) -> None:

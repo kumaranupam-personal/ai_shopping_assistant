@@ -1,8 +1,9 @@
 """Renders one eval turn as text, the same way for the labeling sheet and the judge (docs/07-evaluation.md, Judge rubric).
 
-What a person labels and what the judge grades must be identical, so both read a turn through `render`: the earlier
-conversation, the user's message, what the agent did, the products shown (rebuilt from the catalog by ID), the
-headline and suggestions, the reply and its length.
+A person labeling and the judge read a turn through `render`: the earlier conversation (with every product shown in
+it), the user's message, what the agent did, the products shown (rebuilt from the catalog by ID), the headline and
+suggestions, the reply and its length. The labeling sheet was rendered before earlier turns listed their products'
+details, so the judge sees those details where the sheet shows only titles, brands and prices.
 """
 
 import json
@@ -89,8 +90,8 @@ def render(item: dict, rows: dict, edit: dict | None) -> dict:
     show_call = next((c for c in reversed(data["tool_calls"]) if c["name"] == "show_products"), None)
     earlier = []
     for prev in item["history"]:
-        products = "; ".join(f"{k}. {rows[i]['title']} ({rows[i]['brand']}, {inr(rows[i]['price'])})" for k, i in enumerate(prev["shown"] or [], 1))
-        earlier.append(f"User: {prev['user']}" + (f"\nAgent showed: {products}" if products else "") + f"\nAgent: {prev['reply']}")
+        products = "\n".join(product_line(k, rows[i]) for k, i in enumerate(prev["shown"] or [], 1))
+        earlier.append(f"User: {prev['user']}" + (f"\nAgent showed:\n{products}" if products else "") + f"\nAgent: {prev['reply']}")
     reply = edit.get("reply", data["reply"])
     extras = ""
     if show_call:
