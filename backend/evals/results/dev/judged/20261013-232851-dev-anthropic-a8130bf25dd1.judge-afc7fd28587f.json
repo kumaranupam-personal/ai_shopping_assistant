@@ -1,0 +1,1794 @@
+{
+  "results_file": "20261013-232851-dev-anthropic-a8130bf25dd1.json",
+  "judge_version": "afc7fd28587f",
+  "judge_provider": "anthropic",
+  "judge_model": "claude-sonnet-5-5",
+  "judge_effort": "medium",
+  "summary": {
+    "turns": 53,
+    "errors": 0,
+    "criteria": {
+      "Relevance": {
+        "applies": 40,
+        "pass_rate": 0.975
+      },
+      "Helpfulness": {
+        "applies": 46,
+        "pass_rate": 0.978
+      },
+      "Faithfulness": {
+        "applies": 46,
+        "pass_rate": 0.913
+      },
+      "Relaxation honesty": {
+        "applies": 4,
+        "pass_rate": 0.75
+      },
+      "Clarification quality": {
+        "applies": 4,
+        "pass_rate": 1.0
+      },
+      "Decline quality": {
+        "applies": 4,
+        "pass_rate": 1.0
+      },
+      "Language and style": {
+        "applies": 53,
+        "pass_rate": 0.792
+      }
+    },
+    "turn_pass_rate": 0.736,
+    "cost_usd": 0.541104
+  },
+  "turns": {
+    "jackets-ladakh#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown jackets are size L, under 8k, high/extreme warmth; fleeces are a reasonable layering option."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and trade-off (down vs fleece, Ridge cheaper and waterproof)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Ridge is cheaper than Summit and waterproof; fleeces as layer is reasonable; claims supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; the warmth filter was inferred, not relaxed."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Reply shows products, no question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "Three sentences exceeds the 2-sentence limit, and the first sentence comments on inferred filters (process commentary)."
+        }
+      },
+      "cost_usd": 0.019048
+    },
+    "shoes-trekking-uk9#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are waterproof trekking shoes with UK 9 available; gender not specified by user."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and trade-off (price vs top rating, gender fit)."
+        },
+        "Faithfulness": {
+          "verdict": "fail",
+          "reason": "Claim that Glide and Terra cost less than the rest is false: TrailKing Apex (₹3,059) and Metro (₹3,039) are cheaper. Also Glide is men's, not unisex (the parenthesis only attaches to Terra, but \"cost less than the rest\" is wrong)."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 39 words, 2 sentences, plain text; suggestions in English."
+        }
+      },
+      "cost_usd": 0.019613
+    },
+    "phones-5g-budget#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown phones are 5G, under ₹15,000, with 5,355+ mAh batteries, so they fit the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "It recommends a pick and gives a trade-off between the Pixelon and the Kirin."
+        },
+        "Faithfulness": {
+          "verdict": "fail",
+          "reason": "The facts check out: the minimum battery is 5,355 mAh, the Kirin has the top rating at 4.6, it costs less than the Pixelon, and its camera is 12 MP. The claim that they are ranked by battery size and rating is not supported, because the list isn't ordered by battery (6167 mAh is second, then 6158 mAh, then 5716 mAh). The \"best all-rounder\" line is an opinion that the specs support."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "The reply shows products and asks no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The agent did not decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply has 3 sentences, which is over the 2-sentence limit. It also comments on the agent's own ranking process (\"I've ranked these by...\")."
+        }
+      },
+      "cost_usd": 0.02011
+    },
+    "backpacks-trek#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are waterproof trekking backpacks of 40 L or more."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives picks with reasons: best value, more room for longer treks, cheapest."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Ratings, capacities and the cheapest price all match the product data; no computed amounts."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Reply shows products and asks no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 45 words, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.021578
+    },
+    "watches-analog-leather#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All three are men's analog watches with leather straps, matching the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and price/rating trade-offs across the three."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Pulse has most reviews (8,816), is priciest; Horizon cheapest at ₹7,049 with lowest rating 3.6; Luxe is mid-priced. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; all filters were kept."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 31 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.007858
+    },
+    "kitchen-air-fryer#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are air fryers at or under ₹6,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives recommendations with trade-offs (rating vs capacity/warranty)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Annapurna 4.7 highest, 3-year warranty; Swaad 5.8 L biggest and 5-year warranty longest — all supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 27 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.009218
+    },
+    "refine-only-waterproof#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown jackets are size L, under 8k, high/extreme warmth; fleece are fine as mid-layers."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and trade-offs (down vs fleece, cheaper alternative)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "TrekNorth Summit 4.4 is tied with Glacier Fleece 4.4 (more reviews) so \"best-rated one\" among down is true; Ridge same extreme warmth, cheaper: supported. Claims supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; warmth was inferred and applied, not relaxed."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Not a clarifying question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "58 words and 4 sentences exceed the limits, and the first sentence comments on the agent's inference process."
+        }
+      },
+      "cost_usd": 0.010218
+    },
+    "refine-only-waterproof#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown jackets are waterproof, size L, under 8k, warm; fit the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation with reasons and a trade-off about warmth levels."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Pamir: extreme warmth, 4.5★ best, 401 g lightest, ₹4,429 cheaper than most (only AltiGear 3,439 cheaper) — all supported; Zanskar and TrekNorth Pamir are high warmth."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened; waterproof filter added."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 47 words, 2 sentences, plain text, suggestions in English, no process commentary."
+        }
+      },
+      "cost_usd": 0.012438
+    },
+    "refine-brand#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are trekking shoes under ₹6,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a trade-off: top-rated vs waterproof options."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Both top picks are 4.7★ and non-waterproof; UrbanStep Glide is men's waterproof; TrailKing Metro is women's waterproof. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Not a clarifying question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 26 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.009538
+    },
+    "refine-brand#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are TrailKing trekking shoes under ₹6,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and waterproof trade-off."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Apex 4.7★ top rated, not waterproof; Metro unisex ₹5,209 4.6★ is the top-rated waterproof. \"Budget pick\" is reasonable at ₹2,569. SKU IDs not in the tool data shown, but they are plausible identifiers."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 26 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.012281
+    },
+    "refine-ordinal#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Three cheapest backpacks sorted by price ascending; all fit the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a trade-off: features of UrbanSling vs rating and capacity of Commuto."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "UrbanSling is the only waterproof one with laptop compartment; Commuto has 4.7★ and 51 L, the highest of the three. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No clarifying question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 26 words, 2 sentences, plain text, suggestions in English, used specs for comparison."
+        }
+      },
+      "cost_usd": 0.007988
+    },
+    "refine-ordinal#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown as cards; the turn answers a question about one product."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Answers the request for more detail, adding details beyond the cards (padded straps, pockets, waterproof, laptop compartment)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "All facts (price, MRP, rating, reviews, waterproof, laptop compartment, straps, pockets, colors) match the tool result."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 37 words, 2 sentences, plain text, product title and amounts as returned."
+        }
+      },
+      "cost_usd": 0.008401
+    },
+    "refine-compare#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Three cheapest phones, sorted price ascending; all fit."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation with trade-off and 5G note beyond the cards."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Aurora 128 vs 64 GB is double; battery 5237 is bigger; 4.6 highest; none has 5G; \"a little more\" is a reasonable reading, no computed amount."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 32 words, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.008173
+    },
+    "refine-compare#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Both shown products are exactly the two requested."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives trade-offs and a recommendation on when each makes sense."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "All specs and ratings match tool results; no computed amounts."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question was asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply is 56 words, over the 55-word tolerance in D4, even though it is English and has 2 sentences."
+        }
+      },
+      "cost_usd": 0.011283
+    },
+    "vague-gift#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no question answered; it's a clarification."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product or result mentioned, only category examples."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "pass",
+          "reason": "One short question; no category or use case could be inferred from 'gift for my sister'; examples help narrow the search (D7)."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 24 words, 2 sentences, plain text, no process commentary."
+        }
+      },
+      "cost_usd": 0.006391
+    },
+    "oos-televisions#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Directly answers the question (no TVs) and lists what the store carries."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product facts stated; category list matches the store's brands."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No clarifying question asked."
+        },
+        "Decline quality": {
+          "verdict": "pass",
+          "reason": "Polite, brief, says it can't help with TVs, offers alternatives without searching."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 29 words, plain text."
+        }
+      },
+      "cost_usd": 0.006393
+    },
+    "relax-gaming-budget#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All four are gaming laptops within the disclosed relaxed budget."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives trade-offs and a recommendation, and says the budget was raised."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Claims about the Quanta's CPU tier and rating and the Vertex's RAM and weight match the product data; ₹63,250 comes from the tool call."
+        },
+        "Relaxation honesty": {
+          "verdict": "pass",
+          "reason": "The reply says the budget was raised to ₹63,250."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products were shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 46 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.011588
+    },
+    "relax-inferred-warmth#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Products are the warmest available under budget, relaxation disclosed; shown items include light windcheaters that don't suit -20°C, but disclosed as not enough; moderate pass."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives honest trade-off: none suit -20°C, explains moderate vs windcheater layering, suggests bigger budget."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Moderate warmth for fleece/denim and waterproof windcheaters are supported; but \"Snowline Glacier\" windcheater is not waterproof and \"all waterproof windcheaters\" is only said loosely; \"down jacket\" need is unsupported by results but a reasonable claim. Mostly supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "pass",
+          "reason": "Reply states that warmth filter was dropped and no extreme-warmth jacket was found."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No clarifying question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "60 words and 3 sentences exceeds the limit; also first sentence comments on the agent's own process (\"Warmth was inferred, so I'll drop it\")."
+        }
+      },
+      "cost_usd": 0.010401
+    },
+    "hinglish-shaadi-kurta#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are silk wedding kurtas under 5k."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a top pick and men's picks, and suggests narrowing."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Claims on rating and gender are supported by the product data."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products were shown, so this does not apply."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply has 3 sentences, over the 2-sentence limit (D4)."
+        }
+      },
+      "cost_usd": 0.012256
+    },
+    "hinglish-teen-hazaar#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown watches are under ₹3,000 and are watches; fit the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and trade-off (unisex balanced vs highest-rated but women's)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Chronex Active is unisex; Tempo Active is 4.6★, the highest, and women's. \"Sabse balanced\" is a mild opinion, reasonable given 4.5★ and unisex."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products were shown; no clarification-only reply."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matches the user, 2 sentences, 38 words, plain text, suggestions in Hinglish."
+        }
+      },
+      "cost_usd": 0.009581
+    },
+    "hinglish-aur-sasta#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are smartwatches under ₹10,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives picks with reasons (water resistance, budget option)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Kaal Classic's 4.3★ is not the highest among the cheaper options: Meridian Active is 4.4 but costs ₹6,959, so \"kam budget mein sabse achhi\" is arguably true among the low-priced ones (Kaal Classic ₹2,289 at 4.3 is the best-rated of the cheap ones). Chronex Orbit and Meridian Pulse both have 100 m, which is true (Tempo Active too, but not claimed as exclusive)."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products were shown; no clarification instead of products."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish, 2 sentences, 40 words, plain text, suggestions in Hinglish/English mix consistent."
+        }
+      },
+      "cost_usd": 0.010443
+    },
+    "hinglish-aur-sasta#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are smartwatches under ₹2,288, cheaper than the earlier Kaal Classic at ₹2,289, so they fit \"aur sasta\"."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives picks with reasons (ratings, cheapest, gender fit), which helps the user decide."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Vela 5.0 and Horizon 4.7 are the top ratings; Meridian Classic at ₹679 is the cheapest; Vela is women's and Horizon is unisex. All of this is supported by the results."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; the budget was tightened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "The reply shows products and asks no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply and suggestions match the user's Hinglish; 28 words and 2 sentences; plain text."
+        }
+      },
+      "cost_usd": 0.011876
+    },
+    "hinglish-dusra-wala#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Three cheapest kurtas by price ascending, matches request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Notes gender mix and recommends the cheapest, best-rated Utsav, giving a decision basis."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Utsav ₹399 is cheapest and 5.0★ is highest; genders and khadi correct."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matches user, 2 sentences, 32 words, suggestions in Hinglish."
+        }
+      },
+      "cost_usd": 0.007866
+    },
+    "hinglish-dusra-wala#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown; not applicable."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Answers the question about the second kurta and gives a comparison and recommendation."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Rating 3.2 is lower than 5.0 and 4.1, so \"lower than the other two\" is true. Price, sizes, colours and sleeve all match the tool result."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question was asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply is in Hinglish and has 2 sentences, but at 60 words it is over the 55-word limit in D4."
+        }
+      },
+      "cost_usd": 0.008508
+    },
+    "hinglish-kuch-accha#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no question answered; it's a clarification."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product facts or results mentioned."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "pass",
+          "reason": "The request is vague with no category or use inferable. One short question, with category options (D7), helps the search. The second sentence is a list of options, not a second question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply matching the user, 16 words, 2 sentences, plain text."
+        }
+      },
+      "cost_usd": 0.006518
+    },
+    "hinglish-mausam#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no product question answered; it's a decline."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "The reply mentions no specific product or result; jackets and waterproof shoes are only offered as search ideas."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "The reply is a decline, not a clarifying question."
+        },
+        "Decline quality": {
+          "verdict": "pass",
+          "reason": "It is polite and brief, says weather is out of scope, does no weather task, and offers a store alternative without searching (D8)."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "The reply is in Hinglish, matching the user. It is 2 sentences and 37 words, in plain text."
+        }
+      },
+      "cost_usd": 0.006983
+    },
+    "hinglish-mummy-phone-battery#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown phones have battery ≥6000 mAh and price ≤12,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives recommendation and trade-offs (5G/screen, storage)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Novaphone Pulse has 4.2★, the highest of the shown phones; Aurora Zen has 5G and 6.8 in screen; Novaphone Zen and Kirin Orbit have 128 GB (one Kirin Orbit does). All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply and suggestions, 2 sentences, 36 words, plain text."
+        }
+      },
+      "cost_usd": 0.010633
+    },
+    "hinglish-khadi-kurta#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All 8 are men's khadi kurtas in size M under ₹1,800."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a trade-off on sleeve length and an office pick, which helps the user decide."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Rangsutra Aangan and Mehfil Aangan are both rated 4.7, the highest. The Rangsutra is short sleeve, which the reply calls half sleeve, a fair reading. DesiLoom Noor and Mehfil Saanjh ₹829 are office and full sleeve. Prices are correct."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "The reply shows products and asks no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "The reply and suggestions are in Hinglish, matching the user. The reply is 32 words in 2 sentences, in plain text."
+        }
+      },
+      "cost_usd": 0.010468
+    },
+    "hinglish-school-backpack#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All four are black backpacks under ₹2,500, daily use; fit school need."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives trade-offs: biggest and waterproof vs budget waterproof, lighter options for younger kids."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "TrailCarry 30 L is largest and waterproof; Packwise waterproof at ₹709 cheap. \"Halke size ke\" for Commuto 16 L and Himpack 18 L is reasonable reading of smaller capacity (weight not given, but smaller size is supported)."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Reply shows products, no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matching user, 32 words, 2 sentences, plain text, suggestions in Hinglish."
+        }
+      },
+      "cost_usd": 0.008923
+    },
+    "watches-swim-100m#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown watches are 100m water resistant and under ₹12,000, so they fit the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation (silicone strap, Chronex Active) with a reason for swimming."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "100m claim is true for all; Chronex Active has a silicone strap. The claim that silicone handles water better than leather or fabric is general knowledge, reasonable, and no leather watch is shown."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products shown, not a clarifying question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 25 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.009293
+    },
+    "hinglish-mixer-wattage#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown products are mixer grinders ≥750W and ≤₹4,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives recommendations with trade-offs (value vs larger jar)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Neo and Eco 4.4★, 5-year warranty; Swaad 1.2L, 5-year warranty — all supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matching user, 42 words, 2 sentences, suggestions in Hinglish, plain text."
+        }
+      },
+      "cost_usd": 0.009711
+    },
+    "hinglish-running-eva#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All six are running shoes, UK 10, EVA sole, under ₹5,000; gender wasn't specified."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Points out the gender split and recommends the Terra as best-rated and cheapest, which helps the user decide."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "First two are men's, rest women's; Terra has 4.2★ (highest) and ₹1,909 (lowest). All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Reply shows products, not a question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matches the user, 27 words and 2 sentences, plain text, suggestions in Hinglish/English mix consistent."
+        }
+      },
+      "cost_usd": 0.009316
+    },
+    "shoes-sandals-men#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All four are men's sandals, UK 7, under ₹1,500."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives trade-offs across rating, price, reviews and sole."
+        },
+        "Faithfulness": {
+          "verdict": "fail",
+          "reason": "\"EVA sole... which is lighter\" is not supported by any tool result; the weight claim is outside the attributes."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was relaxed."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 33 words, suggestions in English."
+        }
+      },
+      "cost_usd": 0.011641
+    },
+    "hinglish-refine-budget-up#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are trekking backpacks, 50L+, under ₹3,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation with reasons and a waterproof trade-off."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "TrailCarry is waterproof, highest rated 4.4, and the cheapest at ₹1,039; Commuto Voyager and Himpack Explorer are waterproof; the others are not. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Not a clarification."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply and suggestions, 34 words, 2 sentences, plain text."
+        }
+      },
+      "cost_usd": 0.009698
+    },
+    "hinglish-refine-budget-up#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown products are trekking backpacks, 50 L or more, and within ₹5,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "It gives a trade-off: the best-rated options aren't waterproof, and Himpack is the only waterproof one."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "UrbanSling Explorer and Ridge are both 4.3★ and not waterproof. Himpack Explorer is the only waterproof product in the list. TrailCarry Nova was in the earlier list, though it's not in the current results, and the reply says so."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "The budget was raised at the user's own request, not loosened by the agent."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question was asked; products were shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "This is not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "It is in Hinglish like the user's message, 35 words and 2 sentences, in plain text, and the suggestions are in Hinglish."
+        }
+      },
+      "cost_usd": 0.012963
+    },
+    "refine-more-premium#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown items are toasters under ₹2,500."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a pick and a trade-off (warranty vs review count)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "RasoiPro Neo 4.7★ with 11,710 reviews; Annapurna 5-year warranty is the longest and has 206 reviews. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products shown, no question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 23 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.009131
+    },
+    "refine-more-premium#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are toasters priced ₹1,809–2,479; the search floor was ₹1,720 but two are at ₹1,809 and ₹1,839, still above earlier items; within budget and pricier."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation and a trade-off (best rated vs. long warranty with lower ratings) plus an offer to go higher."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Swaad Neo 4.7★ is the highest rating shown; Homeline Prime has 5-year warranty and 3.5★, lower ratings; all supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; budget kept and price floor added as user asked."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Products were shown; not a clarification turn."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 35 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.012386
+    },
+    "hinglish-refine-size#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are casual shoes, UK 8, under ₹3,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Recommends a top pick with reasons and flags gender differences, which helps the user decide."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "PaceOne Breeze has the highest rating (4.6) and is waterproof; some are men's/women's, as shown."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply and suggestions match the user's Hinglish; 24 words, 2 sentences, plain text."
+        }
+      },
+      "cost_usd": 0.009621
+    },
+    "hinglish-refine-size#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown are casual shoes with UK 9 and under ₹3,000."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Recommends top-rated and a cheaper alternative, with trade-off."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Footcraft 4.8 top-rated, waterproof; PaceOne cheaper (1,729 vs 2,749) and waterproof; gender claim supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish, 36 words, 2 sentences, suggestions in Hinglish, plain text."
+        }
+      },
+      "cost_usd": 0.012386
+    },
+    "refine-color-kurta#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All shown kurtas are women's, size M, under ₹1,500."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Separates everyday vs festive picks, giving a basis to decide."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Cotton daily kurtas with 5.0, 4.7, 4.4 ratings are highly rated; Rangsutra cotton is festive; Utsav and DesiLoom silk are festive. All supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "No decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 33 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.009563
+    },
+    "refine-color-kurta#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All six are women's green kurtas in M under ₹1,500."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a recommendation by rating and an office-wear pointer, which helps the user choose."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Utsav 5.0 and Taana Heritage 4.4 are the top-rated of the shown, and Kalakriti and DesiLoom are office occasion; all supported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 23 words, 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.011423
+    },
+    "hinglish-beech-wala-bag#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All four are 40L+ backpacks, the cheapest ones; user asked for 3 but a tie at ₹699 justifies a fourth."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Explains why 4 are shown and gives a trade-off (waterproof/laptop vs cheapest)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Tie at ₹699 true; Nova waterproof and laptop compartment yes; Commuto cheapest at ₹449; but its 4.7 rating is highest among shown, true."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened; showing 4 for a tie isn't a relaxation of a filter."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matches user, 36 words, 2 sentences, plain text, suggestions in Hinglish."
+        }
+      },
+      "cost_usd": 0.009031
+    },
+    "hinglish-beech-wala-bag#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown in this turn."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Answers brand and use directly, the second of the shown items, with a reasonable interpretation."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Packwise, trekking, 55 L all match the earlier tool data; the claim about 4 bags and price tie at third is also correct."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened this turn."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No clarifying question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply is in Hinglish like the user, 39 words and 2 sentences. However, the second sentence comments on its own process (\"maine 2nd number wala bag liya hai\"), which breaks the rule against commentary on the agent's own process."
+        }
+      },
+      "cost_usd": 0.008716
+    },
+    "compare-top-smartwatches#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "All three are smartwatches sorted by top rating, matching the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Notes gender split, cheapest option and water resistance, giving a basis to choose beyond ratings; though partly restating card specs, it adds a price comparison."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "All facts (gender, strap, price lowest, 100m resistance) match the product data; no computed values."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 38 words, 2 sentences, plain text, suggestions in English; specs used for comparison."
+        }
+      },
+      "cost_usd": 0.008013
+    },
+    "compare-top-smartwatches#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown, so not applicable."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Names the brands and compares price, gender, strap and water resistance, answering both parts."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "All facts match the compare result; \"much less\" is qualitative, with no computed amount."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question was asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 54 words (within the 55 tolerance), plain text, and the specs are used as a comparison."
+        }
+      },
+      "cost_usd": 0.008138
+    },
+    "compare-mixer-first-two#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Three mixer grinders sorted by lowest price, matching the request."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Gives a trade-off and a recommendation: Eco costs slightly more but has the best rating, biggest jar and longest warranty."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Eco has 4.4★ (highest), 1 L (biggest), 5-year warranty (longest); \"a little more\" is not a computed amount; cheapest-in-stock is supported by the price_asc sort."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint was loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "The reply shows products and asks no question."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "The request was not declined."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, matching the user. 28 words in 2 sentences, plain text, suggestions in English."
+        }
+      },
+      "cost_usd": 0.008356
+    },
+    "compare-mixer-first-two#2": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Answers both brand question and gives a pick with reason (power, price)."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Brands, 947W vs 681W, and cheaper (₹2,039 vs ₹2,169) all supported by earlier results; motor claim is reasonable reading."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "English, 2 sentences, 46 words; though it uses markdown bold, which breaks plain text requirement."
+        }
+      },
+      "cost_usd": 0.007898
+    },
+    "hinglish-vague-badhiya#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no question answered; it's a clarification."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product facts or results mentioned."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "pass",
+          "reason": "No category or use case can be inferred; one short question with options helps narrow the search (D7)."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish reply to Hinglish message, 1 sentence, 13 words, plain text."
+        }
+      },
+      "cost_usd": 0.006363
+    },
+    "vague-not-sure#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no question answered; the reply is a clarification."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product or result mentioned, only category names."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "pass",
+          "reason": "The user gave no category or use case. The reply asks one short question and lists the store's categories (D7)."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, matching the user. 18 words and 2 sentences, plain text."
+        }
+      },
+      "cost_usd": 0.006361
+    },
+    "adversarial-fake-review#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no question answered; it's a decline."
+        },
+        "Faithfulness": {
+          "verdict": "fail",
+          "reason": "The reply mentions kitchen appliances like kettle, toaster, mixer grinder as catalog items with no tool result to support them; it's a claim about the catalog. This is unsupported."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No clarifying question asked."
+        },
+        "Decline quality": {
+          "verdict": "pass",
+          "reason": "Declines politely and briefly, doesn't write the review, offers a catalog alternative without searching; slight explanation about policies is mild but not a lecture."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "The reply is in English, but it has 3 sentences, which breaks the 2-sentence limit."
+        }
+      },
+      "cost_usd": 0.007198
+    },
+    "oos-leave-application#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "n/a",
+          "reason": "No products shown."
+        },
+        "Helpfulness": {
+          "verdict": "n/a",
+          "reason": "No products shown and no product question answered; it's a decline."
+        },
+        "Faithfulness": {
+          "verdict": "n/a",
+          "reason": "No product facts stated; only lists categories, no specific product or result."
+        },
+        "Relaxation honesty": {
+          "verdict": "n/a",
+          "reason": "No constraint loosened."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "Not a clarifying question."
+        },
+        "Decline quality": {
+          "verdict": "pass",
+          "reason": "Polite, brief, states why it can't help, doesn't draft the letter, offers store categories without searching."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "English, 2 sentences, 34 words, plain text, no process commentary."
+        }
+      },
+      "cost_usd": 0.006536
+    },
+    "hinglish-relax-brand#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "fail",
+          "reason": "User asked for \"Kaal\" brand watch under 2000; Kaal is a store brand, but none of the shown products are Kaal (Tempo, Vela, Horizon, Chronex). The brand constraint was ignored."
+        },
+        "Helpfulness": {
+          "verdict": "fail",
+          "reason": "Reply doesn't address Kaal brand at all; invents delivery concern; gives no decision help."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Claims \"stock mein hain\" which is supported; no unsupported facts, though it ignores that none are Kaal."
+        },
+        "Relaxation honesty": {
+          "verdict": "fail",
+          "reason": "The brand Kaal was dropped (the search had no brand filter) and the reply doesn't say so, presenting results as if they met the request."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "pass",
+          "reason": "Hinglish matches, 31 words, 2 sentences, plain text; suggestions are Hinglish/English mix acceptable."
+        }
+      },
+      "cost_usd": 0.010133
+    },
+    "relax-video-editing#1": {
+      "verdicts": {
+        "Relevance": {
+          "verdict": "pass",
+          "reason": "Shown laptops are all student, integrated-graphics, under ₹45,000; weak for video editing, but the relaxation is disclosed and they meet budget. Aeon Air has only 8 GB, but it's still a candidate after relaxation."
+        },
+        "Helpfulness": {
+          "verdict": "pass",
+          "reason": "Explains the relaxation and gives a reason for ordering (RAM), which helps in deciding."
+        },
+        "Faithfulness": {
+          "verdict": "pass",
+          "reason": "Claims integrated graphics for all (true) and 16 GB first; but the sixth product has 8 GB, which is consistent with ordering. Claim 'ones with 16 GB first' is supported. No computed amounts in reply."
+        },
+        "Relaxation honesty": {
+          "verdict": "pass",
+          "reason": "Reply states the creator filter was dropped."
+        },
+        "Clarification quality": {
+          "verdict": "n/a",
+          "reason": "No question asked; products shown."
+        },
+        "Decline quality": {
+          "verdict": "n/a",
+          "reason": "Not a decline."
+        },
+        "Language and style": {
+          "verdict": "fail",
+          "reason": "Reply has 3 sentences (over the 2 limit) and opens with leaked internal commentary \"Creator use was inferred; drop it.\"; also the suggestion \"Raise budget to ₹51,750\" is a computed amount."
+        }
+      },
+      "cost_usd": 0.010656
+    }
+  }
+}
