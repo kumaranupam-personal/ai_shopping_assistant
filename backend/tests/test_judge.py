@@ -16,8 +16,9 @@ FIELDS = {name: f"<{name}>" for name in INFO}
 
 
 def verdict_args(**overrides):
-    args = {key: {"verdict": "pass", "reason": "fine"} for key in CRITERIA}
-    return {**args, **{k: {"verdict": v, "reason": "why"} for k, v in overrides.items()}}
+    verdicts = {key: "pass" for key in CRITERIA} | overrides
+    return {f"{key}_{part}": (verdict if part == "verdict" else "why" if key in overrides else "fine")
+            for key, verdict in verdicts.items() for part in ("verdict", "reason")}
 
 
 def verdict_call(**overrides):
@@ -37,7 +38,8 @@ def test_the_verdict_tool_has_a_portable_schema():
         return found
 
     assert keys(VERDICT_TOOL.parameters) <= PORTABLE_KEYS
-    assert VERDICT_TOOL.parameters["required"] == list(CRITERIA)
+    assert len(VERDICT_TOOL.parameters["required"]) == 2 * len(CRITERIA)
+    assert all(not s.get("properties") for s in VERDICT_TOOL.parameters["properties"].values())  # flat: no nested objects
 
 
 def test_a_turn_is_judged_from_one_tool_call_and_costed():
@@ -64,10 +66,29 @@ def test_an_invalid_answer_is_retried_once(responses, judged):
     assert ("verdicts" in result) is judged and ("error" in result) is not judged
 
 
+def test_a_failed_judgment_records_why_without_its_verdicts():
+    bad = verdict_args(relevance="N/A")
+    del bad["decline_quality_verdict"], bad["decline_quality_reason"]
+    responses = [reply("thinking"), reply(stop="tool_use", calls=[ToolCall("j", "record_verdicts", bad)])]
+    result = asyncio.run(judge_turn(ScriptedProvider(*responses), FIELDS))
+    first, second = result["attempts"]
+    assert first == {"stop_reason": "end_turn", "tools": [], "problems": ["no record_verdicts call"]}
+    assert second["problems"] == ["relevance_verdict: 'N/A' isn't pass, fail or n/a", "decline_quality_verdict: missing",
+                                  "decline_quality_reason: missing"]
+
+
+def test_a_provider_exception_fails_only_that_turn():
+    result = asyncio.run(judge_turn(ScriptedProvider(RuntimeError("limit"), verdict_call()), FIELDS))
+    assert "verdicts" in result
+    result = asyncio.run(judge_turn(ScriptedProvider(RuntimeError("limit"), RuntimeError("limit")), FIELDS))
+    assert result["attempts"] == [{"exception": "RuntimeError: limit"}] * 2
+
+
 def test_parse_verdicts_needs_every_criterion():
     args = verdict_args()
-    del args["decline_quality"]
+    del args["decline_quality_reason"]
     assert parse_verdicts(args) is None and parse_verdicts(verdict_args()) is not None
+    assert parse_verdicts({**verdict_args(), "reason": "x"}) is None  # a field outside the schema
 
 
 def test_summary_counts_pass_rates_only_where_a_criterion_applies():

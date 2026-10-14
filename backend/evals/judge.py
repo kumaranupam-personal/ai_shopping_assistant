@@ -54,23 +54,19 @@ def rubric_text() -> str:
 SYSTEM = f"{INSTRUCTIONS}\n\n{rubric_text()}"
 VERDICT_TOOL = ToolSpec(
     name="record_verdicts",
-    description="Record the verdict and a one-line reason for every criterion of the rubric.",
+    description="Record the verdict and a one-line reason for every criterion of the rubric, all in this one call.",
+    # Flat fields, two per criterion: with one nested object per criterion, models often split or flattened the call.
     parameters={
         "type": "object",
         "properties": {
-            key: {
-                "type": "object",
-                "description": name,
-                "properties": {
-                    "verdict": {"type": "string", "enum": list(VERDICTS)},
-                    "reason": {"type": "string", "description": "One line: why, or why the criterion doesn't apply."},
-                },
-                "required": ["verdict", "reason"],
-                "additionalProperties": False,
-            }
+            field: spec
             for key, name in CRITERIA.items()
+            for field, spec in (
+                (f"{key}_verdict", {"type": "string", "enum": list(VERDICTS), "description": f"{name}: pass, fail or n/a"}),
+                (f"{key}_reason", {"type": "string", "description": f"{name}: one line on why, or why it doesn't apply"}),
+            )
         },
-        "required": list(CRITERIA),
+        "required": [f"{key}_{part}" for key in CRITERIA for part in ("verdict", "reason")],
         "additionalProperties": False,
     },
 )
@@ -94,27 +90,46 @@ def turn_text(fields: dict) -> str:
     return "\n\n".join(f"## {name}\n{fields[name]}" for name in INFO)
 
 
+def verdict_problems(arguments: dict) -> list[str]:
+    """What makes a record_verdicts call invalid, without the verdicts themselves: missing or malformed fields."""
+    problems = []
+    for key in CRITERIA:
+        verdict, reason = arguments.get(f"{key}_verdict"), arguments.get(f"{key}_reason")
+        if verdict is None:
+            problems.append(f"{key}_verdict: missing")
+        elif verdict not in VERDICTS:
+            problems.append(f"{key}_verdict: {verdict!r} isn't pass, fail or n/a")
+        if not isinstance(reason, str):
+            problems.append(f"{key}_reason: missing")
+    return problems + [f"{field}: unexpected" for field in arguments if field not in VERDICT_TOOL.parameters["properties"]]
+
+
 def parse_verdicts(arguments: dict) -> dict | None:
-    """The verdicts by criterion name, or None when the call misses a criterion or uses an unknown verdict."""
-    verdicts = {}
-    for key, name in CRITERIA.items():
-        item = arguments.get(key)
-        if not isinstance(item, dict) or item.get("verdict") not in VERDICTS or not isinstance(item.get("reason"), str):
-            return None
-        verdicts[name] = {"verdict": item["verdict"], "reason": item["reason"]}
-    return verdicts
+    """The verdicts by criterion name, or None when the call misses a field or uses an unknown verdict."""
+    if verdict_problems(arguments):
+        return None
+    return {name: {"verdict": arguments[f"{key}_verdict"], "reason": arguments[f"{key}_reason"]} for key, name in CRITERIA.items()}
 
 
 async def judge_turn(provider: LLMProvider, fields: dict, attempts: int = 2) -> dict:
-    """Grades one rendered turn. A response without a valid record_verdicts call is retried once, then recorded as an error."""
-    cost, history = 0.0, [provider.user_message(turn_text(fields))]
+    """Grades one rendered turn. A response without a valid record_verdicts call is retried once, then recorded as an
+    error with what each attempt got wrong (its stop reason, the tools it called and the problems with the call)."""
+    cost, history, attempts_made = 0.0, [provider.user_message(turn_text(fields))], []
     for _ in range(attempts):
-        response = await provider.complete(SYSTEM, history, [VERDICT_TOOL])
+        try:
+            response = await provider.complete(SYSTEM, history, [VERDICT_TOOL])
+        except Exception as e:  # noqa: BLE001 - a failed call fails this turn's judgment, not the whole run
+            attempts_made.append({"exception": f"{type(e).__name__}: {e}"})
+            continue
         cost += provider.prices.cost(response.usage) if provider.prices else 0.0
         call = next((c for c in response.tool_calls if c.name == VERDICT_TOOL.name), None)
         if call and (verdicts := parse_verdicts(call.arguments)):
             return {"verdicts": verdicts, "cost_usd": round(cost, 6)}
-    return {"error": "no valid record_verdicts call", "cost_usd": round(cost, 6)}
+        attempts_made.append({
+            "stop_reason": response.stop_reason, "tools": [c.name for c in response.tool_calls],
+            "problems": verdict_problems(call.arguments) if call else ["no record_verdicts call"],
+        })
+    return {"error": "no valid record_verdicts call", "attempts": attempts_made, "cost_usd": round(cost, 6)}
 
 
 async def judge_all(provider: LLMProvider, items: dict[str, dict], concurrency: int = 4) -> dict[str, dict]:
@@ -200,18 +215,23 @@ def read_key() -> dict:
     return json.loads((LABELS_DIR / "key" / "key.json").read_text())
 
 
-async def judge_sheet(split: str, settings: Settings) -> Path:
+async def judge_sheet(split: str, settings: Settings, retry_errors: bool = False) -> Path:
+    """Judges a split's rows; with `retry_errors`, only the rows that ended in an error in this judge version's file."""
     sheet, key = read_sheet(LABELS_DIR / "labeling-sheet.xlsx"), read_key()
     ids = [r["row"] for r in key["rows"] if r["split"] == split]
     provider = judge_provider(settings)
     version = judge_version(provider, settings.judge_effort)
-    judged = await judge_all(provider, {i: sheet[i]["fields"] for i in ids})
     out = LABELS_DIR / "judged" / f"{split}-judge-{version}.json"
+    judged = json.loads(out.read_text())["rows"] if retry_errors else {}
+    todo = [i for i in ids if "error" in judged[i]] if retry_errors else ids
+    judged.update(await judge_all(provider, {i: sheet[i]["fields"] for i in todo}))
+    judged = {i: judged[i] for i in ids}
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps({"split": split, "judge_version": version, "judge_provider": provider.name, "judge_model": provider.model,
                                "judge_effort": settings.judge_effort, "summary": summarize_verdicts(judged), "rows": judged},
                               indent=2, ensure_ascii=False) + "\n")
-    print(f"Judged {len(judged)} {split} rows: {out}")
+    errors = [i for i in ids if "error" in judged[i]]
+    print(f"Judged {len(todo)} {split} rows ({len(errors)} with errors{': ' + ', '.join(errors) if errors else ''}): {out}")
     return out
 
 
@@ -297,12 +317,13 @@ async def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--agreement", type=Path, help="compare a judged sheet file with the human labels")
     mode.add_argument("--consistency", action="store_true", help="compare the recheck sheet with the labeling sheet")
     parser.add_argument("--holdout", action="store_true", help="allow judging a holdout results file")
+    parser.add_argument("--retry-errors", action="store_true", help="with --sheet, judge again only the rows that ended in an error")
     args = parser.parse_args(argv)
     settings = Settings()
     if args.results:
         await judge_results_file(args.results, settings, load_index(settings.data_dir), args.holdout)
     elif args.sheet:
-        await judge_sheet(args.sheet, settings)
+        await judge_sheet(args.sheet, settings, args.retry_errors)
     elif args.agreement:
         report_agreement(args.agreement)
     else:
