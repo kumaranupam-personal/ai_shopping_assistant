@@ -83,7 +83,7 @@ Every adapter times out each attempt after 60 seconds and retries a failed attem
 `app/llm/anthropic_provider.py`, selected with `LLM_PROVIDER=anthropic`.
 
 - Uses the async Anthropic client and `beta.messages.create`, because the refusal fallback below is a beta feature. It doesn't use the SDK's tool runner.
-- The default model is `claude-opus-5-5`.
+- The default model is `claude-opus-5-5`. The price table also holds `claude-sonnet-5-5`, the eval judge's model (see `07-evaluation.md`, Judge).
 - `LLM_EFFORT` maps to `output_config.effort` with the same value. The `thinking` parameter is omitted, so the model uses its adaptive default.
 - Tool choice is `auto`.
 - The system prompt goes in one text block marked with `cache_control` `{"type": "ephemeral"}`. The last content block of the last history message gets the same marker, so each call reads the earlier conversation from the cache. The marker goes on a copy of that message, so the stored history is unchanged, and a string content becomes a single text block in the copy. Inputs under 512 tokens aren't cached. Anthropic reports cache reads and cache writes separately from `input_tokens`, as `cache_read_input_tokens` and `cache_creation_input_tokens`, and they become `cache_read_tokens` and `cache_write_tokens`.

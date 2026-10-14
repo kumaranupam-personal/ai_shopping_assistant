@@ -94,7 +94,10 @@ ai_shopping_assistant/
         holdout.yaml         the holdout set: never used for tuning, run only to report a finished prompt version
       run.py                 eval runner
       checks.py              grounding check, case expectations and the prompt leak check
+      turn_view.py           renders a turn for the labeling sheet and the judge alike
+      judge.py               the LLM judge and its agreement with human labels
       prompts/               one snapshot of the system prompt and tools per prompt version
+      labels/                the judge's labeling sheets, the script that builds them, their key and judged sheets
       results/               eval run outputs, tracked in git so runs can be compared
         dev/                 dev runs and each provider's baseline
         holdout/             holdout runs
@@ -119,6 +122,7 @@ The backend reads these environment variables, optionally from `backend/.env`. V
 - `LLM_MODEL`: model ID for the chosen provider. Default: unset, which means the adapter's default model from `09-llm-providers.md`.
 - `LLM_EFFORT`: `low`, `medium` or `high`. Default `low`.
 - `LLM_MAX_TOKENS`: maximum output tokens per model call. Default `16000`.
+- `JUDGE_PROVIDER`, `JUDGE_MODEL` and `JUDGE_EFFORT`: the eval judge's provider, model and effort (see `07-evaluation.md`, Judge), read only by the evals. Defaults: unset, which stops the judge with a message; unset, which means the adapter's default model; `medium`. The judge uses the chosen provider's `LLM_<PROVIDER>_API_KEY`.
 - `DATA_DIR`: directory with built catalog files. Default `data`.
 - `SESSION_TTL_MINUTES`: idle time before a session expires. Default `60`.
 - `MAX_TURNS_PER_SESSION`: user messages allowed per session. Default `15`.
@@ -159,5 +163,5 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 5. `uv run python -m app` starts the API server on `PORT` with auto-reload.
 6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
-8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. `--set holdout` runs the holdout set instead of the dev set, always in full. Case IDs as arguments run only those dev cases.
+8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. `--set holdout` runs the holdout set instead of the dev set, always in full. Case IDs as arguments run only those dev cases, and `--judge` grades every turn of a dev run afterwards. `uv run python -m evals.judge` runs the LLM judge on its own (see `07-evaluation.md`, Judge).
 9. `npm install && npm run dev` serves the UI at `http://localhost:5173/saathi/`. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.

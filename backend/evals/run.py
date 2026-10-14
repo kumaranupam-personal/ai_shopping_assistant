@@ -66,12 +66,14 @@ class Recorder:
     def __init__(self, provider: LLMProvider):
         self.provider, self.name, self.model = provider, provider.name, provider.model
         self.min_cache_tokens, self.prices = provider.min_cache_tokens, provider.prices
-        self.tools: list[str] = []  # both lists only grow; a turn's share is the slice it added
+        self.tools: list[str] = []  # the lists only grow; a turn's share is the slice it added
         self.results: list[ToolResult] = []
+        self.calls: list[dict] = []  # each call with its arguments and, once it has run, its result
 
     async def complete(self, system, history, tools):
         response = await self.provider.complete(system, history, tools)
         self.tools += [call.name for call in response.tool_calls]
+        self.calls += [{"id": call.id, "name": call.name, "arguments": call.arguments} for call in response.tool_calls]
         return response
 
     def user_message(self, text):
@@ -79,7 +81,27 @@ class Recorder:
 
     def tool_results_message(self, results):
         self.results += results
+        by_id = {call["id"]: call for call in self.calls}
+        for result in results:
+            if call := by_id.get(result.call_id):
+                call["result"] = result.content if result.is_error else compact_result(call["name"], json.loads(result.content))
+                call["is_error"] = result.is_error
         return self.provider.tool_results_message(results)
+
+
+def compact_result(tool: str, result: dict) -> dict:
+    """A search result keeps its product IDs instead of the product rows, which the catalog rebuilds when needed."""
+    if tool == "search_products" and "results" in result:
+        return {"ids": [row["id"] for row in result["results"]], **{k: v for k, v in result.items() if k != "results"}}
+    return result
+
+
+def catalog_fingerprint(index: SearchIndex) -> str:
+    """A SHA-256 hash of every product row, so stored product IDs can be checked against the catalog they came from."""
+    digest = hashlib.sha256()
+    for row in index.conn.execute("SELECT * FROM products ORDER BY id"):
+        digest.update(json.dumps(list(row), ensure_ascii=False).encode())
+    return digest.hexdigest()
 
 
 def git_state(cwd: Path = BACKEND_DIR) -> tuple[str | None, bool | None]:
@@ -127,7 +149,7 @@ async def run_case(
     options = TraceOptions(["eval", eval_set, case.id], message_text=True)  # the messages are the eval cases, never private
     turns, calls, error, last = [], [], None, TurnResult()
     for text in case.turns:
-        events, first_tool = [], len(recorder.tools)
+        events, first_tool, first_call = [], len(recorder.tools), len(recorder.calls)
         user_numbers |= user_amounts(text)
         started = time.perf_counter()
         try:
@@ -147,6 +169,8 @@ async def run_case(
         turns.append({
             "user": text,
             **vars(last),
+            # What the agent searched and got back, so a reply can be judged against it (docs/07-evaluation.md).
+            "tool_calls": [{k: v for k, v in call.items() if k != "id"} for call in recorder.calls[first_call:]],
             "latency_s": round(time.perf_counter() - started, 2),
             "model_calls": len(usages),
             **{name: sum(getattr(u, name) for u in usages) for name in USAGE_FIELDS},
@@ -213,9 +237,12 @@ async def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the eval cases against the configured LLM provider.")
     parser.add_argument("ids", nargs="*", help="case IDs to run (default: all; dev set only)")
     parser.add_argument("--set", dest="eval_set", choices=EVAL_SETS, default="dev", help="dev (tuning) or holdout (reporting)")
+    parser.add_argument("--judge", action="store_true", help="then grade every turn with the LLM judge (dev set only)")
     args = parser.parse_args(argv)
     if args.eval_set == "holdout" and args.ids:
         parser.error("the holdout set runs in full; debug single cases on the dev set")
+    if args.eval_set == "holdout" and args.judge:
+        parser.error("judge a holdout run with `python -m evals.judge --holdout`, after recording a plan in evals/README.md")
 
     settings = Settings()
     cases_file = SETS_DIR / f"{args.eval_set}.yaml"
@@ -246,12 +273,16 @@ async def main(argv: list[str] | None = None) -> int:
     (RESULTS_DIR / args.eval_set).mkdir(parents=True, exist_ok=True)
     out = RESULTS_DIR / args.eval_set / f"{datetime.now():%Y%m%d-%H%M%S}-{args.eval_set}-{provider.name}-{version}.json"
     header = {
-        "eval_set": args.eval_set, "cases_sha256": cases_sha256, "provider": provider.name, "model": provider.model,
+        "eval_set": args.eval_set, "cases_sha256": cases_sha256, "catalog_sha256": catalog_fingerprint(index),
+        "provider": provider.name, "model": provider.model,
         "prompt_version": version, "git_commit": commit, "git_dirty": dirty,
     }
     out.write_text(json.dumps({**header, "summary": summary, "cases": results}, indent=2, ensure_ascii=False) + "\n")
     note = " with uncommitted changes" if dirty else ""
     print(json.dumps(summary, indent=2), f"Eval set: {args.eval_set}", f"Prompt version: {version} (commit {commit}{note})", f"Results: {out}", sep="\n")
+    if args.judge:
+        from evals.judge import judge_results_file
+        await judge_results_file(out, settings, index)
     return 0 if summary["targets_met"] else 1
 
 
