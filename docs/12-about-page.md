@@ -14,7 +14,7 @@ A page that explains the project to engineers and recruiters: what it does, how 
 
 - `frontend/src/about/content.ts` holds every word, number and link on the page: the document title and description, the header's links, the hero, each section's heading and line, the diagram's labels, the turns and their steps, the feature cards, the evidence figures and note, the closing call to action and the footer. The components hold no wording of their own, so editing this one file changes any text on the page.
 - This doc fixes the page's structure and behavior, and repeats none of the file's wording.
-- The evidence figures are copied from the Evaluation section of `README.md`, and change with it.
+- The evidence figures are copied from `README.md` (its Highlights and Evaluation sections), and change with it.
 - The file also holds the repository's URL, the LinkedIn profile's URL and each turn's trace URL.
 
 ## Structure

@@ -140,6 +140,7 @@ Phase 18 ended with every rule-based check passing on both sets, so those checks
 - Part 5: the judge in `evals/`, called through the LLM layer from `09-llm-providers.md` with its own provider, model and prompt version recorded in the results, a `--judge` option in the runner and a way to judge an existing results file, with tests against a scripted provider.
 - Part 6: calibration: the judge prompt is refined, in one or two rounds, against the calibration labels only, and its agreement with the held-out labels is reported once, per criterion.
 - Then a new plan, recorded in the holdout run log before any judged holdout result, for judged dev and holdout runs.
+- Last part: the Evaluation section of `README.md` and the about page's evidence figures (`12-about-page.md`), reporting the rule checks on both sets, the judge's held-out agreement and the judged results.
 - Done when the tests in `07-evaluation.md` pass, the judge's agreement with the held-out labels is reported, and the judged runs the new plan names are in the log.
 
 ## Stretch goals
