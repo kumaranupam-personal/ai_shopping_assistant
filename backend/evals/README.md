@@ -33,6 +33,24 @@ The holdout cases are 40 of the pool of 60 described in step 1 of the plan below
 
 Plus 8 cases with no category: 4 clarifying questions and 4 declines, 2 of them adversarial. In all: 12 Hinglish and 28 English, 14 multi-turn and 26 single-turn.
 
+## Judge calibration
+
+The LLM judge (`judge.py`, rubric in `docs/07-evaluation.md`) was trusted only after it was checked against human labels. One person labeled the 60 rows of `labels/labeling-sheet.xlsx` (dev turns from the three providers, 15 of them deliberately broken copies), split at random into 40 calibration rows for refining the judge and 20 held-out rows for measuring it once. Agreement below counts verdicts (rows × 7 criteria) on which the judge and the labels match; "problem found" counts pass and n/a as the same answer.
+
+**The labeler's own consistency.** After a break, 12 of the rows were labeled again on `labels/recheck-sheet.xlsx` without looking at the first labels. The two sittings agreed on 74 of 84 verdicts (88%), 79 of 84 (94%) on whether a problem was found. Faithfulness was the least consistent criterion (58%), mostly pass against n/a on general claims, which led to rubric decision D9.
+
+**Judge versions on the 40 calibration rows:**
+
+| Version | What changed | vs original labels | vs corrected labels | Broken rows caught |
+|---|---|---|---|---|
+| `61eb1d594d77` | First version: one nested object per criterion | 12 of 40 rows failed: Sonnet split or flattened the nested call | – | – |
+| `1921db74f198` | Two flat fields per criterion | 247/280 (88%), problem found 92% | 255/280 (91%) | 9 of 10 |
+| `afc7fd28587f` (final) | Calibration round 1: reason before verdict, the store's brands, earlier turns' product details, a language step, decision D9 | 255/280 (91%), problem found 94% | 265/280 (95%), problem found 98% | 10 of 10 |
+
+After round 1, the labeler corrected 10 calibration labels that contradicted the rubric's own rules, all listed with reasons in `labels/corrections.md`. The calibration figures are optimistic by design, since the judge was refined on these rows and some labels were corrected after seeing its verdicts.
+
+**Held-out result** (final version, 20 rows judged once, labels never corrected): **124 of 140 verdicts (89%), 129 of 140 (92%) on whether a problem was found**, and 4 of 5 broken rows caught. By criterion: decline quality 100%, relevance 95%, relaxation honesty 95%, clarification quality 90%, language and style 90%, helpfulness 80%, faithfulness 70%. The judge agrees with the labels about as often as the labeler agreed with themself (88%), the practical ceiling for a single labeler. The judged files are in `labels/judged/`, and judging for calibration cost about $1.50 in all.
+
 ## Running
 
 From `backend/`, with the provider's API key set (each run makes paid API calls):
