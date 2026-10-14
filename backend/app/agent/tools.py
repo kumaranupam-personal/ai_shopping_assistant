@@ -149,13 +149,13 @@ TOOL_SPECS = [
         "Search the catalog. Put hard constraints in filters and the user's need and soft preferences in query.",
         _object(
             {
-                "query": {"type": "string", "description": "The need in English, e.g. 'warm jacket for winter trekking'."},
+                "query": {"type": "string", "description": "The need in English, e.g. 'lightweight laptop for college'."},
                 "sort": {"type": "string", "enum": ["relevance", "price_asc", "price_desc", "rating"]},
                 "category": {"type": "string", "enum": list(CATEGORIES)},
                 "price_min": {"type": "integer", "minimum": 0, "description": "Inclusive, in rupees."},
                 "price_max": {"type": "integer", "minimum": 0, "description": "Inclusive, in rupees."},
                 "brand": {"type": "array", "items": {"type": "string"}},
-                "size": {"type": "string", "description": "Exact size such as 'M' or 'UK 9'."},
+                "size": {"type": "string", "description": "Exact size such as 'M' or 'UK 8'."},
                 "color": {"type": "string", "enum": list(COLORS)},
                 "min_rating": {"type": "number", "minimum": 0, "maximum": 5},
                 "in_stock_only": {"type": "boolean", "description": "Defaults to true."},

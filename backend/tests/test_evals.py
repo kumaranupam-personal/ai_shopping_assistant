@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 
 import pytest
@@ -7,8 +8,11 @@ from app.config import Settings
 from app.agent.prompt import PROMPT_VERSION, prompt_snapshot, prompt_version
 from app.llm.base import Prices, ToolCall, Usage
 from app.search.engine import Filters, matching_ids
-from evals.checks import TurnResult, expect_failures, grounding_violations, reply_language, rupee_amounts, tool_facts, user_amounts
-from evals.run import EVALS_DIR, Case, cache_misses, git_state, load_cases, run_case, summarize
+from evals.checks import (
+    TurnResult, expect_failures, grounding_violations, prompt_leaks, quoted_examples, reply_language, rupee_amounts, tool_facts,
+    user_amounts,
+)
+from evals.run import EVAL_SETS, SETS_DIR, Case, cache_misses, git_state, load_cases, main, run_case, summarize
 from tests.test_loop import SEARCH, ScriptedProvider, reply
 
 
@@ -48,7 +52,15 @@ def test_a_title_shared_by_several_products_is_grounded_when_any_of_them_was_ret
     assert grounding_violations("Try the Snowline Parka.", catalog, {"J3"}, set(), set()) == ["title 'Snowline Parka' was named but no tool returned it"]
 
 
-@pytest.mark.parametrize(("text", "language"), [("Yeh jackets aapke budget mein hain.", "hinglish"), ("These are warm.", "english")])
+@pytest.mark.parametrize(
+    ("text", "language"),
+    [
+        ("Yeh jackets aapke budget mein hain.", "hinglish"),
+        ("Kis category mein dekh rahe ho?", "hinglish"),  # a one-line question with only common words
+        ("These are warm.", "english"),
+        ("Which category are you looking for, so I can help?", "english"),
+    ],
+)
 def test_reply_language(text, language):
     assert reply_language(text) == language
 
@@ -110,13 +122,66 @@ def test_a_case_runs_end_to_end_and_is_graded(index, prices, cost):
         assert turn["cost_usd"] == summary["mean_cost_usd"] == summary["total_cost_usd"] == pytest.approx(cost)
 
 
-def test_the_case_file_is_valid(index):
+def all_cases() -> dict[str, list[Case]]:
+    return {eval_set: load_cases(SETS_DIR / f"{eval_set}.yaml", []) for eval_set in EVAL_SETS}
+
+
+@pytest.mark.parametrize("eval_set", EVAL_SETS)
+def test_each_case_file_is_valid(index, eval_set):
     """Unknown keys fail validation, and every shown filter uses known categories, sizes, colors and attributes."""
-    cases = load_cases(EVALS_DIR / "cases.yaml", [])
-    assert len({case.id for case in cases}) == len(cases) == 20
+    cases = all_cases()[eval_set]
+    assert len({case.id for case in cases}) == len(cases)
     for case in cases:
         if case.expect.shown is not None:
             matching_ids(index, Filters(**case.expect.shown), ["J1"])  # raises on an unknown filter value
+
+
+def test_the_dev_set_has_40_cases_and_no_case_is_in_both_sets():
+    cases = all_cases()
+    assert len(cases["dev"]) == 40
+    assert not {c.id for c in cases["dev"]} & {c.id for c in cases["holdout"]}
+    assert not {tuple(c.turns) for c in cases["dev"]} & {tuple(c.turns) for c in cases["holdout"]}
+
+
+def test_no_prompt_or_tool_example_repeats_an_eval_case():
+    """Examples the model sees must not share words with any case's messages, so a pass can't come from copying."""
+    case_turns = {case.id: case.turns for cases in all_cases().values() for case in cases}
+    assert prompt_leaks(quoted_examples(prompt_snapshot()), case_turns) == []
+
+
+@pytest.mark.parametrize(
+    ("example", "leaks"),
+    [
+        ("-20 degrees", True),  # a shared pair of words
+        ("the second one", True),
+        ("shaadi", True),  # a one-word example the case uses
+        ("for my new job", False),  # "for my" is only common words
+        ("in blue", False),
+        ("M", False),  # too short to count alone
+    ],
+)
+def test_a_prompt_leak_is_a_shared_word_pair_or_a_distinctive_word(example, leaks):
+    turns = {"case": ["A jacket for -20 degrees", "Tell me more about the second one", "Shaadi ke liye kurta", "a gift for my sister in M"]}
+    assert bool(prompt_leaks({example}, turns)) is leaks
+
+
+def test_quoted_examples_come_from_the_prompt_and_the_tools_but_not_apostrophes():
+    snapshot = {"system_prompt": 'Say "cheaper" for the user\'s budget.', "tools": [{"description": "A size such as 'M'."}]}
+    assert quoted_examples(snapshot) == {"cheaper", "M"}
+
+
+# The holdout file's SHA-256. Changing a holdout case means updating this on purpose, in its own commit (docs/07-evaluation.md).
+HOLDOUT_SHA256 = "b057620bb2b675a0354d4c79d0e07553d5c224ed690fb5ce5d0660594aa0e638"
+
+
+def test_the_holdout_set_is_frozen():
+    assert len(all_cases()["holdout"]) == 40
+    assert hashlib.sha256((SETS_DIR / "holdout.yaml").read_bytes()).hexdigest() == HOLDOUT_SHA256
+
+
+def test_the_holdout_set_runs_only_in_full():
+    with pytest.raises(SystemExit):  # argparse exits before any provider is built
+        asyncio.run(main(["--set", "holdout", "jackets-ladakh"]))
 
 
 @pytest.mark.parametrize(

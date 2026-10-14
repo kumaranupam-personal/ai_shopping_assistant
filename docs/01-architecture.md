@@ -88,11 +88,16 @@ ai_shopping_assistant/
     data/                    built catalog files, git-ignored
     tests/                   backend tests
     evals/
-      cases.yaml
+      README.md              the two case sets and the rules for using them, plus the holdout run log
+      sets/
+        dev.yaml             the dev set: cases used for tuning
+        holdout.yaml         the holdout set: never used for tuning, run only to report a finished prompt version
       run.py                 eval runner
-      checks.py              grounding check and case expectations
-      results/               eval run outputs and each provider's baseline, tracked in git so runs can be compared
-        prompts/             one snapshot of the system prompt and tools per prompt version
+      checks.py              grounding check, case expectations and the prompt leak check
+      prompts/               one snapshot of the system prompt and tools per prompt version
+      results/               eval run outputs, tracked in git so runs can be compared
+        dev/                 dev runs and each provider's baseline
+        holdout/             holdout runs
   frontend/
     package.json
     Dockerfile               the frontend image: the build served by nginx
@@ -154,5 +159,5 @@ Steps 1 to 8 run inside `backend/`, and step 9 runs inside `frontend/`.
 5. `uv run python -m app` starts the API server on `PORT` with auto-reload.
 6. `uv run python -m app.cli` starts a terminal chat that runs agent turns directly, skipping the API and frontend. It prints status lines, the title and price of each shown product, and reply text.
 7. `uv run pytest` runs the backend tests.
-8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. Case IDs as arguments run only those cases, and `--cases <path>` reads another case file.
+8. `uv run python -m evals.run` runs the eval suite against the demo catalog. It calls the configured LLM provider and costs money. `--set holdout` runs the holdout set instead of the dev set, always in full. Case IDs as arguments run only those dev cases.
 9. `npm install && npm run dev` serves the UI at `http://localhost:5173/saathi/`. `npm test` runs the Playwright tests, and `npm run lighthouse` builds the app and runs Lighthouse against the production build.

@@ -1,10 +1,12 @@
 """Runs the eval cases against the real agent and the demo catalog, in-process (docs/07-evaluation.md).
 
-`uv run python -m evals.run [--cases PATH] [CASE_ID ...]` calls the provider named by LLM_PROVIDER and costs money.
+`uv run python -m evals.run [--set dev|holdout] [CASE_ID ...]` calls the provider named by LLM_PROVIDER and costs money.
+The dev set is for tuning; the holdout set only reports a finished prompt version, so it always runs in full.
 """
 
 import argparse
 import asyncio
+import hashlib
 import json
 import math
 import subprocess
@@ -30,7 +32,10 @@ from app.tracing import TraceOptions, setup_tracing, shutdown_tracing
 from evals.checks import TurnResult, expect_failures, grounding_violations, tool_facts, user_amounts
 
 EVALS_DIR = Path(__file__).resolve().parent
+SETS_DIR = EVALS_DIR / "sets"
+PROMPTS_DIR = EVALS_DIR / "prompts"
 RESULTS_DIR = EVALS_DIR / "results"
+EVAL_SETS = ("dev", "holdout")
 TARGETS = {"pass_rate": 0.9, "grounding_violations": 0, "latency_p50_s": 8.0, "latency_p95_s": 15.0}
 USAGE_FIELDS = [f.name for f in fields(Usage)]  # input_tokens, output_tokens, cache_read_tokens, cache_write_tokens
 
@@ -83,7 +88,8 @@ def git_state(cwd: Path = BACKEND_DIR) -> tuple[str | None, bool | None]:
         return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
 
     try:
-        return git("rev-parse", "--short", "HEAD"), bool(git("status", "--porcelain", "--", ".", ":(exclude)evals/results"))
+        changes = git("status", "--porcelain", "--", ".", ":(exclude)evals/results", ":(exclude)evals/prompts")
+        return git("rev-parse", "--short", "HEAD"), bool(changes)
     except (OSError, subprocess.CalledProcessError):
         return None, None
 
@@ -103,20 +109,22 @@ def cache_misses(calls: list[Usage], min_cache_tokens: int | None) -> int:
 
 
 def load_cases(path: Path, ids: list[str]) -> list[Case]:
-    cases = [Case.model_validate(item) for item in yaml.safe_load(path.read_text(encoding="utf-8"))]
+    cases = [Case.model_validate(item) for item in yaml.safe_load(path.read_text(encoding="utf-8")) or []]
     unknown = set(ids) - {case.id for case in cases}
     if unknown:
         raise SystemExit(f"Unknown case IDs: {sorted(unknown)}")
     return [case for case in cases if not ids or case.id in ids]
 
 
-async def run_case(provider: LLMProvider, index: SearchIndex, catalog: list[tuple[str, str]], case: Case, settings: Settings) -> dict:
+async def run_case(
+    provider: LLMProvider, index: SearchIndex, catalog: list[tuple[str, str]], case: Case, settings: Settings, eval_set: str = "dev"
+) -> dict:
     """Runs a case's turns in one session, then grades the final turn. Grounding is checked on every turn."""
     recorder = Recorder(provider)
     store = SessionStore(settings.session_ttl_minutes, settings.max_turns_per_session)
     session = store.create(provider.name)
     user_numbers: set[float] = set()
-    options = TraceOptions(["eval", case.id], message_text=True)  # the messages are the eval cases, never private
+    options = TraceOptions(["eval", eval_set, case.id], message_text=True)  # the messages are the eval cases, never private
     turns, calls, error, last = [], [], None, TurnResult()
     for text in case.turns:
         events, first_tool = [], len(recorder.tools)
@@ -203,12 +211,18 @@ def summarize(results: list[dict]) -> dict:
 
 async def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the eval cases against the configured LLM provider.")
-    parser.add_argument("ids", nargs="*", help="case IDs to run (default: all)")
-    parser.add_argument("--cases", type=Path, default=EVALS_DIR / "cases.yaml")
+    parser.add_argument("ids", nargs="*", help="case IDs to run (default: all; dev set only)")
+    parser.add_argument("--set", dest="eval_set", choices=EVAL_SETS, default="dev", help="dev (tuning) or holdout (reporting)")
     args = parser.parse_args(argv)
+    if args.eval_set == "holdout" and args.ids:
+        parser.error("the holdout set runs in full; debug single cases on the dev set")
 
     settings = Settings()
-    cases = load_cases(args.cases, args.ids)
+    cases_file = SETS_DIR / f"{args.eval_set}.yaml"
+    cases = load_cases(cases_file, args.ids)
+    if not cases:
+        raise SystemExit(f"{cases_file} has no cases.")
+    cases_sha256 = hashlib.sha256(cases_file.read_bytes()).hexdigest()
     snapshot, version = prompt_snapshot(), PROMPT_VERSION
     commit, dirty = git_state()
     provider, index = build_provider(settings), load_index(settings.data_dir)
@@ -217,7 +231,7 @@ async def main(argv: list[str] | None = None) -> int:
     results, tracing = [], setup_tracing(settings)
     try:
         for case in cases:
-            result = await run_case(provider, index, catalog, case, settings)
+            result = await run_case(provider, index, catalog, case, settings, args.eval_set)
             results.append(result)
             grounding = [v for t in result["turns"] for v in t["grounding"]]
             print(f"{'PASS' if result['passed'] else 'FAIL'} {case.id}", *(f"  - {f}" for f in result["failures"] + grounding), sep="\n")
@@ -225,15 +239,19 @@ async def main(argv: list[str] | None = None) -> int:
         shutdown_tracing(tracing)  # flushes the remaining spans
 
     summary = summarize(results)
-    (RESULTS_DIR / "prompts").mkdir(parents=True, exist_ok=True)
-    snapshot_file = RESULTS_DIR / "prompts" / f"{version}.json"
+    PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
+    snapshot_file = PROMPTS_DIR / f"{version}.json"
     if not snapshot_file.exists():  # once per prompt version, so any two versions can be diffed
         snapshot_file.write_text(json.dumps({"prompt_version": version, **snapshot}, indent=2, ensure_ascii=False) + "\n")
-    out = RESULTS_DIR / f"{datetime.now():%Y%m%d-%H%M%S}-{provider.name}-{version}.json"
-    header = {"provider": provider.name, "model": provider.model, "prompt_version": version, "git_commit": commit, "git_dirty": dirty}
+    (RESULTS_DIR / args.eval_set).mkdir(parents=True, exist_ok=True)
+    out = RESULTS_DIR / args.eval_set / f"{datetime.now():%Y%m%d-%H%M%S}-{args.eval_set}-{provider.name}-{version}.json"
+    header = {
+        "eval_set": args.eval_set, "cases_sha256": cases_sha256, "provider": provider.name, "model": provider.model,
+        "prompt_version": version, "git_commit": commit, "git_dirty": dirty,
+    }
     out.write_text(json.dumps({**header, "summary": summary, "cases": results}, indent=2, ensure_ascii=False) + "\n")
     note = " with uncommitted changes" if dirty else ""
-    print(json.dumps(summary, indent=2), f"Prompt version: {version} (commit {commit}{note})", f"Results: {out}", sep="\n")
+    print(json.dumps(summary, indent=2), f"Eval set: {args.eval_set}", f"Prompt version: {version} (commit {commit}{note})", f"Results: {out}", sep="\n")
     return 0 if summary["targets_met"] else 1
 
 

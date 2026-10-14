@@ -1,0 +1,783 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.8-flash",
+  "prompt_version": "a8130bf25dd1",
+  "git_commit": "9cf4a56",
+  "git_dirty": false,
+  "summary": {
+    "cases": 20,
+    "scored": 20,
+    "passed": 19,
+    "pass_rate": 0.95,
+    "grounding_violations": 0,
+    "latency_p50_s": 5.27,
+    "latency_p95_s": 8.2,
+    "mean_input_tokens": 6875,
+    "mean_output_tokens": 182,
+    "mean_cache_read_tokens": 0,
+    "mean_cache_write_tokens": 0,
+    "cache_misses": 0,
+    "mean_cost_usd": 0.005838,
+    "total_cost_usd": 0.151777,
+    "targets_met": true
+  },
+  "cases": [
+    {
+      "id": "jackets-ladakh",
+      "description": "A warm jacket for a cold trek, with a budget written as \"8k\" and a size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.",
+          "reply": "Here are warm down jackets built for extreme winter conditions under ₹8,000 in size L. The top options feature waterproof shells to protect against sub-zero winds and snow.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00230",
+            "JKT-00279",
+            "JKT-00061",
+            "JKT-00017",
+            "JKT-00010",
+            "JKT-00263",
+            "JKT-00035",
+            "JKT-00011"
+          ],
+          "latency_s": 6.81,
+          "model_calls": 2,
+          "input_tokens": 5910,
+          "output_tokens": 270,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005445,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "shoes-trekking-uk9",
+      "description": "Shoe type, a waterproof attribute and a UK size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Waterproof trekking shoes in UK 9",
+          "reply": "Here are top-rated waterproof trekking shoes available in size UK 9, featuring durable rubber soles for rugged trails.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00283",
+            "SHO-00166",
+            "SHO-00279",
+            "SHO-00182",
+            "SHO-00184",
+            "SHO-00088"
+          ],
+          "latency_s": 5.27,
+          "model_calls": 2,
+          "input_tokens": 5880,
+          "output_tokens": 216,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.00522,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "phones-5g-budget",
+      "description": "A boolean attribute with a \"15k\" budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A 5G phone under 15k with a good battery",
+          "reply": "Here are top-rated 5G phones under ₹15,000 featuring high battery capacities. Aurora Pulse leads in ratings and battery size, while Aurora Nova offers a 200 MP camera option.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "PHN-00267",
+            "PHN-00177",
+            "PHN-00060",
+            "PHN-00200"
+          ],
+          "latency_s": 5.53,
+          "model_calls": 2,
+          "input_tokens": 5921,
+          "output_tokens": 215,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005247,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "backpacks-trek",
+      "description": "A boolean attribute with a numeric minimum.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A waterproof trekking backpack, at least 40 litres",
+          "reply": "Here are top-rated waterproof trekking backpacks with 40L+ capacity. Some options also include a dedicated laptop compartment if you need it.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "BAG-00006",
+            "BAG-00206",
+            "BAG-00040",
+            "BAG-00153",
+            "BAG-00199",
+            "BAG-00083",
+            "BAG-00053",
+            "BAG-00197"
+          ],
+          "latency_s": 5.41,
+          "model_calls": 2,
+          "input_tokens": 5675,
+          "output_tokens": 242,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005164,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "watches-analog-leather",
+      "description": "Three attributes, one of which (gender) also accepts unisex.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "An analog watch with a leather strap for men",
+          "reply": "Here are men's analog watches with genuine leather straps, featuring water resistance up to 50m.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00164",
+            "WCH-00222",
+            "WCH-00190"
+          ],
+          "latency_s": 4.71,
+          "model_calls": 2,
+          "input_tokens": 4869,
+          "output_tokens": 183,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.004338,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "kitchen-air-fryer",
+      "description": "An appliance type with a budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Air fryer under ₹6,000",
+          "reply": "Here are the top-rated air fryers under ₹6,000, offering generous capacities and multi-year warranties for everyday cooking.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KIT-00197",
+            "KIT-00023",
+            "KIT-00287",
+            "KIT-00140",
+            "KIT-00016",
+            "KIT-00238",
+            "KIT-00298",
+            "KIT-00192"
+          ],
+          "latency_s": 5.62,
+          "model_calls": 2,
+          "input_tokens": 5576,
+          "output_tokens": 223,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005018,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-only-waterproof",
+      "description": "Adding an attribute keeps the earlier budget and size.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I'm going trekking in Ladakh in December, need a jacket under 8k, size L.",
+          "reply": "For sub-zero Ladakh conditions, these extreme-warmth down jackets are ideal. TrekNorth Summit and Monsoonwear Ridge also offer waterproof protection against snow.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00230",
+            "JKT-00061",
+            "JKT-00279",
+            "JKT-00011",
+            "JKT-00010"
+          ],
+          "latency_s": 5.34,
+          "model_calls": 2,
+          "input_tokens": 5902,
+          "output_tokens": 215,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005233,
+          "grounding": []
+        },
+        {
+          "user": "only waterproof ones",
+          "reply": "Here are the waterproof options in size L under ₹8,000. TrekNorth Summit and UrbanLayer Pamir offer extreme warmth to handle Ladakh's freezing temperatures.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00230",
+            "JKT-00061",
+            "JKT-00017",
+            "JKT-00279",
+            "JKT-00125",
+            "JKT-00011",
+            "JKT-00014"
+          ],
+          "latency_s": 5.39,
+          "model_calls": 2,
+          "input_tokens": 9117,
+          "output_tokens": 257,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.007802,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-brand",
+      "description": "Narrowing to one brand keeps the type and budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Trekking shoes under ₹6,000",
+          "reply": "Here are the top-rated trekking shoes under ₹6,000. You can filter by waterproof options or your exact shoe size to narrow them down.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00097",
+            "SHO-00021",
+            "SHO-00069",
+            "SHO-00182",
+            "SHO-00296",
+            "SHO-00081",
+            "SHO-00231",
+            "SHO-00027"
+          ],
+          "latency_s": 4.98,
+          "model_calls": 2,
+          "input_tokens": 5825,
+          "output_tokens": 231,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005235,
+          "grounding": []
+        },
+        {
+          "user": "only from TrailKing",
+          "reply": "Here are the TrailKing trekking shoes within ₹6,000. Options include both waterproof pairs and everyday trekking shoes.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "SHO-00021",
+            "SHO-00221",
+            "SHO-00241",
+            "SHO-00279",
+            "SHO-00081",
+            "SHO-00184",
+            "SHO-00167"
+          ],
+          "latency_s": 4.56,
+          "model_calls": 2,
+          "input_tokens": 9141,
+          "output_tokens": 223,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.007692,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-ordinal",
+      "description": "\"The second one\" resolves against the shown list. The second-cheapest backpack is an UrbanSling.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Show me the 3 cheapest backpacks",
+          "reply": "Here are the 3 lowest-priced backpacks available. UrbanSling Ridge offers water resistance and a laptop sleeve, while Commuto Ridge provides the largest capacity.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "BAG-00007",
+            "BAG-00288",
+            "BAG-00148"
+          ],
+          "latency_s": 4.37,
+          "model_calls": 2,
+          "input_tokens": 5569,
+          "output_tokens": 143,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.004713,
+          "grounding": []
+        },
+        {
+          "user": "Tell me more about the second one",
+          "reply": "UrbanSling Ridge 34 L Travel Backpack is a waterproof travel bag priced at ₹439 with a 3.8 rating. It features a 34 L capacity, dedicated laptop compartment, padded shoulder straps, and multiple organizer pockets in maroon and black colors.",
+          "tools": [
+            "get_product_details"
+          ],
+          "shown": null,
+          "latency_s": 4.83,
+          "model_calls": 2,
+          "input_tokens": 7411,
+          "output_tokens": 82,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005866,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "refine-compare",
+      "description": "Comparing the first two shown. The two cheapest phones are a Zentrix and an Aurora.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Show me the 3 cheapest phones",
+          "reply": "Here are the 3 most affordable phones available in our store. Let me know if you would like to see 5G models or options with higher storage.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "PHN-00019",
+            "PHN-00130",
+            "PHN-00278"
+          ],
+          "latency_s": 5.19,
+          "model_calls": 2,
+          "input_tokens": 5838,
+          "output_tokens": 157,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.004967,
+          "grounding": []
+        },
+        {
+          "user": "Compare the first two",
+          "reply": "Zentrix Neo Phone costs ₹7,099 with a 6.1-inch screen, 64 GB storage, 12 MP camera, and 4223 mAh battery. Aurora Neo Phone costs ₹7,229, offering a larger 6.3-inch screen, 128 GB storage, 64 MP camera, and 5237 mAh battery.",
+          "tools": [
+            "compare_products"
+          ],
+          "shown": null,
+          "latency_s": 4.9,
+          "model_calls": 2,
+          "input_tokens": 8076,
+          "output_tokens": 123,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.006518,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "vague-gift",
+      "description": "No category or use case can be inferred.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "I need a gift for my sister.",
+          "reply": "Could you share what kind of gift you have in mind—such as a watch, kurta, phone, or backpack—or your budget?",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.5,
+          "model_calls": 1,
+          "input_tokens": 2198,
+          "output_tokens": 28,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.001754,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "oos-televisions",
+      "description": "A category the store doesn't carry.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Do you sell televisions?",
+          "reply": "We don't carry televisions in our store. We currently offer jackets, shoes, phones, laptops, backpacks, watches, kurtas, and select kitchen appliances.",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.2,
+          "model_calls": 1,
+          "input_tokens": 2195,
+          "output_tokens": 33,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.00177,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "relax-gaming-budget",
+      "description": "No gaming laptop is under ₹55,000; raising the budget by 15% (to ₹63,250) finds some.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A gaming laptop under ₹55,000",
+          "reply": "No gaming laptops were found under ₹55,000, so I raised your budget slightly by 15% to show the closest options with dedicated graphics.",
+          "tools": [
+            "search_products",
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "LAP-00177",
+            "LAP-00146",
+            "LAP-00102",
+            "LAP-00145"
+          ],
+          "latency_s": 7.85,
+          "model_calls": 3,
+          "input_tokens": 7495,
+          "output_tokens": 240,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.006521,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "relax-inferred-warmth",
+      "description": "An inferred extreme-warmth filter finds nothing under ₹2,000; dropping it (the user never said it) does.",
+      "scored": true,
+      "passed": false,
+      "failures": [
+        "shown: ['JKT-00108'] don't meet {'category': 'jackets', 'price_max': 2000}"
+      ],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "A jacket for -20 degrees, under ₹2,000",
+          "reply": "Extreme cold jackets for -20°C start above ₹2,000, so I relaxed the warmth filter to show our warmest jackets in budget alongside our lowest-priced extreme cold jacket. Fleece jackets work well as mid-layers, while down jackets handle sub-zero weather on their own.",
+          "tools": [
+            "search_products",
+            "search_products",
+            "search_products",
+            "search_products",
+            "search_products",
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "JKT-00047",
+            "JKT-00110",
+            "JKT-00108"
+          ],
+          "latency_s": 16.13,
+          "model_calls": 7,
+          "input_tokens": 28963,
+          "output_tokens": 465,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.023466,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-shaadi-kurta",
+      "description": "\"Shaadi\" maps to the wedding occasion and \"5k tak\" to a budget.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Shaadi ke liye silk kurta chahiye, 5k tak",
+          "reply": "Shaadi ke liye ₹5,000 ke andar best silk kurtas yahan hain. Aap men ya women kis ke liye dekh rahe hain aur size kya chahiye?",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KRT-00279",
+            "KRT-00059",
+            "KRT-00186",
+            "KRT-00025",
+            "KRT-00112",
+            "KRT-00092"
+          ],
+          "latency_s": 5.99,
+          "model_calls": 2,
+          "input_tokens": 5809,
+          "output_tokens": 241,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005261,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-teen-hazaar",
+      "description": "\"Teen hazaar tak\" is a budget of ₹3,000, written in Hindi number words.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Teen hazaar tak ki watch dikhao",
+          "reply": "₹3,000 ke budget mein analog aur digital watches ke top options yeh rahe. Aapko men ya women ke liye chahiye ya koi specific strap pasand hai?",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00031",
+            "WCH-00069",
+            "WCH-00105",
+            "WCH-00186",
+            "WCH-00084",
+            "WCH-00025",
+            "WCH-00253",
+            "WCH-00109"
+          ],
+          "latency_s": 5.44,
+          "model_calls": 2,
+          "input_tokens": 5598,
+          "output_tokens": 220,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.005024,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-aur-sasta",
+      "description": "\"Aur sasta dikhao\" is \"cheaper\", with the reply in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "10k tak smartwatch dikhao",
+          "reply": "Yeh rahe ₹10,000 ke andar best smartwatches. Aap strap material ya gender preference ke hisab se filter kar sakte hain.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00155",
+            "WCH-00022",
+            "WCH-00168",
+            "WCH-00161",
+            "WCH-00233",
+            "WCH-00289"
+          ],
+          "latency_s": 5.4,
+          "model_calls": 2,
+          "input_tokens": 5613,
+          "output_tokens": 208,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.00499,
+          "grounding": []
+        },
+        {
+          "user": "aur sasta dikhao",
+          "reply": "Pichhle options se aur saste me yeh do smartwatches uplabdh hain. Dono me 100m water resistance milta hai.",
+          "tools": [
+            "search_products",
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "WCH-00215",
+            "WCH-00286"
+          ],
+          "latency_s": 8.2,
+          "model_calls": 3,
+          "input_tokens": 12285,
+          "output_tokens": 218,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.010031,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-dusra-wala",
+      "description": "\"Dusra wala\" is the second one shown. The second-cheapest kurta is a Rangsutra.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Sabse saste 3 kurte dikhao",
+          "reply": "Yeh hamare catalog ke sabse saste 3 kurte hain. Aap gender ya fabric ke hisaab se filter kar sakte hain.",
+          "tools": [
+            "search_products",
+            "show_products"
+          ],
+          "shown": [
+            "KRT-00145",
+            "KRT-00230",
+            "KRT-00031"
+          ],
+          "latency_s": 4.87,
+          "model_calls": 2,
+          "input_tokens": 5735,
+          "output_tokens": 154,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.004879,
+          "grounding": []
+        },
+        {
+          "user": "Dusra wala kaisa hai?",
+          "reply": "Rangsutra Heritage Rayon Kurta for Women daily wear ke liye rayon fabric aur short sleeves ke sath aata hai. Iski rating 3.2 hai aur yeh olive tatha navy colors mein M, L, XL sizes mein available hai.",
+          "tools": [
+            "get_product_details"
+          ],
+          "shown": null,
+          "latency_s": 5.46,
+          "model_calls": 2,
+          "input_tokens": 7752,
+          "output_tokens": 76,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.006099,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-kuch-accha",
+      "description": "A vague Hinglish request gets one clarifying question in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Kuch accha dikhao",
+          "reply": "Aap kis cheez ki shopping karna chahte hain, jaise shoes, jackets, phones, ya laptops?",
+          "tools": [],
+          "shown": null,
+          "latency_s": 2.25,
+          "model_calls": 1,
+          "input_tokens": 2195,
+          "output_tokens": 23,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.001732,
+          "grounding": []
+        }
+      ]
+    },
+    {
+      "id": "hinglish-mausam",
+      "description": "An out-of-scope Hinglish request is declined in Hinglish.",
+      "scored": true,
+      "passed": true,
+      "failures": [],
+      "cache_misses": 0,
+      "turns": [
+        {
+          "user": "Aaj Delhi ka mausam kaisa hai?",
+          "reply": "Main mausam ki jaankari nahi de sakta, par shopping mein aapki help kar sakta hoon. Agar aapko jacket, shoes ya koi aur product chahiye, toh batayein!",
+          "tools": [],
+          "shown": null,
+          "latency_s": 1.89,
+          "model_calls": 1,
+          "input_tokens": 2199,
+          "output_tokens": 38,
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "cost_usd": 0.001792,
+          "grounding": []
+        }
+      ]
+    }
+  ]
+}
