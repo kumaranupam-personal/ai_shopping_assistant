@@ -67,6 +67,9 @@ Every holdout run is listed here, so the number of times the set has been looked
 | 2026-10-13 | `a8130bf25dd1` (v1) | Anthropic (`claude-opus-5-5`) | 40/40 | 0 grounding violations, p50 5.8 s, p95 9.9 s, $0.86. |
 | 2026-10-13 | `a8130bf25dd1` (v1) | OpenAI (`gpt-6-astra`) | 40/40 | 0 grounding violations, p50 7.0 s, p95 16.1 s (over the 15 s target), $1.22. |
 | 2026-10-13 | `a8130bf25dd1` (v1) | Gemini (`gemini-3.8-flash`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 16.1 s (over the 15 s target), $0.29. The three runs ran at the same time. |
+| 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | Anthropic (`claude-opus-5-5`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 9.8 s, $0.86. Stores tool calls; judged below. |
+| 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | OpenAI (`gpt-6-astra`) | 40/40 | 0 grounding violations, p50 7.6 s, p95 11.9 s, $1.24. Stores tool calls; judged below. |
+| 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | Gemini (`gemini-3.8-flash`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 20.7 s (over the 15 s target), $0.30. Stores tool calls; judged below. Run alone, after the other two. |
 
 **Closed 2026-10-13, following the plan's stop rule.** After v1, the dev set ran once on each provider with the same prompt version, one provider at a time: Anthropic, OpenAI and Gemini each passed 40/40 with 0 grounding violations and met every dev target (p95 10.2 s, 14.5 s and 9.8 s). Tuning therefore stopped at zero commits, so the final prompt version is still `a8130bf25dd1`. v2 would have rerun that same version on the same cases, so it wasn't run, and v1 is the final holdout result. Run alone, Gemini's p95 was well under v1's 16.1 s, which suggests running the three providers at once inflated v1's latency; OpenAI stays close to the 15 s limit either way. Step 3's blinding stays in force: the holdout's per-case results remain unread, so the set stays usable for a later plan.
 
@@ -80,3 +83,19 @@ Next: with every rule-based check passing on both sets, the next step is an LLM 
 4. **Blinding:** for the holdout runs and their judgments, only the summaries are looked at: pass rates by criterion and provider, the share of turns passing every criterion, errors and cost. Per-case results, replies, verdicts and traces stay unread, so the set stays usable for a later plan.
 5. **No tuning:** this plan only reports. If its results call for changes to the agent, they need a new plan here first. That plan keeps this holdout set rather than writing a new one: its judged results here are the baseline, its v2 is measured on the same 40 cases with the same judge version, and the blinding in step 4 continues for every holdout run and judgment, so only summaries of the set are ever seen.
 6. **Reporting:** each provider's judged results on both sets are reported whatever they show, next to the judge's held-out agreement, so every pass rate is read with the judge's own error rate in mind.
+
+**Results of the judged-runs plan, 2026-10-14** (judge `afc7fd28587f`; the share of turns where a criterion applied that passed it; holdout from summaries only):
+
+| Criterion | Anthropic dev | Anthropic holdout | OpenAI dev | OpenAI holdout | Gemini dev | Gemini holdout |
+|---|---|---|---|---|---|---|
+| Relevance | 98% | 97% | 100% | 97% | 100% | 100% |
+| Helpfulness | 98% | 100% | 87% | 91% | 48% | 61% |
+| Faithfulness | 91% | 92% | 98% | 100% | 74% | 87% |
+| Relaxation honesty | 75% (of 4) | 100% (of 4) | 100% | 100% | 100% | 100% |
+| Clarification quality | 100% | 75% (of 4) | 100% | 100% | 75% (of 4) | 100% |
+| Decline quality | 100% | 100% | 100% | 100% | 100% | 100% |
+| Language and style | 79% | 72% | 94% | 100% | 98% | 94% |
+| **Turns passing every criterion** | **74%** | **67%** | **85%** | **91%** | **40%** | **54%** |
+
+Every rule check passed on both sets (40/40 for each provider), so the judge measures what they can't. On both sets OpenAI's replies pass most often and Gemini's least; Gemini's misses are mostly helpfulness (replies that restate the cards) and Anthropic's mostly language and style (replies over 2 sentences, and replies narrating the agent's own process). Read every figure with the judge's held-out agreement in mind (89% of verdicts, faithfulness 70%): differences of a few points are within its error, and criteria applying to 4 or 5 turns rest on one or two turns. Judging cost $1.48 on dev and $1.53 on holdout. The plan is complete; any change to the agent needs a new plan, which measures v2 on this holdout set with the same judge.
+
