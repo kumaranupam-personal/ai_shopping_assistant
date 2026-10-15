@@ -5,7 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from app import tracing
-from app.agent.prompt import PROMPT_VERSION, SYSTEM_PROMPT
+from app.agent.prompt import agent_prompt
 from app.agent.session import Turn
 from app.agent.tools import TOOL_SPECS, TurnContext, current, execute, status_text
 from app.limits import DailyBudget, Rejected
@@ -57,12 +57,13 @@ async def run_turn(
         record.turn = turn.session.turn_count
         return record
 
+    system, version = agent_prompt(index.conn)
     token = current.set(TurnContext(index, turn, send))
     root_attributes = {
         "langfuse.trace.name": "turn",
         "langfuse.session.id": turn.session.id,
         "langfuse.trace.tags": [*options.tags, provider.name],  # the provider, so a trace shows it at a glance
-        "langfuse.version": PROMPT_VERSION,
+        "langfuse.version": version,
         "langfuse.trace.metadata.turn": turn.session.turn_count + 1,
         "langfuse.trace.metadata.provider": provider.name,
         **tracing.text_attributes(options, input=text),
@@ -76,7 +77,7 @@ async def run_turn(
                     raise Rejected("chat_unavailable")
                 with tracing.span("model call", {"langfuse.observation.type": "generation", "gen_ai.request.model": provider.model}) as span:
                     started = time.perf_counter()
-                    response = await provider.complete(SYSTEM_PROMPT, history, TOOL_SPECS)
+                    response = await provider.complete(system, history, TOOL_SPECS)
                     record.calls.append((time.perf_counter() - started, response.usage))
                     calls = [{"name": call.name, "arguments": call.arguments} for call in response.tool_calls]
                     span.set_attributes({

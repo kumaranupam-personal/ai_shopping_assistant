@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
 
-from app.catalog.store import open_catalog
+from app.catalog.store import brands_by_category, open_catalog
 from app.config import Settings
 from app.llm.base import LLMProvider, ToolSpec
 from app.llm.registry import build_provider
@@ -55,12 +55,7 @@ def rubric_text() -> str:
     return doc[doc.index("## Judge rubric"):doc.index("## Labeling guide")].strip()
 
 
-def brand_list(conn) -> dict[str, list[str]]:
-    """The brands the catalog carries in each category."""
-    brands: dict[str, list[str]] = {}
-    for row in conn.execute("SELECT DISTINCT category, brand FROM products ORDER BY category, brand"):
-        brands.setdefault(row[0], []).append(row[1])
-    return brands
+brand_list = brands_by_category  # the same brands the agent's prompt lists
 
 
 def system_prompt(brands: dict[str, list[str]]) -> str:

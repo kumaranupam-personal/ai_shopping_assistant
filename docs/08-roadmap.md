@@ -143,9 +143,19 @@ Phase 18 ended with every rule-based check passing on both sets, so those checks
 - Last part: the Evaluation section of `README.md` and the about page's evidence figures (`12-about-page.md`), reporting the rule checks on both sets, the judge's held-out agreement and the judged results.
 - Done when the tests in `07-evaluation.md` pass, the judge's agreement with the held-out labels is reported, and the judged runs the new plan names are in the log.
 
+## Phase 20: Reply-quality tuning
+
+Phase 19's judged dev results traced most failures to five behaviors that hold across requests: replies that restate the cards instead of helping the user choose, claims the results don't support, narration of the agent's own process (mostly on relaxation turns), replies over the length limit, and store brands not recognized in a message. This phase fixes those behaviors through the prompt and tool descriptions only, tuning on the dev set and measuring the result once on the holdout set, as the Phase 20 plan in the holdout run log of `evals/README.md` sets out. Each part is one commit for one theme, and changes the rules it names in `04-agent.md` together with the prompt.
+
+- Part 1, reply content (rules 8 and 10): a reply that shows cards names one product as the pick with the reason from its values, or a trade-off between products, instead of restating the cards; superlatives and comparisons only where the values in the results show them, and no attribute words the catalog doesn't use.
+- Part 2, reply form (rules 7 and 10): a relaxation is told in the shopper's terms, naming the requirement that couldn't be met, never the filters, the search or whether a value was inferred; no commentary on the agent's own process; the 2-sentence and 50-word limit and plain text, bold included, restated; no computed amounts in suggestions.
+- Part 3, brands (rule 2): the system prompt lists the catalog's brands by category, read from the catalog at startup, so a brand named in a message becomes the brand filter.
+- After each part, the dev set reruns on every provider with `--judge`, and its rule-check and judged summaries go in the commit message.
+- Done when the tests in `07-evaluation.md` pass, the plan's stop rule has ended tuning, the second holdout measurement (v2) is in the run log on every provider, and the Evaluation section of `README.md` and the about page's evidence (`12-about-page.md`) report it.
+
 ## Stretch goals
 
-These come after Phase 19 and are each specified in a new doc before being built.
+These come after Phase 20 and are each specified in a new doc before being built.
 
 - Image input: the user uploads a photo, a vision-capable model extracts the category and attributes, and the agent searches with them.
 - Letting the agent use the cart from `06-frontend.md`, through an add-to-cart tool that requires the user to confirm in the UI.

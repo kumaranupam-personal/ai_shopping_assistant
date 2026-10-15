@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from app.agent.prompt import SYSTEM_PROMPT
+from app.agent.prompt import system_prompt as agent_system_prompt
 from app.llm.base import Prices, ToolCall
 from evals.judge import (
     CRITERIA, VERDICT_TOOL, agreement, cohen_kappa, judge_turn, parse_verdicts, results_items, summarize_verdicts, system_prompt,
@@ -28,7 +28,7 @@ def verdict_call(**overrides):
 
 def test_the_judge_reads_the_rubric_but_never_the_agent_prompt():
     assert "## Judge rubric" in SYSTEM and "D9, when faithfulness applies" in SYSTEM and "Labeling guide" not in SYSTEM
-    assert SYSTEM_PROMPT not in SYSTEM
+    assert agent_system_prompt(()) not in SYSTEM
     assert "- watches: Kaal, Vela\n- kitchen appliances: Tava" in SYSTEM  # brands, so a brand in a message is recognized
 
 

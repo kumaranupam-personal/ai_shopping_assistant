@@ -28,3 +28,11 @@ def fetch_products(conn: sqlite3.Connection, ids: list[str]) -> dict[str, dict]:
         return {}
     rows = conn.execute(f"SELECT * FROM products WHERE id IN ({', '.join('?' * len(ids))})", ids)
     return {row["id"]: product_from_row(row) for row in rows}
+
+
+def brands_by_category(conn: sqlite3.Connection) -> dict[str, list[str]]:
+    """The brands the catalog carries in each category, both sorted."""
+    brands: dict[str, list[str]] = {}
+    for row in conn.execute("SELECT DISTINCT category, brand FROM products ORDER BY category, brand"):
+        brands.setdefault(row[0], []).append(row[1])
+    return brands

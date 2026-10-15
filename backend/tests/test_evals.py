@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.config import Settings
-from app.agent.prompt import PROMPT_VERSION, prompt_snapshot, prompt_version
+from app.agent.prompt import agent_prompt, prompt_snapshot, prompt_version
 from app.llm.base import Prices, ToolCall, Usage
 from app.search.engine import Filters, matching_ids
 from evals.checks import (
@@ -149,10 +149,10 @@ def test_the_dev_set_has_40_cases_and_no_case_is_in_both_sets():
     assert not {tuple(c.turns) for c in cases["dev"]} & {tuple(c.turns) for c in cases["holdout"]}
 
 
-def test_no_prompt_or_tool_example_repeats_an_eval_case():
+def test_no_prompt_or_tool_example_repeats_an_eval_case(index):
     """Examples the model sees must not share words with any case's messages, so a pass can't come from copying."""
     case_turns = {case.id: case.turns for cases in all_cases().values() for case in cases}
-    assert prompt_leaks(quoted_examples(prompt_snapshot()), case_turns) == []
+    assert prompt_leaks(quoted_examples(prompt_snapshot(agent_prompt(index.conn)[0])), case_turns) == []
 
 
 @pytest.mark.parametrize(
@@ -206,10 +206,11 @@ def test_a_cache_miss_counts_only_calls_large_enough_to_cache(calls, misses):
     assert cache_misses(calls, min_cache_tokens=None) == 0  # best-effort caching isn't checked
 
 
-def test_prompt_version_changes_with_any_word_of_the_prompt_or_a_tool():
-    snapshot = prompt_snapshot()
+def test_prompt_version_changes_with_any_word_of_the_prompt_or_a_tool(index):
+    system, built_version = agent_prompt(index.conn)
+    snapshot = prompt_snapshot(system)
     version = prompt_version(snapshot)
-    assert len(version) == 12 and version == prompt_version(prompt_snapshot()) == PROMPT_VERSION  # stable
+    assert len(version) == 12 and version == prompt_version(prompt_snapshot(system)) == built_version  # stable
     assert [tool["name"] for tool in snapshot["tools"]] == ["search_products", "get_product_details", "compare_products", "show_products"]
     edited_tool = {**snapshot, "tools": [{**snapshot["tools"][0], "description": "Search."}, *snapshot["tools"][1:]]}
     edited_prompt = {**snapshot, "system_prompt": snapshot["system_prompt"] + " "}
