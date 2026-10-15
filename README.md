@@ -22,7 +22,7 @@ Agent: [lowers the budget below the cheapest shown] → new cards, reply in Hing
 - **Provider-agnostic agent.** One tool-calling loop runs on Anthropic, OpenAI or Gemini, chosen by a config variable. Each provider sits behind a small adapter, and only adapters may import a provider SDK (a test enforces this).
 - **Grounded by design.** The model picks *which* products to show; product cards are built on the server from catalog rows, never from model text. An eval check flags any price or product the model mentions that no tool returned.
 - **Hybrid search.** SQL filters for hard constraints, then SQLite FTS5 keyword ranking and vector similarity, merged with reciprocal rank fusion and capped at 3 products per brand. About 12 ms per search over the 2,400-product demo catalog.
-- **Measured, not guessed.** Rule checks for correctness and grounding, and an LLM judge for reply quality that agrees with human labels on 89% of held-out verdicts, on a dev set used for tuning and a holdout set written without seeing the prompt and never tuned on (see [Evaluation](#evaluation)).
+- **Measured, not guessed.** Rule checks for correctness and grounding, and an LLM judge for reply quality that agrees with human labels on 89% of held-out verdicts, on a dev set used for tuning and a holdout set written without seeing the prompt and never tuned on. Tuning three reply behaviors on dev raised the deployed model's (Gemini) judged quality on the holdout set from 54% to 91% of turns (see [Evaluation](#evaluation)).
 - **Traced end to end.** Every turn is an OpenTelemetry trace in Langfuse: one span per model call (tokens, cache reads and writes, cost) and per tool call, grouped by conversation. The code uses only OpenTelemetry, so any OTLP backend works, and message text stays out of traces unless switched on.
 - **Robust turns.** Each turn commits or rolls back as a unit: a provider failure, the model-call limit or a client disconnect leaves no half-finished exchange in the session.
 - **Hinglish.** Users can write Hindi in Latin script; the agent maps it to catalog terms ("shaadi" → occasion `wedding`, "teen hazaar tak" → `price_max` 3000) and replies in the same language.
@@ -67,25 +67,27 @@ Targets: pass rate ≥ 90%, 0 grounding violations, latency p50 < 8 s and p95 < 
 
 | Provider (model) | Dev (40, tuned on) | Holdout (40, never tuned on) | Grounding violations | Holdout latency p50 / p95 | Cost per turn |
 |---|---|---|---|---|---|
-| Anthropic (`claude-opus-5-5`) | 40/40 | **40/40** in both runs | 0 | 5.7 s / 9.8 s | $0.016 |
-| OpenAI (`gpt-6-astra`) | 40/40 | **40/40** in both runs | 0 | 7.6 s / 11.9 s | $0.023 |
-| Gemini (`gemini-3.8-flash`) | 40/40 | **40/40** in both runs | 0 | 5.7 s / 20.7 s | $0.006 |
+| Anthropic (`claude-opus-5-5`) | 40/40 | **40/40** in all 3 runs | 0 | 5.5 s / 11.8 s | $0.016 |
+| OpenAI (`gpt-6-astra`) | 40/40 | **40/40** in all 3 runs | 0 | 8.0 s / 17.4 s | $0.025 |
+| Gemini (`gemini-3.8-flash`) | 40/40 | **40/40** in all 3 runs | 0 | 5.7 s / 9.4 s | $0.006 |
 
-Every pass-rate, grounding and caching target is met on both sets: on Anthropic and OpenAI, every call large enough to cache read from the prompt cache (a 100% hit rate), while Gemini caches on a best-effort basis and isn't checked. Latency varies between runs: Gemini's p95 was 20.7 s in its latest holdout run, and OpenAI's has landed just over 15 s in two runs, so those two miss the p95 target some of the time. A perfect score also means these checks no longer separate a good reply from a great one, which is what the judge is for.
+Dev results and latency are from the final prompt; the holdout ran 3 times per provider, before and after tuning. Every pass-rate, grounding and caching target is met on both sets: on Anthropic and OpenAI, every call large enough to cache read from the prompt cache (a 100% hit rate), while Gemini caches on a best-effort basis and isn't checked. Latency varies between runs: OpenAI's p95 has landed over 15 s in 3 runs (up to 17.4 s) and Gemini's in 2 (up to 20.7 s), so those two miss the p95 target some of the time. A perfect score also means these checks no longer separate a good reply from a great one, which is what the judge is for.
 
 ### Reply quality (LLM judge)
 
 An LLM judge (Claude Sonnet 5.5) grades each turn's reply against a 7-criterion rubric drawn from the agent's spec: relevance, helpfulness, faithfulness to the tool results, honesty about relaxed constraints, clarification and decline quality, and language and style. It was calibrated against 60 hand-labeled dev turns, 15 of them deliberately broken copies. **On 20 held-out labeled turns it agreed with the human labels on 89% of verdicts (92% on whether a reply had a problem at all) and caught 4 of 5 broken replies**; its weakest criterion is faithfulness (70%).
 
-| Provider | Turns passing every criterion: dev | Holdout | Weakest criterion on holdout |
-|---|---|---|---|
-| OpenAI | 85% | **91%** | Helpfulness, 91% |
-| Anthropic | 74% | **67%** | Language and style, 72%: replies over 2 sentences, or narrating its own process |
-| Gemini | 40% | **54%** | Helpfulness, 61%: replies that restate the cards |
+Share of turns passing every criterion, before and after tuning (see How the prompt got here):
 
-The ranking holds on both sets. Differences of a few points are within the judge's own error; the gaps between providers aren't. Gemini runs the public demo for its low cost, so its reply quality is the clearest gap these results show.
+| Provider | Holdout before | **Holdout after** | Dev after | Weakest criterion on holdout after |
+|---|---|---|---|---|
+| Gemini (runs the public demo) | 54% | **91%** | 92% | Relaxation honesty and clarification quality, one turn of 4 each |
+| OpenAI | 91% | **98%** | 98% | Relevance, one turn |
+| Anthropic | 67% | **70%** | 79% | Language and style, 70%: replies over 2 sentences, or a planning note to itself |
 
-Costs come from each provider's published prices and match the per-call costs Langfuse shows for the same traces. Prompt caching does most of the saving: Anthropic and OpenAI read about 6,800 and 4,300 tokens per turn from the cache, while Gemini's best-effort implicit caching reads almost none. A full 40-case holdout run costs $0.86 on Anthropic, $1.24 on OpenAI and $0.30 on Gemini, and judging one costs about $0.50.
+With about 54 judged turns per provider, differences under about 7 points are within run-to-run noise: Gemini's gain is far beyond it, OpenAI's is at it, and Anthropic's is within it. On every provider the holdout change follows the dev change, so the tuning fixed behaviors rather than the cases it was made on.
+
+Costs come from each provider's published prices and match the per-call costs Langfuse shows for the same traces. Prompt caching does most of the saving: Anthropic and OpenAI read about 8,300 and 5,500 tokens per turn from the cache, while Gemini's best-effort implicit caching reads almost none. A full 40-case holdout run costs $0.89 on Anthropic, $1.33 on OpenAI and $0.34 on Gemini, and judging one costs about $0.50.
 
 ### Public traces
 
@@ -102,6 +104,8 @@ These are single turns, recorded separately from the full runs above with an ear
 ### How the prompt got here
 
 The first rule-check runs, on an earlier 20-case dev set, scored 17, 19 and 19 of 20 with 5 grounding violations in all. Prompt and tool-description changes only, one per commit and each rerun on all three providers, took them to 20, 20 and 20 of 20 with none: quoting amounts exactly instead of computing or rounding them, and separating filters the user stated from ones the agent inferred, so relaxation drops the inferred ones first and raises the budget by 15% at most once. Those were dev scores, measured on the cases the changes were made for. Two prompt examples turned out to repeat eval cases, so they were replaced and a test now prevents it, and the holdout set and the judge were added to measure the agent on cases it was never tuned on.
+
+The judge then traced most failed replies to a few behaviors, and a second tuning round fixed them under a plan committed before it began: at most three commits, one behavior theme each, tuned on dev only and measured once on the holdout set with the same judge. The three themes were reply content (name a pick and its reason instead of restating the cards, and claim no quality, extreme or tie the results don't show), reply form (two sentences at most, no notes about the agent's own process, and relaxation told in the shopper's terms) and brands (the catalog's brands listed in the prompt, so a brand that is also an everyday word is recognized). Each change and what it did is in the run log of [`backend/evals/README.md`](backend/evals/README.md).
 
 ## Tech stack
 
