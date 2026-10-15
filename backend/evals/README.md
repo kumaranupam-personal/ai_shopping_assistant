@@ -142,3 +142,20 @@ Learnings:
 - **Process narration is untouched by content rules.** Anthropic still narrates inferred filters and its own reasoning in a few replies; that's Part 2's theme.
 - **Watch for a side effect on clarifying.** Gemini searched and showed products for a vague gift request it had answered with a question in every earlier dev run, the one rule-check failure. It may be noise or a lean towards showing products after "name a pick"; the next run shows which.
 - **Stop rule not met** (Anthropic below 85%, Gemini's rule checks below 40/40), so tuning continues with Part 2, reply form.
+
+**Phase 20, Part 2 (reply form), 2026-10-15:** prompt `7d1a2cd21b7a`, dev set judged by `afc7fd28587f`.
+
+| Provider | Turns passing every criterion: baseline | Part 1 | After Part 2 | Dev rule checks |
+|---|---|---|---|---|
+| OpenAI | 85% | 98% | 100% | 40/40 |
+| Gemini | 40% | 91% | 94% | 39/40 |
+| Anthropic | 74% | 60% | 76% | 40/40 |
+
+Learnings:
+
+- **Restating the form limits next to the content rules undid most of Part 1's side effect.** Saying "one or two sentences, never three" and "put your pick and its contrast in one sentence" took Anthropic's language and style from 62% to 77%: 3-sentence replies fell from 17 to 12 and replies over 55 words from 4 to 0.
+- **Anthropic's remaining 3-sentence replies follow one template:** the pick in a sentence of its own ("My pick is X at ₹Y."), then its reason, then the contrast.
+- **A prompt rule didn't stop Anthropic's notes to itself.** Despite "everything you write is shown exactly as written; never put notes to yourself in it", 5 replies still open with a planning line in the prompt's own vocabulary ("Warmth was inferred; drop it.", "Lowest shown was ₹1,729, so price_max 1728."). They look like Opus planning inside the reply at low effort; raising `LLM_EFFORT` is the likely fix, but it's a configuration change, outside this phase.
+- **Telling relaxation in the shopper's terms worked for OpenAI and Gemini:** neither mentions filters or inference in a reply any more, and OpenAI reached 100% on every criterion.
+- **Gemini's vague-gift failure in Part 1 didn't repeat,** so it was most likely run-to-run noise. Its one rule-check failure this time was new: for a brand nothing matched within the budget, it raised the budget while keeping the brand instead of dropping the brand first, as rule 7's order requires. Its reply said so honestly, and the judge passed it.
+- **Stop rule not met** (Anthropic below 85%, Gemini's rule checks below 40/40), so tuning continues with Part 3, brands, the last commit the plan allows.
