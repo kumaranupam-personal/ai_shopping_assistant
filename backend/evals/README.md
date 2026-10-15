@@ -159,3 +159,21 @@ Learnings:
 - **Telling relaxation in the shopper's terms worked for OpenAI and Gemini:** neither mentions filters or inference in a reply any more, and OpenAI reached 100% on every criterion.
 - **Gemini's vague-gift failure in Part 1 didn't repeat,** so it was most likely run-to-run noise. Its one rule-check failure this time was new: for a brand nothing matched within the budget, it raised the budget while keeping the brand instead of dropping the brand first, as rule 7's order requires. Its reply said so honestly, and the judge passed it.
 - **Stop rule not met** (Anthropic below 85%, Gemini's rule checks below 40/40), so tuning continues with Part 3, brands, the last commit the plan allows.
+
+**Phase 20, Part 3 (brands), 2026-10-15:** prompt `48e8321552c0`, dev set judged by `afc7fd28587f`.
+
+| Provider | Turns passing every criterion: baseline | Part 1 | Part 2 | After Part 3 | Dev rule checks |
+|---|---|---|---|---|---|
+| OpenAI | 85% | 98% | 100% | 98% | 40/40 |
+| Gemini | 40% | 91% | 94% | 92% | 40/40 |
+| Anthropic | 74% | 60% | 76% | 79% | 40/40 |
+
+Learnings:
+
+- **Listing the brands fixed the brand that is also an everyday word.** Before Part 3, Anthropic never treated the brand in a Hinglish request as a brand (0 of 3 runs), reading it once as "tomorrow" and once as "black". With the catalog's brands in the prompt it applied the brand filter, said honestly that none fit the budget and showed other brands, which took its relaxation honesty from 75% to 100%.
+- **No over-triggering appeared.** No dev turn gained a brand filter the user didn't ask for, and a brand-free check in the terminal chat searched normally.
+- **Gemini's rule-check failure from Part 2 didn't repeat:** it dropped the brand before raising the budget this time, so dev rule checks are 40/40 on all three providers for the first time in this phase.
+- **Part 1's tie rule showed up as intended:** asked for the cheapest few, Anthropic found two products at the same third-lowest price and showed and named both.
+- **What's left is outside the three themes.** Anthropic still writes a planning line in 2 replies and 3-sentence replies in 9; Gemini didn't disclose one relaxation; OpenAI and Gemini each have one borderline claim. Single turns like these move a provider's rate by about 2 points, within run-to-run noise.
+
+**Tuning ended after Part 3, the third commit the plan allows.** The stop rule's targets weren't all met: Gemini (92%, target 70%) and OpenAI (98%, target 80%) passed theirs and all three rule checks are 40/40, but Anthropic reached 79% against a target of 85%. The final prompt is `48e8321552c0`, and v2 measures it on the holdout set as the plan sets out.
