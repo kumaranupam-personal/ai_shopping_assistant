@@ -1,10 +1,13 @@
-"""The static system prompt (docs/04-agent.md, Required behaviors). Built once at import, so providers can cache it."""
+"""The system prompt (docs/04-agent.md, Required behaviors). Built once per catalog, from the taxonomy's categories
+and the catalog's brands, and unchanged after that, so providers can cache it."""
 
+import functools
 import hashlib
 import json
 from dataclasses import asdict
 
 from app.agent.tools import TOOL_SPECS
+from app.catalog.store import brands_by_category
 from app.catalog.taxonomy import CATEGORIES
 
 
@@ -25,12 +28,12 @@ def _catalog_section() -> str:
     return "\n".join(lines)
 
 
-SYSTEM_PROMPT = f"""You are the shopping assistant for an Indian online store. You help people find products in the store's catalog by searching it and showing results as product cards. The cards show prices, ratings and key specs, so your replies stay short.
+_HEAD = f"""You are the shopping assistant for an Indian online store. You help people find products in the store's catalog by searching it and showing results as product cards. The cards show prices, ratings and key specs, so your replies stay short.
 
 The catalog has only these categories, with these attributes and allowed values:
 {_catalog_section()}
-
-How to work:
+"""
+_BODY = """How to work:
 - Turn every request to find products into a search_products call. Put hard constraints (category, budget, size, color, brand, attribute values) in filters and the need and soft preferences ("lightweight", "stylish") in query.
 - Search right away whenever you can infer a category or a clear use case. Ask exactly one short clarifying question only when you can infer neither, and never ask two questions in a row.
 - Once the search for a request returns results, call show_products with up to 8 of the best results (at least 3 when that many exist), best first, plus 2 to 4 short refinement suggestions. Put your reply to the user in its reply parameter, not in separate text: the turn ends once the cards are shown.
@@ -61,10 +64,17 @@ Language and style:
 - Politely decline requests unrelated to shopping, and say so when the store doesn't carry a category."""
 
 
+def system_prompt(brands: tuple[tuple[str, tuple[str, ...]], ...]) -> str:
+    listed = "\n".join(f"- {category}: {', '.join(names)}" for category, names in brands)
+    return (f"{_HEAD}\nThe store's brands, by category:\n{listed}\n\nA word in a message is a brand only when the user "
+            "uses it as the name of a product's maker. When the word also has an everyday meaning that fits the sentence, "
+            f"it keeps that meaning and isn't a brand filter.\n\n{_BODY}")
 
-def prompt_snapshot() -> dict:
+
+
+def prompt_snapshot(system: str) -> dict:
     """Everything the model sees besides the conversation: the system prompt and every tool."""
-    return {"system_prompt": SYSTEM_PROMPT, "tools": [asdict(tool) for tool in TOOL_SPECS]}
+    return {"system_prompt": system, "tools": [asdict(tool) for tool in TOOL_SPECS]}
 
 
 def prompt_version(snapshot: dict) -> str:
@@ -72,4 +82,12 @@ def prompt_version(snapshot: dict) -> str:
     return hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12]
 
 
-PROMPT_VERSION = prompt_version(prompt_snapshot())
+@functools.cache
+def _build(brands: tuple[tuple[str, tuple[str, ...]], ...]) -> tuple[str, str]:
+    system = system_prompt(brands)
+    return system, prompt_version(prompt_snapshot(system))
+
+
+def agent_prompt(conn) -> tuple[str, str]:
+    """The system prompt and its version for a catalog. Built once per set of brands, so every call sends the same text."""
+    return _build(tuple((category, tuple(names)) for category, names in brands_by_category(conn).items()))

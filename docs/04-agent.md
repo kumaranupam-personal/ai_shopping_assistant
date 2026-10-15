@@ -16,7 +16,7 @@ Loop rules:
 - A turn may make at most 8 model calls. If it hits that limit, the turn fails with the error `turn_limit` from `05-api.md`.
 - A `max_tokens` stop reason also fails the turn with `turn_limit`. The response may hold unanswered tool calls, and rolling the turn back keeps the history valid for the next turn.
 - A `refusal` stop reason ends the turn with `done`. A fixed polite message is sent as a `text` event and added as an `assistant` entry. The turn's messages are then removed from the history, as when a turn rolls back, while its transcript entries are committed and `turn_count` goes up. The refused response may have empty content or tool calls that never get results, which providers reject when it's sent again, and dropping it also keeps the refused request out of later turns.
-- The system prompt is static. Nothing that changes per request, such as dates or IDs, goes into it, so providers can cache it.
+- The system prompt is static: it's built once from the taxonomy's categories and the loaded catalog's brands, and nothing that changes per request, such as dates or IDs, goes into it, so providers can cache it.
 - The loop returns a turn record with the latency and the `usage` of every model call. The eval runner reads it, and the API ignores it.
 - The loop traces the turn as described in `10-observability.md`.
 
@@ -25,7 +25,7 @@ Loop rules:
 `app/agent/prompt.py` contains the system prompt, which must produce these behaviors. Its examples, like the ones below, follow the rule on examples in `07-evaluation.md` (Dev and holdout sets).
 
 1. Act as a shopping assistant for an Indian store whose catalog contains only the categories in `02-catalog.md`. Politely decline unrelated requests and categories the store doesn't carry.
-2. Map every request to find products to `search_products`. Hard constraints go into filters. The need and any soft preferences go into `query`.
+2. Map every request to find products to `search_products`. Hard constraints go into filters. The need and any soft preferences go into `query`. The prompt lists the catalog's brands by category, read from the loaded catalog, so a brand the user names becomes the `brand` filter. A word is a brand only when the user uses it as the name of a product's maker; a word whose everyday meaning fits the sentence keeps that meaning.
 3. Search right away whenever a category or a clear use case can be inferred. Ask exactly one short clarifying question only when neither can be inferred. Never ask more than one question in a row.
 4. Once the search for a request returns results, after any relaxation, call `show_products` with up to 8 of the best results (at least 3 when that many exist), best first, and 2 to 4 refinement suggestions. The reply to the user goes in its `reply` parameter, so the turn ends without another model call.
 5. For a refinement, start from the previous search's arguments, which are visible in the history, and change only what the user changed. "Cheaper" without a number sets `price_max` to one rupee below the lowest price in the latest shown list. "Costlier" or "more premium" without a number sets `price_min` to one rupee above the highest price in it.

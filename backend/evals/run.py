@@ -21,7 +21,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.loop import run_turn
-from app.agent.prompt import PROMPT_VERSION, prompt_snapshot
+from app.agent.prompt import agent_prompt, prompt_snapshot
 from app.agent.session import SessionStore
 from app.config import BACKEND_DIR, Settings
 from app.llm.base import LLMProvider, ToolResult, Usage
@@ -250,9 +250,10 @@ async def main(argv: list[str] | None = None) -> int:
     if not cases:
         raise SystemExit(f"{cases_file} has no cases.")
     cases_sha256 = hashlib.sha256(cases_file.read_bytes()).hexdigest()
-    snapshot, version = prompt_snapshot(), PROMPT_VERSION
     commit, dirty = git_state()
     provider, index = build_provider(settings), load_index(settings.data_dir)
+    system, version = agent_prompt(index.conn)
+    snapshot = prompt_snapshot(system)
     catalog = [(row["id"], row["title"]) for row in index.conn.execute("SELECT id, title FROM products")]
 
     results, tracing = [], setup_tracing(settings)

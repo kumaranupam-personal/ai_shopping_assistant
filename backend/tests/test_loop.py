@@ -4,7 +4,8 @@ import json
 import pytest
 
 from app.agent.loop import MAX_MODEL_CALLS, REFUSAL_MESSAGE, TurnLimitError, run_turn
-from app.agent.prompt import SYSTEM_PROMPT
+from app.agent.prompt import agent_prompt
+from app.catalog.store import brands_by_category
 from app.agent.session import SessionStore
 from app.agent.tools import TOOL_SPECS
 from app.catalog.taxonomy import CATEGORIES
@@ -82,7 +83,7 @@ def test_tools_run_in_order_and_the_turn_commits(index, store):
     assert (session.shown_ids, session.turn_count, session.busy) == (["J3", "J1"], 1, False)
     assert record.turn == 1 and [usage for _, usage in record.calls] == [Usage(100, 20, 80)] * 2
     # Every call gets the same static prompt and tool list, so providers can cache them.
-    assert {c["system"] for c in provider.calls} == {SYSTEM_PROMPT}
+    assert {c["system"] for c in provider.calls} == {agent_prompt(index.conn)[0]}
     assert all(c["tools"] == TOOL_SPECS for c in provider.calls)
 
 
@@ -159,5 +160,9 @@ def test_failed_turns_roll_back(index, store, responses, error):
     assert (session.turn_count, session.busy) == (1, False)
 
 
-def test_system_prompt_lists_every_category():
-    assert all(name in SYSTEM_PROMPT for name in CATEGORIES)
+def test_system_prompt_lists_every_category_and_each_category_s_brands(index):
+    system = agent_prompt(index.conn)[0]
+    assert all(name in system for name in CATEGORIES)
+    brands = brands_by_category(index.conn)
+    assert brands and all(f"- {category}: {', '.join(names)}" in system for category, names in brands.items())
+    assert agent_prompt(index.conn)[0] is system  # built once: every call sends the same text

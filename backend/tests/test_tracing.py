@@ -8,7 +8,7 @@ from opentelemetry.trace import StatusCode
 
 from app import tracing
 from app.agent.loop import TurnLimitError, run_turn
-from app.agent.prompt import PROMPT_VERSION
+from app.agent.prompt import agent_prompt
 from app.agent.session import SessionStore
 from app.config import Settings
 from app.llm.base import LLMUpstreamError, Prices, ToolCall
@@ -64,7 +64,7 @@ def test_a_turn_is_a_root_span_with_a_span_per_model_and_tool_call(traced, index
     # With message text off, no attribute holds a message, reply, tool argument or tool result.
     assert attributes(root) == {
         "langfuse.trace.name": "turn", "langfuse.session.id": session.id, "langfuse.trace.tags": ("api", "scripted"),
-        "langfuse.version": PROMPT_VERSION, "langfuse.trace.metadata.turn": 1,
+        "langfuse.version": agent_prompt(index.conn)[1], "langfuse.trace.metadata.turn": 1,
         "langfuse.trace.metadata.provider": "scripted", "langfuse.trace.metadata.outcome": "done",
     }
     assert root.status.status_code == StatusCode.UNSET
