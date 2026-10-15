@@ -125,3 +125,20 @@ Every rule check passed on both sets (40/40 for each provider), so the judge mea
 4. **v2:** the holdout set runs once on each provider with the final prompt, one at a time, and each run is judged once with `afc7fd28587f`. Only the summaries are looked at, as in the judged-runs plan, and each run's rule-check result goes in the table above.
 5. **Reporting:** v1 against v2 for every provider and criterion, whatever they show. With about 54 judged turns per provider, a difference under about 7 points is within run-to-run noise, and every figure is read with the judge's held-out agreement (89%) in mind. The README's Evaluation section and the about page report the result.
 
+
+**Phase 20, Part 1 (reply content), 2026-10-15:** prompt `b847f098e11b`, dev set judged by `afc7fd28587f`.
+
+| Provider | Turns passing every criterion: baseline | After Part 1 | Dev rule checks |
+|---|---|---|---|
+| Gemini | 40% | 91% | 39/40 |
+| OpenAI | 85% | 98% | 40/40 |
+| Anthropic | 74% | 60% | 40/40 |
+
+Learnings:
+
+- **Making the pick or contrast required fixed generic replies.** The old prompt said what helps the user choose "such as" a trade-off, which read as optional, and nothing forbade restating the request. Requiring a pick with its reason, and naming the filler habits to drop, took Gemini's helpfulness from 48% to 96% and OpenAI's from 87% to 100%.
+- **Naming the kinds of unsupported claim worked better than a general rule.** "Only specs from a tool result" didn't stop words like "top-rated" or "genuine", which models don't treat as specs. Saying that extremes must be uniquely true, ties named together, no qualities added and both values read before comparing took Gemini's faithfulness from 74% to 96% and Anthropic's and OpenAI's to 100%.
+- **A content rule can break a form rule.** Anthropic's replies kept their length (37 words on average before and after) but split the pick and the contrast into 3 sentences, which took its language and style from 79% to 62%. A rule that adds content needs the form limits restated next to it.
+- **Process narration is untouched by content rules.** Anthropic still narrates inferred filters and its own reasoning in a few replies; that's Part 2's theme.
+- **Watch for a side effect on clarifying.** Gemini searched and showed products for a vague gift request it had answered with a question in every earlier dev run, the one rule-check failure. It may be noise or a lean towards showing products after "name a pick"; the next run shows which.
+- **Stop rule not met** (Anthropic below 85%, Gemini's rule checks below 40/40), so tuning continues with Part 2, reply form.
