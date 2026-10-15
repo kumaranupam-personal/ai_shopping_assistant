@@ -88,6 +88,9 @@ Every holdout run is listed here, so the number of times the set has been looked
 | 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | Anthropic (`claude-opus-5-5`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 9.8 s, $0.86. Stores tool calls; judged below. |
 | 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | OpenAI (`gpt-6-astra`) | 40/40 | 0 grounding violations, p50 7.6 s, p95 11.9 s, $1.24. Stores tool calls; judged below. |
 | 2026-10-14 | `a8130bf25dd1` (judged-runs plan) | Gemini (`gemini-3.8-flash`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 20.7 s (over the 15 s target), $0.30. Stores tool calls; judged below. Run alone, after the other two. |
+| 2026-10-15 | `48e8321552c0` (Phase 20 v2) | Anthropic (`claude-opus-5-5`) | 40/40 | 0 grounding violations, p50 5.5 s, p95 11.8 s, $0.89. Judged below. |
+| 2026-10-15 | `48e8321552c0` (Phase 20 v2) | OpenAI (`gpt-6-astra`) | 40/40 | 0 grounding violations, p50 8.0 s, p95 17.4 s (over the 15 s target), $1.33. Judged below. |
+| 2026-10-15 | `48e8321552c0` (Phase 20 v2) | Gemini (`gemini-3.8-flash`) | 40/40 | 0 grounding violations, p50 5.7 s, p95 9.4 s, $0.34. Judged below. |
 
 **Closed 2026-10-13, following the plan's stop rule.** After v1, the dev set ran once on each provider with the same prompt version, one provider at a time: Anthropic, OpenAI and Gemini each passed 40/40 with 0 grounding violations and met every dev target (p95 10.2 s, 14.5 s and 9.8 s). Tuning therefore stopped at zero commits, so the final prompt version is still `a8130bf25dd1`. v2 would have rerun that same version on the same cases, so it wasn't run, and v1 is the final holdout result. Run alone, Gemini's p95 was well under v1's 16.1 s, which suggests running the three providers at once inflated v1's latency; OpenAI stays close to the 15 s limit either way. Step 3's blinding stays in force: the holdout's per-case results remain unread, so the set stays usable for a later plan.
 
@@ -177,3 +180,14 @@ Learnings:
 - **What's left is outside the three themes.** Anthropic still writes a planning line in 2 replies and 3-sentence replies in 9; Gemini didn't disclose one relaxation; OpenAI and Gemini each have one borderline claim. Single turns like these move a provider's rate by about 2 points, within run-to-run noise.
 
 **Tuning ended after Part 3, the third commit the plan allows.** The stop rule's targets weren't all met: Gemini (92%, target 70%) and OpenAI (98%, target 80%) passed theirs and all three rule checks are 40/40, but Anthropic reached 79% against a target of 85%. The final prompt is `48e8321552c0`, and v2 measures it on the holdout set as the plan sets out.
+
+**Phase 20 v2, 2026-10-15:** the holdout set once per provider with the final prompt `48e8321552c0`, each run judged once by `afc7fd28587f`, summaries only. Share of turns passing every criterion, v1 (`a8130bf25dd1`) to v2, 54 judged turns per provider:
+
+| Provider | v1 | v2 | Change | Criteria that moved (v1 to v2) |
+|---|---|---|---|---|
+| Gemini | 54% | 91% | +37 | helpfulness 61% to 98%, faithfulness 87% to 98%; relaxation honesty and clarification quality each 100% to 75%, one turn of 4 |
+| OpenAI | 91% | 98% | +7 | helpfulness 91.5% to 100% |
+| Anthropic | 67% | 70% | +3 | faithfulness 92% to 100%, relevance 97% to 100%; language and style 72% to 70% |
+
+Rule checks stayed at 40/40 on every provider with 0 grounding violations. Gemini's gain is far beyond the about 7 points of run-to-run noise; OpenAI's is at that threshold, near the judge's ceiling; Anthropic's is within it, since its remaining weakness, the sentence count and planning notes in its replies, was outside the three tuning themes. On every provider the holdout change follows the dev change, so the tuning fixed behaviors rather than the dev cases. Judged by a judge that agrees with human labels on 89% of held-out verdicts. Phase 20's plan is complete.
+
